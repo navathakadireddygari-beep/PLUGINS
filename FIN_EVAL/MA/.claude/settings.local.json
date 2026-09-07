@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "NotebookEdit",
+      "PowerShell(npm:*)",
+      "PowerShell(npx:*)",
+      "PowerShell(node:*)",
+      "PowerShell(git:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(git:*)",
+      "PowerShell(npm run build 2>&1)",
+      "PowerShell(npm test 2>&1)",
+      "PowerShell($p = Start-Process npm -ArgumentList 'run','dev' -PassThru -RedirectStandardOutput dev.log -RedirectStandardError deverr.log -NoNewWindow; Start-Sleep -Seconds 6; Get-Content dev.log -Tail 8; try { $r = Invoke-WebRequest http://localhost:5173/ -UseBasicParsing -TimeoutSec 5; \"STATUS: $\\($r.StatusCode\\)\" } catch { \"FETCH ERR: $_\" }; Stop-Process -Id $p.Id -Force; Get-Content deverr.log -Tail 5)",
+      "PowerShell($p = Start-Process -FilePath \"npm.cmd\" -ArgumentList 'run','dev' -PassThru -RedirectStandardOutput dev.log -RedirectStandardError deverr.log -NoNewWindow; Start-Sleep -Seconds 7; try { $r = Invoke-WebRequest http://localhost:5173/ -UseBasicParsing -TimeoutSec 5; \"STATUS: $\\($r.StatusCode\\)\"; try { $m = Invoke-WebRequest http://localhost:5173/src/main.tsx -UseBasicParsing -TimeoutSec 5; \"MAIN: $\\($m.StatusCode\\)\" } catch { \"MAIN ERR: $_\" } } catch { \"FETCH ERR: $_\" }; Stop-Process -Id $p.Id -Force; Get-Content dev.log -Tail 6)",
+      "PowerShell(npx tsc -b 2>&1)",
+      "PowerShell(npm run lint 2>&1)",
+      "PowerShell(\"---LINT---\")",
+      "PowerShell(\"---TEST---\")"
+    ],
+    "deny": [
+      "PowerShell(git push --force:*)",
+      "Bash(git push --force:*)",
+      "PowerShell(Remove-Item -Recurse -Force C:\\:*)",
+      "Bash(rm -rf /:*)"
+    ]
+  }
+}

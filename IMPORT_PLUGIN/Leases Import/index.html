@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leases Investment Report</title>
+    <script>
+      // ── Plug-in parameters (injected by host APEX page) ─────────
+      // The host page's p_render procedure sets window.__APP_CONFIG__
+      // before the bundle loads (see plugin PL/SQL).
+      //
+      //   proposal_id      — Financial proposal id (set once a proposal exists;
+      //                      leave null when creating a new proposal from spc_type_id)
+      //   spc_type_id      — SPC type id (used when proposal_id is null)
+      //   template_type_id — Template type id; appended to every GET and PUT call
+      //   app_user         — Logged-in user email; sent as the user_email header
+      //                      and recorded with every save
+      //   app_roles        — Comma-separated role codes (G_APP_ROLES); sent as
+      //                      the role header on every API call for authorization
+      //   is_readonly      — Computed by p_render from proposal ownership /
+      //                      collaborator access level / role; false lets this
+      //                      dev build exercise the editable UI
+      window.__APP_CONFIG__ = {
+        file_id: 353,
+        proposal_id:      673,                         // number | null
+        spc_type_id:      104,                        // number | null
+        template_type_id: 307,                        // number | null
+        app_user:         "arvind.tammineni@test.exp.com",      // string
+        app_roles:        "APP_FIN_GIS_SPC_AUTHOR_PROPERTY_LEASES,APP_FIN_GIS_RLS_NA_AUTOMOTIVE_PROPERTY_LEASES", // string
+        is_readonly:      false,                        // boolean
+        api_endpoint:     "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
+        //api_endpoint:     "https://eappsysdmone.eappsys.com:8443/ords/test/xxexp_gis",
+        // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
+        // ajaxId:   "ajaxId",
+        // flowId:   "flowId",
+        // stepId:   "stepId",
+        // instance: "instance",
+      };
+    </script>
+  </head>
+  <body>
+    <div id="leases-investment-report-root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

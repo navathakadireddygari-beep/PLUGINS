@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+}
+
+/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX */
+#sales-contracts-investment-report-root *,
+#fin-eval-widget-root * {
+  box-sizing: border-box;
+  border-color: hsl(var(--border));
+}
+
+/* Scope background/foreground to the widget root — prevents overwriting APEX body styles */
+#sales-contracts-investment-report-root,
+#fin-eval-widget-root {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+#sales-contracts-investment-report-root,
+#fin-eval-widget-root {
+  width: 100%;
+}
+
+#sales-contracts-investment-report-root > #fin-eval-widget-root,
+#fin-eval-widget-root > div {
+  max-width: none !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  background: #fff !important;
+}
+
+#fin-eval-widget-root > div > div[style*="position: sticky"],
+#fin-eval-widget-root > div > div[style*="position: fixed"] {
+  max-width: none !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Currency / scale toolbar strip.
+
+   Transcribed from the Sales Contracts widget
+   (Sales Contracts Aug 18 -> src/styles/globals.css), so the two widgets
+   render an identical strip on the same APEX page.
+
+   One deliberate deviation: Sales Contracts pairs `overflow-x: auto` on
+   .currency-strip with `flex-wrap: nowrap` + `width: max-content` on the row,
+   which puts a horizontal scrollbar under the strip inside a narrow APEX
+   container. Here the row wraps instead, so every control stays reachable
+   without one.
+   ────────────────────────────────────────────────────────────────── */
+.currency-strip {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 5px;
+}
+.currency-strip-row {
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+  box-sizing: border-box;
+}
+.strip-label {
+  font-size: 10px;
+  color: #6b7280;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+.toggle-group {
+  display: flex;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.toggle-btn {
+  padding: 3px 8px;
+  border: none;
+  border-left: 1px solid #e5e7eb;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+  background: #fff;
+  color: #6b7280;
+}
+.toggle-btn:first-child {
+  border-left: none;
+}
+.toggle-btn.active {
+  background: #1e2433;
+  color: #fff;
+}
+.strip-divider {
+  width: 1px;
+  height: 18px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+.strip-select {
+  height: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  padding: 0 6px;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+}
+.info-icon {
+  position: relative;
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  border: 1.5px solid #9ca3af;
+  color: #9ca3af;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: default;
+  user-select: none;
+  flex-shrink: 0;
+}
+.info-tooltip {
+  position: absolute;
+  left: 19px;
+  top: -4px;
+  background: #1e2433;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: normal;
+  width: 360px;
+  line-height: 1.5;
+  z-index: 300;
+}
+.fx-wrap {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.fx-badge {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  border: 1.5px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.fx-rate-text {
+  font-size: 11px;
+  color: rgb(17, 24, 39);
+  white-space: nowrap;
+  line-height: 1.25;
+}
+.fx-rate-text strong {
+  font-weight: 700;
+}
+.fx-error-text {
+  font-size: 11px;
+  color: #b91c1c;
+  white-space: nowrap;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Per-table horizontal scroll container.
+
+   One per table block. The scrollbar itself is hidden in every engine —
+   scrolling still works by wheel, trackpad, touch and keyboard.
+   ────────────────────────────────────────────────────────────────── */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* legacy Edge / IE */
+}
+.table-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;              /* Chrome / Safari / Edge */
+}
+
+/* Hide every scrollbar inside the widget, in every engine, whatever element
+   draws it — the class above only covers the containers we own, and APEX draws
+   its own bars on wrappers we do not. Scrolling itself is untouched: wheel,
+   trackpad, touch, drag and keyboard all still work. */
+#fin-eval-widget-root,
+#fin-eval-widget-root * {
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* legacy Edge / IE */
+}
+#fin-eval-widget-root::-webkit-scrollbar,
+#fin-eval-widget-root *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;              /* Chrome / Safari / Edge */
+}

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm run build 2>&1 | Select-Object -Last 4; $p = Start-Process -FilePath \"npm.cmd\" -ArgumentList 'run','dev' -PassThru -RedirectStandardOutput dev.log -RedirectStandardError deverr.log -NoNewWindow; Start-Sleep -Seconds 6; try { $r = Invoke-WebRequest http://localhost:5173/ -UseBasicParsing -TimeoutSec 5; \"ROOT: $\\($r.StatusCode\\)\"; $m = Invoke-WebRequest http://localhost:5173/src/App.tsx -UseBasicParsing -TimeoutSec 5; \"APP: $\\($m.StatusCode\\)\" } catch { \"ERR: $_\" }; Stop-Process -Id $p.Id -Force; Remove-Item dev.log,deverr.log -ErrorAction SilentlyContinue)",
+      "PowerShell(\"---LINT---\")",
+      "PowerShell(\"---TEST---\")",
+      "PowerShell(npm run build 2>&1 | Select-Object -Last 3; $p = Start-Process -FilePath \"npm.cmd\" -ArgumentList 'run','dev' -PassThru -RedirectStandardOutput dev.log -RedirectStandardError deverr.log -NoNewWindow; Start-Sleep -Seconds 6; try { $r = Invoke-WebRequest http://localhost:5173/ -UseBasicParsing -TimeoutSec 5; \"ROOT: $\\($r.StatusCode\\)\" } catch { \"ERR: $_\" }; Stop-Process -Id $p.Id -Force; Remove-Item dev.log,deverr.log -ErrorAction SilentlyContinue)",
+      "PowerShell(\"jsdom:\")",
+      "PowerShell(\"---TSC---\")"
+    ]
+  }
+}

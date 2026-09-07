@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#investment-report-root,
+#fin-eval-widget-root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+
+  --radius: 0.5rem;
+}
+
+/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX */
+#investment-report-root *,
+#fin-eval-widget-root * {
+  box-sizing: border-box;
+  border-color: hsl(var(--border));
+}
+
+/* Scope background/foreground to the widget root — prevents overwriting APEX body styles */
+#investment-report-root,
+#fin-eval-widget-root {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Table typography — single source of truth for section / line
+   font sizes. Adjust the three variables below to resize
+   everything; the !important rules override the components'
+   inline fallbacks.
+   ────────────────────────────────────────────────────────────── */
+#fin-eval-widget-root {
+  --feval-section-header-size: 13px; /* CAPITAL INVESTMENT, P&L, REVENUE      */
+  --feval-column-header-size: 11px;  /* LINE ITEM, ACCOUNT, FY.., TOTAL        */
+  --feval-line-size: 12px;           /* editable line-item names + value cells */
+  --feval-total-size: 12px;          /* auto-calculated subtotal / total rows  */
+}
+
+/* Section header bar (dark rows carry a data-section-type) */
+#fin-eval-widget-root tr[data-section-type] td,
+#fin-eval-widget-root tr[data-section-type] td span,
+#fin-eval-widget-root tr[data-section-type] td input {
+  font-size: var(--feval-section-header-size) !important;
+}
+
+/* Per-section column headers (LINE ITEM / ACCOUNT / FY.. / TOTAL) */
+#fin-eval-widget-root .feval-col-header-row th {
+  font-size: var(--feval-column-header-size) !important;
+}
+
+/* Editable line-item name + value cells */
+#fin-eval-widget-root .feval-line-name,
+#fin-eval-widget-root .feval-line-value {
+  font-size: var(--feval-line-size) !important;
+}
+
+/* Auto-calculated subtotal / total rows (e.g. "P&L Investment Costs") */
+#fin-eval-widget-root .feval-calc-row td {
+  font-size: var(--feval-total-size) !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Currency / Scale / Date / Number strip — align every group on
+   one compact baseline and normalize native <select> chrome so
+   Date and Number sit flush with the toggle-button groups instead
+   of leaving extra vertical/horizontal space around them.
+   ────────────────────────────────────────────────────────────── */
+#fin-eval-widget-root .feval-strip {
+  row-gap: 6px;
+}
+
+#fin-eval-widget-root .feval-strip select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: 12px 12px;
+  padding-right: 24px;
+  line-height: 1;
+}
+
+#fin-eval-widget-root .feval-strip select:focus {
+  outline: 1.5px solid #A5005A;
+  outline-offset: -1px;
+}

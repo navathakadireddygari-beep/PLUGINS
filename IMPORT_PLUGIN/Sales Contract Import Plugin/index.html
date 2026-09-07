@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sales Contracts Investment Report</title>
+    <script>
+      // ── Plug-in parameters (injected by host APEX page) ─────────
+      // All 4 parameters below are required when embedding as a plug-in.
+      // The host page must set window.__SPC_SALES_CONFIG__ before the bundle loads.
+      //
+      //   proposal_id      — Financial proposal id (set once a proposal exists;
+      //                      leave null when creating a new proposal from spc_type_id)
+      //   spc_type_id      — SPC type id (used when proposal_id is null)
+      //   template_type_id — Template type id; appended to every GET and PUT call
+      //   app_user         — Logged-in user email; recorded with every save
+      window.__SPC_SALES_CONFIG__ = {
+        file_id:          301,
+        proposal_id:      734,                         // number | null
+        spc_type_id:      null,                        // number | null
+        template_type_id: null,                        // number | null
+        app_user:         "satish.mallagundla@eappsys.com",      // string
+        is_readonly:      false,                       // boolean — dev: editable (prod sets this via p_render)
+        app_roles:        "APP_FIN_GIS_RLS_NA_AUTOMOTIVE_SALES_CONTRACTS,APP_FIN_GIS_SPC_AUTHOR_SALES_CONTRACTS",                    // string — V('G_APP_ROLES') in prod
+        api_endpoint:     "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
+        // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
+        // ajaxId:   "ajaxId",
+        // flowId:   "flowId",
+        // stepId:   "stepId",
+        // instance: "instance",
+      };
+    </script>
+  </head>
+  <body>
+    <div id="sales-contracts-investment-report-root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
