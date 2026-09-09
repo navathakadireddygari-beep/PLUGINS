@@ -19,6 +19,11 @@ type Props = {
 const GREEN  = "#10B981";
 const PURPLE = "#7C3AED";
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  GBP: "£", USD: "$", EUR: "€", CAD: "$", AUD: "A$", JPY: "¥", SGD: "$", INR: "₹", CNY: "¥",
+};
+const currencySymbol = (code: string): string => CURRENCY_SYMBOLS[(code || "").toUpperCase()] ?? code;
+
 const cardShell: React.CSSProperties = {
   flex: 1, background: "#fff", border: "1px solid #e5e7eb",
   borderRadius: 8, padding: "14px 16px", borderLeft: "4px solid transparent",
@@ -32,15 +37,17 @@ const fieldLabel: React.CSSProperties = { fontSize: 13, color: "#6b7280", fontWe
 const fieldInput: React.CSSProperties = { padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 4, fontSize: 13, outline: "none", background: "#fff" };
 
 // NPV arrives in thousands (K), like the table values. Divide down for M/B and
-// append the scale suffix, grouped per the selected number format.
+// append the scale suffix, grouped per the selected number format, prefixed
+// with the active display currency's symbol so the KPI header shows its unit.
 const fmtNpv = (
   n: number | null | undefined,
   scale: number,
   fmt: NumberFormatId,
+  symbol: string,
 ): { text: string; negative: boolean } => {
   if (n == null) return { text: "—", negative: false };
   const v      = Math.abs(n) / scaleDivisorOf(scale);
-  const raw    = `${groupNumber(v, fmt, scaleDecimalsOf(scale))}${scaleLabelOf(scale)}`;
+  const raw    = `${symbol}${groupNumber(v, fmt, scaleDecimalsOf(scale))}${scaleLabelOf(scale)}`;
   return n < 0
     ? { text: `(${raw})`, negative: true }
     : { text: raw,        negative: false };
@@ -149,24 +156,25 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, numberForm
       {/* ── KPI cards ── */}
       <div style={{ display: "flex", gap: 12, marginTop: 5 }}>
         <div style={{ ...cardShell, borderLeftColor: "#3B82F6" }}>
-          <div style={labelStyle}>NPV</div>
+          <div style={labelStyle}>NPV <span style={{ color: "#9ca3af", fontWeight: 500 }}>· {display}</span></div>
           {(() => {
             const { text, negative } = fmtNpv(
               rawHeader.npv != null ? rawHeader.npv * kpiFxMultiplier : null,
               displayScale,
               numberFormat,
+              currencySymbol(display),
             );
             return <div style={{ ...valueStyle, color: negative ? "#DC2626" : "#111827" }}>{text}</div>;
           })()}
           <div style={subStyle}>Net Present Value</div>
         </div>
         <div style={{ ...cardShell, borderLeftColor: PURPLE }}>
-          <div style={labelStyle}>IRR</div>
+          <div style={labelStyle}>IRR <span style={{ color: "#9ca3af", fontWeight: 500 }}>· {display}</span></div>
           {(() => { const { text, negative } = fmtPercent(rawHeader.irr_percent); return <div style={{ ...valueStyle, color: negative ? "#DC2626" : "#111827" }}>{text}</div>; })()}
           <div style={subStyle}>Internal Rate of Return</div>
         </div>
         <div style={{ ...cardShell, borderLeftColor: GREEN }}>
-          <div style={labelStyle}>Payback Period</div>
+          <div style={labelStyle}>Payback Period <span style={{ color: "#9ca3af", fontWeight: 500 }}>· {display}</span></div>
           <div style={valueStyle}>{fmtYears(rawHeader.payback_period_years)}</div>
           <div style={subStyle}>Simple payback period</div>
         </div>

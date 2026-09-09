@@ -138,17 +138,34 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, isReadonly
     onChange({ performance_metrics: { ...pm, hurdle_checks: updated } });
   };
 
-  const statusPill = (pass: boolean | undefined) => {
-    const ok = pass === true;
+  // `pass` almost always comes back null from the API even when the check
+  // has a result, so `status` ("Pass"/"Fail") is the source of truth; only
+  // fall back to the boolean if status is missing. Anything else (both
+  // null) means the metric hasn't been evaluated yet — show neutral, not fail.
+  const statusPill = (m: HurdleCheck) => {
+    const status = (m.status ?? "").trim().toUpperCase();
+    const isPass = status === "PASS" || (status === "" && m.pass === true);
+    const isFail = status === "FAIL" || (status === "" && m.pass === false);
+    if (!isPass && !isFail) {
+      return (
+        <span style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          width: 22, height: 22, borderRadius: 999,
+          background: "#f3f4f6", color: "#9ca3af", fontSize: 12, fontWeight: 700,
+        }}>
+          —
+        </span>
+      );
+    }
     return (
       <span style={{
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         width: 22, height: 22, borderRadius: 999,
-        background: ok ? "#dcfce7" : "#fee2e2",
-        color: ok ? "#15803d" : "#b91c1c",
+        background: isPass ? "#dcfce7" : "#fee2e2",
+        color: isPass ? "#15803d" : "#b91c1c",
         fontSize: 12, fontWeight: 700,
       }}>
-        {ok ? "✓" : "×"}
+        {isPass ? "✓" : "×"}
       </span>
     );
   };
@@ -236,7 +253,7 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, isReadonly
                     {(() => { const { text, negative } = fmtPercent(m.actual_value, displayScale); return <span style={{ color: negative ? "#DC2626" : GREEN }}>{text}</span>; })()}
                   </td>
                   <td style={{ padding: "10px 0", textAlign: "center" }}>
-                    {statusPill(m.pass)}
+                    {statusPill(m)}
                   </td>
                 </tr>
               ))}

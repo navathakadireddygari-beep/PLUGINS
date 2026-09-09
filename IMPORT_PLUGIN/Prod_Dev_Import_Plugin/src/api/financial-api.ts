@@ -108,7 +108,11 @@ export type HurdleCheck = {
   label?:        string;
   hurdle_value?: number | null;
   actual_value?: number | null;
-  pass?:         boolean;
+  pass?:         boolean | null;
+  // Backend sends the evaluated result here ("Pass"/"Fail") — `pass` itself
+  // often comes back null even when `status` is set, so `status` is the
+  // source of truth for the pill; null means "not yet evaluated".
+  status?:       string | null;
 };
 
 export type ApiHeader = {

@@ -82,6 +82,21 @@ export const groupNumber = (
   return decPart != null ? `${grouped}${sep.decimal}${decPart}` : grouped;
 };
 
+/** Same as groupNumber, but trailing zero decimals are trimmed (26 not 26.00). */
+export const groupNumberTrimmed = (
+  absValue: number,
+  fmt: NumberFormatId,
+  maxDecimals = 2,
+): string => {
+  const sep = SEPARATORS[fmt];
+  const trimmed = parseFloat(Math.abs(absValue).toFixed(maxDecimals));
+  const [intPart, decPart] = trimmed.toString().split(".");
+  const grouped = fmt === "in"
+    ? groupIndian(intPart, sep.group)
+    : groupThousands(intPart, sep.group);
+  return decPart ? `${grouped}${sep.decimal}${decPart}` : grouped;
+};
+
 /* ──────────────────────────── Date formats ─────────────────────────── */
 export type DateFormatId = "dd-mm-yyyy" | "dd/mm/yyyy" | "mm/dd/yyyy" | "dd-mon-yyyy" | "yyyy-mm-dd";
 
