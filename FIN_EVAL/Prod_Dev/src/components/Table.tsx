@@ -889,15 +889,21 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // fin_eval_line_id and updates rows with real ids, so a separate
   // POST-on-add is unnecessary and caused a race that left stale
   // "New Line Item" rows in the DB.
-  const addGroup = (): void => setData((p) => p ? ({
-    ...p,
-    groups: [...p.groups, {
-      id: generateId(), name: "", expanded: true,
-      sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
-      displayOrder: p.groups.length + 1,
-      values: [blankRow(p)],
-    }],
-  }) : p);
+  const addGroup = (): void => {
+    const newId = generateId();
+    setData((p) => p ? ({
+      ...p,
+      groups: [...p.groups, {
+        id: newId, name: "", expanded: true,
+        sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
+        displayOrder: p.groups.length + 1,
+        values: [blankRow(p)],
+      }],
+    }) : p);
+    // Focuses the new section's name input, which auto-scrolls it into view.
+    setEditingGroupId(newId);
+    setEditingGroupName("");
+  };
   const toggleGroup = (id: string): void => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === id ? { ...g, expanded: !g.expanded } : g) }) : p);
   const toggleAll   = (): void => { const n = !allExpanded; setAllExpanded(n); setData((p) => p ? ({ ...p, groups: p.groups.map((g) => ({ ...g, expanded: n })) }) : p); };
   const addValueRow = (gId: string): void => setData((p) => p ? ({
