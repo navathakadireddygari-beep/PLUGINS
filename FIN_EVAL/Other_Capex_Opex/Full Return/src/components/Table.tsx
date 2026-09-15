@@ -352,6 +352,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [deletingRow,        setDeletingRow]        = useState<boolean>(false);
   const [confirmDeleteYear,  setConfirmDeleteYear]  = useState<{ year: number; label: string } | null>(null);
   const [stripTooltip,       setStripTooltip]       = useState<"currency" | "scale" | null>(null);
+  const [stripTooltipPos,    setStripTooltipPos]    = useState<DOMRect | null>(null);
   const [headerPinned,     setHeaderPinned]     = useState<boolean>(false);
   const [headerHeight,     setHeaderHeight]     = useState<number>(0);
   const [leftOffset,       setLeftOffset]       = useState<number>(0);
@@ -1214,14 +1215,16 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
           const infoIcon = (kind: "currency" | "scale", tooltipText: string) => (
             <div className="info-icon"
-              onMouseEnter={() => setStripTooltip(kind)}
+              onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => { setStripTooltipPos(e.currentTarget.getBoundingClientRect()); setStripTooltip(kind); }}
               onMouseLeave={() => setStripTooltip(null)}
             >
               i
-              {stripTooltip === kind && (
-                <span className="info-tooltip">
+              {stripTooltip === kind && stripTooltipPos && createPortal(
+                // Overlays the page via a portal so the tooltip never inflates the scrollable strip.
+                <span className="info-tooltip" style={{ position: "fixed", left: stripTooltipPos.right + 6, top: stripTooltipPos.top - 4, zIndex: 9999 }}>
                   {tooltipText}
-                </span>
+                </span>,
+                document.body
               )}
             </div>
           );

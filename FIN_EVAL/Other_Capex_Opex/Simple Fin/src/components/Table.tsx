@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Download, Upload, Save } from "lucide-react";
 import { getAppConfig } from "../config/app-config";
 import { subscribeAllActions, publishToBridge } from "../lib";
@@ -327,6 +328,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [deletingRow,        setDeletingRow]        = useState<boolean>(false);
   const [confirmDeleteYear,  setConfirmDeleteYear]  = useState<{ year: number; label: string } | null>(null);
   const [stripTooltip,       setStripTooltip]       = useState<"currency" | "scale" | "number" | "date" | null>(null);
+  const [stripTooltipPos,    setStripTooltipPos]    = useState<DOMRect | null>(null);
   const [headerPinned,     setHeaderPinned]     = useState<boolean>(false);
   const [headerHeight,     setHeaderHeight]     = useState<number>(0);
   const [leftOffset,       setLeftOffset]       = useState<number>(0);
@@ -1250,14 +1252,24 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
           const infoIcon = (kind: "currency" | "scale" | "number" | "date", tooltipText: string, align: "left" | "right" = "left") => (
             <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}
-              onMouseEnter={() => setStripTooltip(kind)}
+              onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => { setStripTooltipPos(e.currentTarget.getBoundingClientRect()); setStripTooltip(kind); }}
               onMouseLeave={() => setStripTooltip(null)}
             >
               <span className="info-icon">i</span>
-              {stripTooltip === kind && (
-                <span className="info-tooltip" style={{ [align]: 19 }}>
+              {stripTooltip === kind && stripTooltipPos && createPortal(
+                // Overlays the page via a portal so the tooltip never inflates the scrollable strip.
+                <span
+                  className="info-tooltip"
+                  style={{
+                    position: "fixed",
+                    left: align === "right" ? stripTooltipPos.left - 360 - 6 : stripTooltipPos.right + 6,
+                    top: stripTooltipPos.top - 4,
+                    zIndex: 9999,
+                  }}
+                >
                   {tooltipText}
-                </span>
+                </span>,
+                document.body
               )}
             </div>
           );

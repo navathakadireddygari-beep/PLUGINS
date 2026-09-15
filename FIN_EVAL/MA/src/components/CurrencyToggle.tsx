@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { SCALES, currencyLabel } from "@/lib";
 import type { CurrencyCode, ScaleId } from "@/lib";
 import {
@@ -30,16 +31,23 @@ const scaleOptions = SCALES.map((s) => ({ id: s.id, label: s.label }));
 /** "i" hint icon with a dark hover tooltip, reused after each toggle group. */
 function InfoDot({ label, tip }: { label: string; tip: string }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<DOMRect | null>(null);
   return (
     <div
       style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}
-      onMouseEnter={() => setOpen(true)}
+      onMouseEnter={(e) => { setPos(e.currentTarget.getBoundingClientRect()); setOpen(true); }}
       onMouseLeave={() => setOpen(false)}
     >
       <span style={infoDot} aria-label={label}>
         i
       </span>
-      {open && <span style={infoTip}>{tip}</span>}
+      {open && pos && createPortal(
+        // Overlays the page via a portal so the tooltip never inflates the scrollable strip.
+        <span style={{ ...infoTip, position: "fixed", left: pos.right + 6, top: pos.top - 4, zIndex: 9999, pointerEvents: "none" }}>
+          {tip}
+        </span>,
+        document.body
+      )}
     </div>
   );
 }
