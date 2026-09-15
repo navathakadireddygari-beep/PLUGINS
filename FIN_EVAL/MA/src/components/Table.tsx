@@ -2042,6 +2042,7 @@ const Table: React.FC = () => {
               toolbars sharing a rule. */}
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={removeProjectionYear}
               disabled={isReadonly || projectionsShown <= 1}
               className="h-7 w-7 rounded border border-[#d1d5db] text-gray-700 disabled:cursor-default disabled:border-[#f3f4f6] disabled:bg-[#f3f4f6] disabled:text-[#9ca3af] disabled:opacity-100"
@@ -2053,6 +2054,7 @@ const Table: React.FC = () => {
               {projectionsShown} Years
             </div>
             <button
+              type="button"
               onClick={addProjectionYear}
               disabled={isReadonly}
               className="h-7 w-7 rounded border border-[#d1d5db] text-gray-700 disabled:cursor-default disabled:border-[#f3f4f6] disabled:bg-[#f3f4f6] disabled:text-[#9ca3af] disabled:opacity-100"
