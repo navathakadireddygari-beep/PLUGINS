@@ -10,8 +10,8 @@
  * exactly the wireframe's "FBR Rate: 0.85 EUR/USD" figure.
  */
 
-import { getBearerToken } from "@/api/auth-api";
-import { getAppConfig, type AppConfig } from "@/config/app-config";
+import { getAccessToken } from "@/api/auth-api";
+import { authHeaders, getAppConfig, type AppConfig } from "@/config/app-config";
 
 export const CURRENCY_EXCHANGE_RATES_PATH =
   "/GIS/proposalAuthoring/currencyExchangeRates";
@@ -32,20 +32,32 @@ export async function fetchCurrencyExchangeRate(
 ): Promise<number> {
   if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__.");
 
-  const token = await getBearerToken(cfg);
+  const token = await getAccessToken();
   const url = `${cfg.api_endpoint}${CURRENCY_EXCHANGE_RATES_PATH}`;
 
-  const res = await fetch(url, {
+  let res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-      user_email: cfg.app_user,
-      role: cfg.app_roles,
+      ...authHeaders(token),
     },
     body: JSON.stringify({ year_period: yearPeriod, currency: currency.toUpperCase() }),
   });
+
+  // A rejected token gets one retry against a freshly minted one.
+  if (res.status === 401) {
+    const freshToken = await getAccessToken(true);
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...authHeaders(freshToken),
+      },
+      body: JSON.stringify({ year_period: yearPeriod, currency: currency.toUpperCase() }),
+    });
+  }
 
   if (!res.ok) throw new Error(`Failed to fetch exchange rate (${res.status}).`);
 

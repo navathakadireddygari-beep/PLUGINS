@@ -37,15 +37,13 @@ export const TOKEN_PATH = "/oauth/token";
  * Base64 `<client id>:<client secret>` for the token endpoint's
  * `authorization: Basic …` header — local-dev only (inside APEX the token
  * comes from the page's own AJAX callback instead, see `api/auth-api.ts`).
- *
- * Deliberately NOT hardcoded here: set `VITE_BUYPLAN_BASIC_AUTH` in a local
- * `.env` file to test the OAuth path outside APEX. Without it, live-rate
- * fetches simply fail and the UI falls back to the manual FX rate input.
+ * Same credential as FIN_EVAL/MA — BuyPlan calls the same M&A GIS ORDS
+ * module (`api_endpoint` in index.html), so it shares M&A's OAuth client.
  */
-export const getBasicAuth = (): string | undefined => {
-  const env = import.meta.env as unknown as Record<string, string | undefined>;
-  return env.VITE_BUYPLAN_BASIC_AUTH;
-};
+const DEV_BASIC_AUTH =
+  "QVRCNEI5OEVWZ1RnZm1rUUJ2ek5ndy4uOk9TWDJBVUJoWVZyMThDVG5HOVZQZEEuLg==";
+
+export const getBasicAuth = (): string | undefined => DEV_BASIC_AUTH;
 
 /** A pre-issued bearer token for debugging: append `?token=…` to the URL. */
 export const getStaticToken = (): string | undefined => {
@@ -83,4 +81,29 @@ export const getAppConfig = (): AppConfig => {
     stepId: cfg.stepId,
     instance: cfg.instance,
   };
+};
+
+/** Base URL of the REST module, without a trailing slash. */
+export const getApiBaseUrl = (): string => getAppConfig().api_endpoint;
+
+/**
+ * Base URL captured at module load — mirrors FIN_EVAL/MA's `API_BASE_URL`,
+ * used by `auth-api.ts`'s OAuth token request.
+ */
+export const API_BASE_URL = getApiBaseUrl();
+
+/** Comma-separated APEX roles for the `role` header. */
+export const getApiRole = (): string | undefined => getAppConfig().app_roles || undefined;
+
+/** Caller identity for the `user_email` header. */
+export const getApiUserEmail = (): string | undefined => getAppConfig().app_user || undefined;
+
+/** Auth/identity headers every proposalAuthoring call carries. */
+export const authHeaders = (token: string): Record<string, string> => {
+  const headers: Record<string, string> = { authorization: `Bearer ${token}` };
+  const role = getApiRole();
+  const userEmail = getApiUserEmail();
+  if (role) headers.role = role;
+  if (userEmail) headers.user_email = userEmail;
+  return headers;
 };
