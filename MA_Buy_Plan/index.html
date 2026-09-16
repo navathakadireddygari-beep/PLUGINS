@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Buy Plan</title>
+    <script>
+      // Read by src/config/app-config.ts. Only `api_endpoint` (+ app_user/
+      // app_roles for the request headers) is needed for the live currency
+      // exchange rate call — BuyPlan has no proposal of its own to load.
+      // Inside APEX, also set ajaxId/flowId/stepId/instance so the auth
+      // callback can mint a token; outside APEX, the OAuth path is used
+      // instead (see src/api/auth-api.ts) and needs no host-supplied secret.
+      window.__APP_CONFIG__ = {
+        api_endpoint: "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
+        app_user: "arvind.tammineni@test.exp.com",
+        app_roles: "APP_FIN_GIS_SPC_AUTHOR_SPC_ALL,APP_FIN_GIS_RLS_NA_AUTOMOTIVE_SPC_ALL",
+        // ajaxId: "ajaxId",
+        // flowId: "flowId",
+        // stepId: "stepId",
+        // instance: "instance",
+      };
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
