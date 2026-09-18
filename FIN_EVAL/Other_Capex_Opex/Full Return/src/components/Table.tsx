@@ -245,6 +245,22 @@ type ParsedRow = { name: string; values: number[] };
 const tok = (s: string | undefined | null): string =>
   (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
+// Depreciation / Amortization / EBIT are backend-calculated (not a sum of
+// the other lines in their section) — recomputeGroup must leave them untouched.
+const FIXED_CALC_IDS = new Set(["DEPRECIATION", "AMORTIZATION", "EBIT"]);
+const isFixedCalcRow = (v: ValueRow): boolean =>
+  FIXED_CALC_IDS.has(tok(v.lineIdentifier)) ||
+  FIXED_CALC_IDS.has(tok(v.lineType)) ||
+  FIXED_CALC_IDS.has(tok(v.name));
+
+// Depreciation / Amortization still count towards the section's total row,
+// even though their own values are backend-owned.
+const DEP_AMORT_IDS = new Set(["DEPRECIATION", "AMORTIZATION"]);
+const isDepAmortRow = (v: ValueRow): boolean =>
+  DEP_AMORT_IDS.has(tok(v.lineIdentifier)) ||
+  DEP_AMORT_IDS.has(tok(v.lineType)) ||
+  DEP_AMORT_IDS.has(tok(v.name));
+
 /* Front-end subtotal / total recompute.
    For each section: calculated lines (isCalculated === "Y") get their year
    values set to the per-year sum of editable (isCalculated !== "Y") lines.
@@ -258,11 +274,14 @@ const recomputeGroup = (g: Group, years: number[]): Group => {
   }
   const editable    = g.values.filter((v) => v.isCalculated !== "Y");
   const nonOngoing  = editable.filter((v) => v.lineType !== "ONGOING_CAPEX");
+  const depAmort    = g.values.filter((v) => v.isCalculated === "Y" && isDepAmortRow(v));
 
   const yearSumsAll:        Record<number, number> = {};
   const yearSumsNonOngoing: Record<number, number> = {};
   years.forEach((y) => {
-    yearSumsAll[y]        = editable.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
+    const editableSum = editable.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
+    const depAmortSum = depAmort.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
+    yearSumsAll[y]        = editableSum + depAmortSum;
     yearSumsNonOngoing[y] = nonOngoing.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
   });
 
@@ -270,6 +289,8 @@ const recomputeGroup = (g: Group, years: number[]): Group => {
     ...g,
     values: g.values.map((v) => {
       if (v.isCalculated === "Y") {
+        // Depreciation / Amortization keep whatever value the backend sent.
+        if (isFixedCalcRow(v)) return v;
         // INITIAL_CAPEX = Total - Ongoing  (exclude ONGOING_CAPEX lines)
         // All other calculated rows (TOTAL_CAPEX etc.) = sum of all editable
         const sums = v.lineType === "INITIAL_CAPEX" ? yearSumsNonOngoing : yearSumsAll;
@@ -1584,9 +1605,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
                     const renderCalcRow = (value: ValueRow) => (
                       <tr key={value.id} style={{ background: "#f3f4f6" }}>
-                        <td colSpan={3} style={{ ...TD, padding: "8px 12px" }}>
+                        <td colSpan={group.isAccountRequired === "Y" ? 2 : 3} style={{ ...TD, padding: "8px 12px" }}>
                           <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={value.name} style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} />
                         </td>
+                        {group.isAccountRequired === "Y" && (
+                          <td style={{ ...TD, padding: "8px 12px" }}>
+                            <div style={{ fontSize: 12, color: "#6b7280", padding: "4px 6px", background: "#f3f4f6", borderRadius: 4, height: 28, display: "flex", alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value.accountId || "—"}</div>
+                          </td>
+                        )}
                         {data.years.map((year: number) => {
                           const val = value.yearValues[year] ?? 0;
                           return (
@@ -1613,9 +1639,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {calcRest.map(renderCalcRow)}
                       </>) : calc.map((value: ValueRow) => (
                         <tr key={value.id} style={{ background: "#f3f4f6" }}>
-                          <td colSpan={3} style={{ ...TD, padding: "10px 14px" }}>
+                          <td colSpan={group.isAccountRequired === "Y" ? 2 : 3} style={{ ...TD, padding: "10px 14px" }}>
                             <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={value.name} style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} />
                           </td>
+                          {group.isAccountRequired === "Y" && (
+                            <td style={{ ...TD, padding: "10px 14px" }}>
+                              <div style={{ fontSize: 12, color: "#6b7280", padding: "4px 6px", background: "#f3f4f6", borderRadius: 4, height: 28, display: "flex", alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value.accountId || "—"}</div>
+                            </td>
+                          )}
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
                             return (

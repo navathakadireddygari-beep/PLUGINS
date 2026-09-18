@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
+import { Calendar } from "lucide-react";
 import type { ApiHeader } from "../api/financial-api";
-import { applyScale, formatNumber, decimalsForScale, SCALES, type Scale, type NumberFormatKey, type DateFormatKey } from "../lib/format";
+import { applyScale, formatNumber, decimalsForScale, SCALES, formatDate, type Scale, type NumberFormatKey, type DateFormatKey } from "../lib/format";
 
 type Props = {
   rawHeader:    ApiHeader;
@@ -41,7 +42,24 @@ const fmtNpv = (
 const fmtYears = (n: number | null | undefined): string =>
   n == null ? "—" : `${n} Year${n === 1 ? "" : "s"}`;
 
-export default function KpiPanel({ rawHeader, onChange, displayScale, numberFormat }: Props): React.ReactElement {
+const fieldLabelStyle: React.CSSProperties = { fontSize: 11, color: "#6b7280", fontWeight: 600, letterSpacing: 0.3, marginBottom: 6, fontFamily: "inherit" };
+const fieldInputStyle: React.CSSProperties = {
+  border: "1px solid #d1d5db", borderRadius: 6, padding: "9px 12px",
+  fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none",
+  width: 220, height: 38,
+};
+
+// Converts whatever date shape the API returns into the yyyy-mm-dd
+// format required by a native <input type="date">.
+const toDateInputValue = (v: string | null | undefined): string => {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+};
+
+export default function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly }: Props): React.ReactElement {
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const local   = (rawHeader.local_currency   || "USD").toUpperCase();
   const display = (rawHeader.display_currency || local).toUpperCase();
   const rate    = rawHeader.exchange_rate || 0.7350;
@@ -92,6 +110,45 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, numberForm
           <div style={labelStyle}>Programme Term</div>
           <div style={valueStyle}>{fmtYears(rawHeader.investment_term_years)}</div>
           <div style={subStyle}>Programme duration</div>
+        </div>
+      </div>
+
+      {/* ── Financial Parameters ── */}
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "14px 16px" }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 12 }}>Financial Parameters</div>
+        <div style={{ display: "flex", gap: 28 }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <label style={fieldLabelStyle}>Amortization Period (Months)</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={rawHeader.amortization_period ?? ""}
+              disabled={isReadonly}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/[^0-9]/g, "");
+                onChange({ amortization_period: digits === "" ? 0 : Number(digits) });
+              }}
+              style={fieldInputStyle}
+            />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <label style={fieldLabelStyle}>Date Placed in Service</label>
+            <div
+              style={{ ...fieldInputStyle, position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: isReadonly ? "default" : "pointer" }}
+              onClick={() => { if (!isReadonly) dateInputRef.current?.showPicker?.(); }}
+            >
+              <span>{formatDate(rawHeader.date_placed_in_service, "DMONY")}</span>
+              <Calendar size={15} color="#6b7280" />
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={toDateInputValue(rawHeader.date_placed_in_service)}
+                disabled={isReadonly}
+                onChange={(e) => onChange({ date_placed_in_service: e.target.value })}
+                style={{ position: "absolute", width: 0, height: 0, opacity: 0, pointerEvents: "none" }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 

@@ -117,7 +117,7 @@ export type ApiHeader = {
   hurdle_rate_percent:       number;
   discount_rate_percent:     number;
   share_repurchase_percent:  number;
-  amortisation_period_years: number;
+  amortization_period:       number;
   date_placed_in_service:    string;
   tax_rate_percent:          number;
   display_years:             number;
@@ -196,7 +196,7 @@ export function createEmptyHeader(cfg: AppConfig): ApiHeader {
     hurdle_rate_percent:       0,
     discount_rate_percent:     0,
     share_repurchase_percent:  0,
-    amortisation_period_years: 0,
+    amortization_period:       0,
     date_placed_in_service:    "",
     tax_rate_percent:          0,
     display_years:             6,
@@ -389,7 +389,7 @@ export function buildPutPayload(
     hurdle_rate_percent:       rawHeader.hurdle_rate_percent,
     discount_rate_percent:     rawHeader.discount_rate_percent,
     share_repurchase_percent:  rawHeader.share_repurchase_percent,
-    amortisation_period_years: rawHeader.amortisation_period_years,
+    amortization_period:       rawHeader.amortization_period,
     date_placed_in_service:    rawHeader.date_placed_in_service,
     performance_metrics:       rawHeader.performance_metrics,
     sections,
