@@ -305,6 +305,14 @@ const recomputeGroup = (g: Group, years: number[]): Group => {
   };
 };
 
+// Custom sections' calculated total row comes back from the API with
+// year_values: null (the backend never computes it) — every freshly-fetched
+// table must run through this before it reaches state, or that row stays "—".
+const recomputeAllGroups = (table: PivotTableData): PivotTableData => ({
+  ...table,
+  groups: table.groups.map((g) => recomputeGroup(g, table.years)),
+});
+
 const parseExcelPaste = (text: string): ParsedRow[] => {
   const lines = text.split(/\r?\n/).map((l: string) => l.trimEnd()).filter((l: string) => l.trim());
   if (!lines.length) return [];
@@ -478,7 +486,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     try {
       const cfg = getAppConfig();
       const result = await getFinancialData(cfg);
-      setData(result.table);
+      setData(recomputeAllGroups(result.table));
       setRawHeader(result.rawHeader);
       dbYearsRef.current = new Set(result.table.years);
       return result;
@@ -511,14 +519,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
     try {
       const cfg    = getAppConfig();
       const result = await getFinancialData(cfg);
+      const recomputed = recomputeAllGroups(result.table);
       const numId  = parseInt(targetId, 10);
-      const fresh  = result.table.groups.find((g) =>
+      const fresh  = recomputed.groups.find((g) =>
         (Number.isFinite(numId) && g.sectionId === numId) ||
         tok(g.sectionType) === tok(targetId) ||
         tok(g.name)        === tok(targetId),
       );
       setData((prev) => {
-        if (!prev) return result.table;
+        if (!prev) return recomputed;
         if (!fresh) return prev;
         // Match on sectionType/name first — sectionId is unreliable here:
         // unsaved (template) sections all carry sectionId === undefined, so an
@@ -671,11 +680,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
       // state so the view doesn't jump.
       try {
         const refetched = await getFinancialData(cfg);
+        const recomputed = recomputeAllGroups(refetched.table);
         console.log("[saveDraft] re-fetch groups:", refetched.table.groups.length,
           "lines:", refetched.table.groups.reduce((s, g) => s + g.values.length, 0));
 
         setData((current) => {
-          if (!current) return refetched.table;
+          if (!current) return recomputed;
 
           const expandedBySection = new Map(
             current.groups.filter((g) => g.sectionId != null).map((g) => [g.sectionId, g.expanded]),
@@ -685,8 +695,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
           );
 
           return {
-            ...refetched.table,
-            groups: refetched.table.groups.map((g) => ({
+            ...recomputed,
+            groups: recomputed.groups.map((g) => ({
               ...g,
               expanded:
                 (g.sectionId != null && expandedBySection.has(g.sectionId)
@@ -943,15 +953,21 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // fin_eval_line_id and updates rows with real ids, so a separate
   // POST-on-add is unnecessary and caused a race that left stale
   // "New Line Item" rows in the DB.
-  const addGroup = (): void => setData((p) => p ? ({
-    ...p,
-    groups: [...p.groups, {
-      id: generateId(), name: "", expanded: true,
-      sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
-      displayOrder: p.groups.length + 1,
-      values: [blankRow(p)],
-    }],
-  }) : p);
+  const addGroup = (): void => {
+    const newId = generateId();
+    setData((p) => p ? ({
+      ...p,
+      groups: [...p.groups, {
+        id: newId, name: "", expanded: true,
+        sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
+        displayOrder: p.groups.length + 1,
+        values: [blankRow(p)],
+      }],
+    }) : p);
+    // Focuses the new section's name input, which auto-scrolls it into view.
+    setEditingGroupId(newId);
+    setEditingGroupName("");
+  };
   const toggleGroup = (id: string): void => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === id ? { ...g, expanded: !g.expanded } : g) }) : p);
   const toggleAll   = (): void => { const n = !allExpanded; setAllExpanded(n); setData((p) => p ? ({ ...p, groups: p.groups.map((g) => ({ ...g, expanded: n })) }) : p); };
   const addValueRow = (gId: string): void => setData((p) => p ? ({
@@ -1047,7 +1063,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 type="button"
                 disabled={deletingRow}
                 onClick={() => setConfirmDelete(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
               >
                 Cancel
               </button>
@@ -1094,7 +1110,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     setDeletingRow(false);
                   }
                 }}
-                style={{ padding: "6px 14px", background: BRAND, color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: deletingRow ? "not-allowed" : "pointer", opacity: deletingRow ? 0.7 : 1 }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: deletingRow ? "not-allowed" : "pointer", opacity: deletingRow ? 0.7 : 1 }}
               >
                 {deletingRow ? "Deleting…" : "OK"}
               </button>
@@ -1123,7 +1139,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteYear(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
               >
                 Cancel
               </button>

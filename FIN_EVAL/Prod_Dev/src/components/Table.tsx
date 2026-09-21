@@ -1038,7 +1038,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 type="button"
                 disabled={deletingRow}
                 onClick={() => setConfirmDelete(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
               >
                 Cancel
               </button>
@@ -1114,7 +1114,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteYear(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
               >
                 Cancel
               </button>

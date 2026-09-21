@@ -2005,7 +2005,7 @@ const Table: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmDelete(null)}
-                className="rounded-md border border-[#d1d5db] bg-white px-3.5 py-1.5 text-[12px] font-semibold text-[#374151]"
+                className="rounded-md border border-black bg-white px-3.5 py-1.5 text-[12px] font-semibold text-black"
               >
                 Cancel
               </button>
@@ -2015,9 +2015,9 @@ const Table: React.FC = () => {
                   confirmDelete.run();
                   setConfirmDelete(null);
                 }}
-                className="rounded-md bg-[#dc2626] px-3.5 py-1.5 text-[12px] font-semibold text-white"
+                className="rounded-md border border-black bg-white px-3.5 py-1.5 text-[12px] font-bold text-black"
               >
-                Delete
+                OK
               </button>
             </div>
           </div>

@@ -716,7 +716,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
             else if (e.key === "Escape") { setEditingGroupId(null); setEditingGroupName(""); }
           }}
           onClick={(e) => e.stopPropagation()}
-          style={{ flex: 1, padding: "3px 8px", fontSize: 12, fontWeight: 700, background: "#fff", color: "#111827", border: `1px solid ${BRAND}`, borderRadius: 4, outline: "none" }}
+          style={{ flex: 1, padding: "3px 8px", fontSize: 12, fontWeight: 700, background: "#fff", color: "#111827", border: "1px solid #3b82f6", borderRadius: 4, outline: "none" }}
         />
       ) : (
         <span
@@ -1075,7 +1075,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 type="button"
                 disabled={deletingRow}
                 onClick={() => setConfirmDelete(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
               >
                 Cancel
               </button>
@@ -1175,7 +1175,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteYear(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
               >
                 Cancel
               </button>
@@ -1544,7 +1544,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           if (e.key === "Enter") updateColumnLabel(year, editingYearLabel);
                           else if (e.key === "Escape") { setEditingYearIdx(null); setEditingYearLabel(""); setEditingYearError(false); }
                         }}
-                        style={{ width: "100%", padding: "2px 4px", fontSize: 11, fontWeight: 700, border: `1px solid ${editingYearError ? "#dc2626" : BRAND}`, borderRadius: 3, outline: "none", textAlign: "right", background: editingYearError ? "#fef2f2" : "#fff", color: editingYearError ? "#dc2626" : "#111827" }}
+                        style={{ width: "100%", padding: "2px 4px", fontSize: 11, fontWeight: 700, border: `1px solid ${editingYearError ? "#dc2626" : "#3b82f6"}`, borderRadius: 3, outline: "none", textAlign: "right", background: editingYearError ? "#fef2f2" : "#fff", color: editingYearError ? "#dc2626" : "#111827" }}
                       />
                     ) : (
                       <div

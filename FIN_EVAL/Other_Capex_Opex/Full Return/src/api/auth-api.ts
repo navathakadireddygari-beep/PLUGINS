@@ -48,12 +48,12 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
   // ── Local dev token — replace with a fresh token when you get 401 ──
   // Generate via: POST {TOKEN_URL} with client_credentials grant
   // Token expires in ~1 hour; update ACCESS_TOKEN below when expired.
-  const ACCESS_TOKEN = "jUGPrnb3Ts2cO2hJYHalSQ";
+  const ACCESS_TOKEN = "KVqdg5DgooDC0P5ayRbFbw";
   return {
     accessToken: ACCESS_TOKEN,
     token_type: "Bearer",
     expiration_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    app_user: "satish.mallagundla@test.exp.com",
+    app_user: "vineet.karwa@test.exp.com",
   }
 }
 

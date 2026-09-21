@@ -46,7 +46,7 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
     };
   }
   return {
-    accessToken: "tG87UzcG07HTtDNd1dhMlg",
+    accessToken: "vyPAf2hg0D8nwIehXbXueg",
     token_type: "Bearer",
     expiration_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     app_user: "Navatha.Kadireddygari@test.exp.com",

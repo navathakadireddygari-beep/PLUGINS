@@ -260,6 +260,14 @@ const recomputeGroup = (g: Group, years: number[]): Group => {
   };
 };
 
+// Custom sections' calculated total row comes back from the API with
+// year_values: null (the backend never computes it) — every freshly-fetched
+// table must run through this before it reaches state, or that row stays "—".
+const recomputeAllGroups = (table: PivotTableData): PivotTableData => ({
+  ...table,
+  groups: table.groups.map((g) => recomputeGroup(g, table.years)),
+});
+
 const parseExcelPaste = (text: string): ParsedRow[] => {
   const lines = text.split(/\r?\n/).map((l: string) => l.trimEnd()).filter((l: string) => l.trim());
   if (!lines.length) return [];
@@ -435,7 +443,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     try {
       const cfg = getAppConfig();
       const result = await getFinancialData(cfg);
-      setData(result.table);
+      setData(recomputeAllGroups(result.table));
       // Keep any already-fetched live rate instead of letting a stale/empty backend value clobber it.
       setRawHeader((prev) => ({ ...result.rawHeader, exchange_rate: prev?.exchange_rate || result.rawHeader.exchange_rate }));
       dbYearsRef.current = new Set(result.table.years);
@@ -492,14 +500,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
     try {
       const cfg    = getAppConfig();
       const result = await getFinancialData(cfg);
+      const recomputed = recomputeAllGroups(result.table);
       const numId  = parseInt(targetId, 10);
-      const fresh  = result.table.groups.find((g) =>
+      const fresh  = recomputed.groups.find((g) =>
         (Number.isFinite(numId) && g.sectionId === numId) ||
         tok(g.sectionType) === tok(targetId) ||
         tok(g.name)        === tok(targetId),
       );
       setData((prev) => {
-        if (!prev) return result.table;
+        if (!prev) return recomputed;
         if (!fresh) return prev;
         const isMatch = (g: Group): boolean =>
           (fresh.sectionId != null && g.sectionId === fresh.sectionId) ||
@@ -649,11 +658,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
       // state so the view doesn't jump.
       try {
         const refetched = await getFinancialData(cfg);
+        const recomputed = recomputeAllGroups(refetched.table);
         console.log("[saveDraft] re-fetch groups:", refetched.table.groups.length,
           "lines:", refetched.table.groups.reduce((s, g) => s + g.values.length, 0));
 
         setData((current) => {
-          if (!current) return refetched.table;
+          if (!current) return recomputed;
 
           const expandedBySection = new Map(
             current.groups.filter((g) => g.sectionId != null).map((g) => [g.sectionId, g.expanded]),
@@ -663,8 +673,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
           );
 
           return {
-            ...refetched.table,
-            groups: refetched.table.groups.map((g) => ({
+            ...recomputed,
+            groups: recomputed.groups.map((g) => ({
               ...g,
               expanded:
                 (g.sectionId != null && expandedBySection.has(g.sectionId)
@@ -922,15 +932,21 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // fin_eval_line_id and updates rows with real ids, so a separate
   // POST-on-add is unnecessary and caused a race that left stale
   // "New Line Item" rows in the DB.
-  const addGroup = (): void => setData((p) => p ? ({
-    ...p,
-    groups: [...p.groups, {
-      id: generateId(), name: "", expanded: true,
-      sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
-      displayOrder: p.groups.length + 1,
-      values: [blankRow(p)],
-    }],
-  }) : p);
+  const addGroup = (): void => {
+    const newId = generateId();
+    setData((p) => p ? ({
+      ...p,
+      groups: [...p.groups, {
+        id: newId, name: "", expanded: true,
+        sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
+        displayOrder: p.groups.length + 1,
+        values: [blankRow(p)],
+      }],
+    }) : p);
+    // Focuses the new section's name input, which auto-scrolls it into view.
+    setEditingGroupId(newId);
+    setEditingGroupName("");
+  };
   const toggleGroup = (id: string): void => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === id ? { ...g, expanded: !g.expanded } : g) }) : p);
   const toggleAll   = (): void => { const n = !allExpanded; setAllExpanded(n); setData((p) => p ? ({ ...p, groups: p.groups.map((g) => ({ ...g, expanded: n })) }) : p); };
   const addValueRow = (gId: string): void => setData((p) => p ? ({
@@ -1026,7 +1042,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 type="button"
                 disabled={deletingRow}
                 onClick={() => setConfirmDelete(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
               >
                 Cancel
               </button>
@@ -1073,7 +1089,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     setDeletingRow(false);
                   }
                 }}
-                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: deletingRow ? "not-allowed" : "pointer", opacity: deletingRow ? 0.7 : 1 }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: deletingRow ? "not-allowed" : "pointer", opacity: deletingRow ? 0.7 : 1 }}
               >
                 {deletingRow ? "Deleting…" : "OK"}
               </button>
@@ -1102,7 +1118,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteYear(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
               >
                 Cancel
               </button>
@@ -1359,11 +1375,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
       {/* ── Table toolbar ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "8px 20px", border: "1px solid rgb(229, 231, 235)", minHeight: 40 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button type="button" onClick={decreaseYears} disabled={numYears <= 1} style={{ width: 32, height: 32, border: "1px solid rgb(209, 213, 219)", borderRadius: 6, background: "rgb(255, 255, 255)", cursor: "pointer", color: "rgb(55, 65, 81)", opacity: numYears <= 1 ? 0.3 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>−</button>
-          <span style={{ fontSize: 12, color: "rgb(0, 20, 46)" }}>{numYears} Years</span>
-          <button type="button" onClick={increaseYears} style={{ width: 32, height: 32, border: "1px solid rgb(209, 213, 219)", borderRadius: 6, background: "rgb(255, 255, 255)", cursor: "pointer", color: "rgb(55, 65, 81)", opacity: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>+</button>
-          {!isReadonly && <button type="button" onClick={addGroup} style={{ padding: "7px 12px", border: "1px solid rgb(0, 0, 0)", borderRadius: 6, fontSize: 12, background: "rgb(255, 255, 255)", cursor: "pointer", color: "rgb(0, 0, 0)", fontWeight: 700 }}>+ Add Section</button>}
-          <button type="button" onClick={toggleAll} style={{ padding: "7px 11px", border: "1px solid rgb(209, 213, 219)", borderRadius: 6, fontSize: 12, background: "rgb(255, 255, 255)", cursor: "pointer", color: "rgb(55, 65, 81)" }}>{allExpanded ? "Collapse All" : "Expand All"}</button>
+          <button type="button" onClick={decreaseYears} disabled={numYears <= 1} style={{ width: 20, height: 20, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: numYears <= 1 ? "not-allowed" : "pointer", color: "#374151", opacity: numYears <= 1 ? 0.3 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>−</button>
+          <span style={{ fontSize: 11, color: "#374151" }}>{numYears} Years</span>
+          <button type="button" onClick={increaseYears} style={{ width: 20, height: 20, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: "pointer", color: "#374151", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>+</button>
+          {!isReadonly && <button type="button" onClick={addGroup} style={{ padding: "3px 8px", border: "1px solid #000", borderRadius: 4, fontSize: 11, background: "#fff", cursor: "pointer", color: "#000", fontWeight: 600 }}>+ Add Section</button>}
+          <button type="button" onClick={toggleAll} style={{ padding: "3px 8px", fontSize: 10, background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>{allExpanded ? "Collapse All" : "Expand All"}</button>
         </div>
       </div>
 

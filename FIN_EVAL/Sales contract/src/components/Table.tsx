@@ -964,7 +964,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 type="button"
                 disabled={deletingRow}
                 onClick={() => setConfirmDelete(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
               >
                 Cancel
               </button>
@@ -1011,7 +1011,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     setDeletingRow(false);
                   }
                 }}
-                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: deletingRow ? "not-allowed" : "pointer", opacity: deletingRow ? 0.7 : 1 }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: deletingRow ? "not-allowed" : "pointer", opacity: deletingRow ? 0.7 : 1 }}
               >
                 {deletingRow ? "Deleting…" : "OK"}
               </button>
@@ -1040,7 +1040,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteYear(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
               >
                 Cancel
               </button>
@@ -1273,13 +1273,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
       <div style={{ margin: "0", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "8px 20px", borderBottom: "1px solid #e5e7eb", minHeight: 40 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button type="button" onClick={decreaseYears} disabled={isReadOnly || numYears <= 1} title={isReadOnly ? "You have read-only access to this record" : undefined} style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", cursor: isReadOnly || numYears <= 1 ? "not-allowed" : "pointer", color: "#374151", opacity: isReadOnly || numYears <= 1 ? 0.3 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>-</button>
-          <span style={{ fontSize: 12, color: "#00142E" }}>{numYears} Years</span>
-          <button type="button" onClick={increaseYears} disabled={isReadOnly} title={isReadOnly ? "You have read-only access to this record" : undefined} style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", cursor: isReadOnly ? "not-allowed" : "pointer", color: "#374151", opacity: isReadOnly ? 0.3 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>+</button>
+          <button type="button" onClick={decreaseYears} disabled={isReadOnly || numYears <= 1} title={isReadOnly ? "You have read-only access to this record" : undefined} style={{ width: 20, height: 20, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: isReadOnly || numYears <= 1 ? "not-allowed" : "pointer", color: "#374151", opacity: isReadOnly || numYears <= 1 ? 0.3 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>-</button>
+          <span style={{ fontSize: 11, color: "#374151" }}>{numYears} Years</span>
+          <button type="button" onClick={increaseYears} disabled={isReadOnly} title={isReadOnly ? "You have read-only access to this record" : undefined} style={{ width: 20, height: 20, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: isReadOnly ? "not-allowed" : "pointer", color: "#374151", opacity: isReadOnly ? 0.3 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>+</button>
           {!isReadOnly && (
-            <button type="button" onClick={addGroup} style={{ padding: "7px 12px", border: "1px solid #000", borderRadius: 6, fontSize: 12, background: "#fff", cursor: "pointer", color: "#000", fontWeight: 700 }}>+ Add Section</button>
+            <button type="button" onClick={addGroup} style={{ padding: "3px 8px", border: "1px solid #000", borderRadius: 4, fontSize: 11, background: "#fff", cursor: "pointer", color: "#000", fontWeight: 600 }}>+ Add Section</button>
           )}
-          <button type="button" onClick={toggleAll} style={{ padding: "7px 11px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, background: "#fff", cursor: "pointer", color: "#374151" }}>{allExpanded ? "Collapse All" : "Expand All"}</button>
+          <button type="button" onClick={toggleAll} style={{ padding: "3px 8px", fontSize: 10, background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>{allExpanded ? "Collapse All" : "Expand All"}</button>
         </div>
       </div>
 
@@ -1397,7 +1397,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     {group.isNewLineRequired !== "N" && !isReadOnly && (
                       <tr key={`${group.id}-add`}>
                         <td colSpan={3 + numYears + 1} style={{ padding: "7px 12px", borderBottom: "1px solid #e5e7eb" }}>
-                          <button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 12, background: "none", border: "none", cursor: "pointer", color: BRAND, fontWeight: 700, padding: 0 }}>
+                          <button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 12, background: "none", border: "none", cursor: "pointer", color: "#000", fontWeight: 700, padding: 0 }}>
                             + Add {group.name} Line
                           </button>
                         </td>

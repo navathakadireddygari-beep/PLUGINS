@@ -256,6 +256,10 @@ export function transformApiData(
 
   const sections: ApiSection[] = header.sections || [];
   const isVisibleTemplateSection = (section: ApiSection): boolean => {
+    // User-added sections carry section_type "CUSTOM" (is_custom "Y") — they
+    // never match a known template token below, so they must be admitted
+    // explicitly or a saved "+ Add Section" would vanish on the next fetch.
+    if (section.is_custom === "Y") return true;
     const token = (section.section_type || section.section_name || "")
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, "");
