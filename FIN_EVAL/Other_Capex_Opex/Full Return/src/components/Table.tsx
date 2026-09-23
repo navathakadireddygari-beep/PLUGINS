@@ -763,6 +763,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
     if (pasteToast) { const t = setTimeout(() => setPasteToast(null), 3000); return () => clearTimeout(t); }
   }, [pasteToast]);
 
+  // Only one toast-style notification should be visible at a time.
+  useEffect(() => { if (toast) setPasteToast(null); }, [toast]);
+  useEffect(() => { if (pasteToast) setToast(null); }, [pasteToast]);
+
   // Live FX rate lookup — fetches the current USD conversion rate whenever the
   // proposal's local currency changes (skipped for USD, which needs no rate).
   useEffect(() => {

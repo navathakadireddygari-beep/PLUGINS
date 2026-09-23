@@ -558,6 +558,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
     if (pasteToast) { const t = setTimeout(() => setPasteToast(null), 3000); return () => clearTimeout(t); }
   }, [pasteToast]);
 
+  // Only one toast-style notification should be visible at a time.
+  useEffect(() => { if (toast) setPasteToast(null); }, [toast]);
+  useEffect(() => { if (pasteToast) setToast(null); }, [pasteToast]);
+
   useEffect(() => {
     const h = (e: MouseEvent): void => {
       if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
