@@ -24,24 +24,56 @@ declare global {
 }
 
 /*
- * Keep track of the currently mounted React root.
+ * Keep track of the currently mounted React root, together with the DOM node
+ * it was created against.
+ *
+ * APEX can replace the host element out from under us — e.g. a native AJAX
+ * region refresh (see the "reinit-investment-report" custom event on the
+ * host page) swaps the region's HTML, including this exact <div>, BEFORE our
+ * destroy() ever runs. If that happens, `_reactRoot` still points at the OLD,
+ * now-detached element. Calling `.unmount()` on it doesn't touch the new
+ * element APEX just inserted, but it also doesn't hurt — the real danger is
+ * anything (a stray native event, a late async setState) later assuming
+ * `_reactRoot`/`_mountedContainer` are still attached to the live document.
+ * Tracking the container lets destroy()/init() detect that mismatch and skip
+ * operating on the stale node instead of unmounting/reconciling against DOM
+ * React no longer actually owns.
  */
 let _reactRoot:
   ReturnType<typeof ReactDOM.createRoot> | null =
   null;
+let _mountedContainer: HTMLElement | null = null;
 
 
 /* ============================================================
  * DESTROY
  * ============================================================ */
 function destroy(hostId: string): void {
+  const liveContainer = document.getElementById(hostId);
+
+  /*
+   * If APEX already swapped the host element (e.g. a native AJAX region
+   * refresh ran before destroy() was called), `_mountedContainer` is a
+   * detached node that no longer represents anything on the live page.
+   * Unmounting into it can't affect the new element, so skip straight to
+   * discarding the stale reference rather than risking a call into a fiber
+   * tree whose DOM was pulled out from under it.
+   */
+  const containerStillCurrent =
+    _mountedContainer !== null && _mountedContainer === liveContainer;
+
   try {
-    if (_reactRoot) {
+    if (_reactRoot && containerStillCurrent) {
       _reactRoot.unmount();
-      _reactRoot = null;
 
       console.log(
         "[InvestmentReport] destroy() unmounted:",
+        hostId
+      );
+    } else if (_reactRoot) {
+      console.warn(
+        "[InvestmentReport] destroy() skipped unmount " +
+        "— host element was already replaced:",
         hostId
       );
     }
@@ -50,8 +82,9 @@ function destroy(hostId: string): void {
       "[InvestmentReport] destroy() error:",
       error
     );
-
+  } finally {
     _reactRoot = null;
+    _mountedContainer = null;
   }
 
   /*
@@ -116,10 +149,13 @@ function init(
 
 
   /*
-   * Protect against APEX calling init()
-   * without destroy() first.
+   * Protect against APEX calling init() without destroy() first — and guard
+   * against unmounting into a container APEX has since replaced (see the
+   * note on `_mountedContainer` above). If the tracked container isn't the
+   * one currently in the document, it's already been swapped out from under
+   * us, so there is nothing live left to unmount.
    */
-  if (_reactRoot) {
+  if (_reactRoot && _mountedContainer === container) {
     try {
       _reactRoot.unmount();
     } catch (error) {
@@ -128,9 +164,10 @@ function init(
         error
       );
     }
-
-    _reactRoot = null;
   }
+
+  _reactRoot = null;
+  _mountedContainer = null;
 
 
   /*
@@ -144,6 +181,7 @@ function init(
    */
   _reactRoot =
     ReactDOM.createRoot(container);
+  _mountedContainer = container;
 
 
   /*

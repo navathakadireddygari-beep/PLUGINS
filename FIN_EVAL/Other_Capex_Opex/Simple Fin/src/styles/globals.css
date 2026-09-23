@@ -202,7 +202,11 @@
   cursor: default;
   user-select: none;
 }
-#fin-eval-widget-root .info-tooltip {
+/* Unscoped (not #fin-eval-widget-root ...): the tooltip is rendered via a
+   React portal into document.body, outside the widget root, so an
+   ID-scoped selector here would never match and the tooltip would render
+   as unstyled inline text instead of a floating box. */
+.info-tooltip {
   position: absolute;
   left: 19px;
   top: -4px;
