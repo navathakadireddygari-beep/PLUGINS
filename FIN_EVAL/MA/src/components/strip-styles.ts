@@ -139,6 +139,7 @@ export const infoTip: CSSProperties = {
   width: 360,
   lineHeight: 1.5,
   zIndex: 300,
+  boxShadow: "0 4px 14px rgba(0,0,0,.25)",
 };
 
 /** The "FX" badge. */

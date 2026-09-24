@@ -84,14 +84,18 @@ const TEMPLATE_UNITS: MoneySettings = {
  * template defines — below the NPV calculation — rather than inside one of
  * them, so an added section is never mistaken for part of Combined Operating
  * Results and never lands between two of the template's own sections.
+ *
+ * `con` is Consideration (Cash / Deferred / Contingent). It renders in its own
+ * panel beside Key Inputs, above Combined Operating Results, not inside it.
  */
-export type FinEvalGridId = "cor" | "fcf" | "ptr" | "cus";
+export type FinEvalGridId = "con" | "cor" | "fcf" | "ptr" | "cus";
 
 /**
  * Which grid each `section_type` feeds. Unmapped section types fall back to
  * `cor` so a new template section still shows up rather than disappearing.
  */
 const SECTION_GRID: Record<string, FinEvalGridId> = {
+  CONSIDERATION: "con",
   REVENUE: "cor",
   COSTS: "cor",
   RETURNS_ANALYSIS: "cor",
@@ -262,6 +266,8 @@ export interface FinancialEvaluationModel {
   /** Owning proposal's workflow status; drives the view-only rule. */
   proposalStatus: string | null;
   keyInputs: FinEvalKeyInputRow[];
+  /** Consideration lines (Cash / Deferred / Contingent). */
+  con: FinEvalGridRow[];
   cor: FinEvalGridRow[];
   fcf: FinEvalGridRow[];
   ptr: FinEvalGridRow[];
@@ -415,6 +421,7 @@ export const mapFinancialEvaluation = (
   const items = (Array.isArray(raw) ? raw[0] : raw) ?? ({} as FinancialEvaluationResponse);
 
   const grids: Record<FinEvalGridId, FinEvalGridRow[]> = {
+    con: [],
     cor: [],
     fcf: [],
     ptr: [],

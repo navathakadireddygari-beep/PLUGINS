@@ -19,7 +19,7 @@ import {
 import {
   cellExists,
   focusCell,
-  nearestCell,
+  nextNavCell,
   parseClipboardMatrix,
   readClipboard,
   readSelectionTSV,
@@ -33,7 +33,7 @@ import { useSaveModel } from "@/context/SaveModelContext";
 import { applyMaNpvBlock, recalcMaGrids } from "@/lib/ma-recalc";
 import { DARK_HEADER } from "@/components/strip-styles";
 import { cagrOf } from "@/lib/ma-formulas";
-import { formatPercent } from "@/lib/number-format";
+import { formatNumber, formatPercent } from "@/lib/number-format";
 import { actualsCountOf, fyNumberOf } from "@/lib/fiscal-years";
 import { collectGridRows, type NewSectionDraft } from "@/lib/save-collect";
 import {
@@ -221,13 +221,6 @@ const npvRowFromApi = (component: FinEvalNpvRow, index: number): Row => ({
  */
 const LABEL_COL_WIDTH = 180;
 
-/** Splits an array into consecutive groups of at most `size` items. */
-const chunk = <T,>(items: T[], size: number): T[][] => {
-  const groups: T[][] = [];
-  for (let i = 0; i < items.length; i += size) groups.push(items.slice(i, i + size));
-  return groups;
-};
-
 /** Row-actions (trash) column — the reference's 36px. */
 const ACTION_COL_WIDTH = 36;
 /** Year column — the reference's 120px. */
@@ -293,18 +286,17 @@ const isRowLocked = (row: Row, isReadonly: boolean): boolean =>
   isReadonly || !!row.isCalculated || !!row.readOnly;
 
 /**
- * Surface for a locked row: #e5e7eb, a touch darker than the reference's
- * #f3f4f6, so a computed band separates from the white input rows without
- * having to look twice. Applied to the whole `<tr>` so the label column and the
- * figures beside it are one continuous block (see SpreadsheetCell, whose
- * resting state is transparent so this shows through).
+ * Surface for a locked row: #f3f4f6, as in Prod Dev. Applied to the whole
+ * `<tr>` so the label column and the figures beside it are one continuous
+ * block (see SpreadsheetCell, whose resting state is transparent so this shows
+ * through). Rows have no hover colour — Prod Dev has none.
  *
  * Written as a literal, never interpolated: Tailwind generates utilities by
  * scanning source TEXT, so a `bg-[${...}]` built at runtime produces no class
  * at all and the row silently renders unpainted.
  */
 const rowBgClass = (locked: boolean): string =>
-  locked ? "bg-[#e5e7eb]" : "bg-white hover:bg-[#fafbfc]";
+  locked ? "bg-[#f3f4f6]" : "bg-white";
 
 /**
  * Label cell text. Bold near-black marks a COMPUTED line specifically — not
@@ -315,6 +307,9 @@ const labelTextClass = (isCalculated: boolean | undefined): string =>
   isCalculated
     ? "text-[12px] font-bold text-[#111]"
     : "text-[12px] font-normal text-[#1f2937]";
+
+/** Template (non-custom) line names are bold #111827, as in Prod Dev. */
+const TEMPLATE_LABEL_CLASS = "text-[12px] font-bold text-[#111827]";
 
 /**
  * The divider between the ACTUALS block and the PROJECTIONS block. Dark grey so
@@ -380,31 +375,19 @@ const rowAllowsRows = (row: Row): boolean =>
 /**
  * Whether the trash icon shows for a row.
  *
- * Two rules, and only two:
- *
  *  1. A CALCULATED line is never deletable, whatever its section says. The
  *     server owns it, the grid renders it as a read-only figure, and offering
- *     to remove a cell the user cannot even type into reads as broken. This is
- *     the "non-editable fields get no delete icon" rule, decided once here
- *     rather than repeated per table.
+ *     to remove a cell the user cannot even type into reads as broken.
  *  2. Its SECTION must be one that takes lines at all (Revenue, Costs, Combined
  *     Free Cash Flows). Returns Analysis, Post Tax Return and the NPV block are
  *     computed blocks and never show the icon.
- *
- * `is_mandatory` / `is_custom` are deliberately NOT consulted. Every template
- * line in the M&A payload ships as `is_custom: "N"` and almost all as
- * `is_mandatory: "Y"` — gating on either hid the icon from every row on the
- * screen, including the Revenue and Costs input lines it is specified for. The
- * section is the authority instead.
- *
- * Worth knowing: this does mean a line the template calls mandatory can be
- * deleted. Removing an input the calculation reads (Standalone Revenues, say)
- * drops it from its section subtotal and moves EBIT downstream, and the server
- * may well restore it on the next GET. The delete is confirmed by name first,
- * so it cannot happen on a mis-click.
+ *  3. A TEMPLATE line (`is_custom: "N"`) is never deletable — only lines the
+ *     user added. Same rule as Prod Dev (`value.isCustom !== "N"`).
+ *     `isCustom` is `false` only for lines the response marks "N"; rows added
+ *     on screen leave it unset, so they keep the icon.
  */
 const canDeleteRow = (row: Row, isReadonly: boolean): boolean =>
-  !isRowLocked(row, isReadonly) && rowAllowsRows(row);
+  !isRowLocked(row, isReadonly) && rowAllowsRows(row) && row.isCustom !== false;
 
 /**
  * A percentage input for the Key Inputs panel. Accepts digits and a single
@@ -509,6 +492,10 @@ const Table: React.FC = () => {
   // seed data: invented rows are indistinguishable from the proposal's own once
   // rendered, so a failed load must show nothing rather than a plausible
   // fiction. Section -> grid routing lives in SECTION_GRID (api/financial-api).
+  /** Consideration (Cash / Deferred / Contingent) — its own panel beside Key Inputs. */
+  const [conRows, setConRows] = useState<Row[]>([]);
+  /** Fiscal-year buckets the Consideration lines carry — its column set. */
+  const [conFyKeys, setConFyKeys] = useState<string[]>([]);
   const [corRows, setCorRows] = useState<Row[]>([]);
   const [fcfRows, setFcfRows] = useState<Row[]>([]);
   const [ptrRows, setPtrRows] = useState<Row[]>([]);
@@ -548,6 +535,18 @@ const Table: React.FC = () => {
   const visibleCols = Math.min(fyKeys.length, actualsCount + years);
   const allYearIdx = Array.from({ length: visibleCols }, (_, i) => i);
   const projYearIdx = allYearIdx.slice(actualsCount); // projection-only
+  /**
+   * Consideration columns: the fiscal years its own lines carry (e.g. fy27-fy29),
+   * not the full grid. Falls back to the first three projection years when the
+   * response sends no Consideration buckets.
+   */
+  const conYearIdx = (() => {
+    const idx = conFyKeys
+      .map((fy) => fyKeys.indexOf(fy))
+      .filter((i) => i >= 0)
+      .sort((a, b) => a - b);
+    return idx.length > 0 ? idx : projYearIdx.slice(0, 3);
+  })();
   /**
    * Projection columns actually on screen. This — not the raw `years` state —
    * is what the stepper reports and what "-" is gated on, so the number in the
@@ -657,6 +656,7 @@ const Table: React.FC = () => {
     // silently refuse edits (`writeCells` bounds-checks the row's own length).
     const widen = (rows: Row[]): Row[] =>
       rows.map((r) => ({ ...r, values: [...r.values, ""] }));
+    setConRows(widen);
     setCorRows(widen);
     setFcfRows(widen);
     setPtrRows(widen);
@@ -721,6 +721,10 @@ const Table: React.FC = () => {
     // and subtracting one from the other silently relabelled a projection as an
     // actual whenever the response carried more years than it displayed.
     setActualsCount(actuals);
+    setConRows(template.con.map((l, i) => rowFromApi(l, i, colByFy, size)));
+    setConFyKeys([
+      ...new Set(template.con.flatMap((l) => Object.keys(l.yearValues))),
+    ]);
     setCorRows(template.cor.map((l, i) => rowFromApi(l, i, colByFy, size)));
     setFcfRows(template.fcf.map((l, i) => rowFromApi(l, i, colByFy, size)));
     setPtrRows(template.ptr.map((l, i) => rowFromApi(l, i, colByFy, size)));
@@ -838,6 +842,8 @@ const Table: React.FC = () => {
     // the first grid can hold them, but every grid is passed the accumulator so
     // a row can never be silently dropped for being in the "wrong" one.
     const sectionDrafts: Record<string, NewSectionDraft> = {};
+    // Consideration is never calculated, so its state IS what is on screen.
+    collectRows(conRows, conYearIdx, yearValues, newLines, sectionDrafts);
     collectRows(calcCor, allYearIdx, yearValues, newLines, sectionDrafts);
     collectRows(calcFcf, allYearIdx, yearValues, newLines, sectionDrafts);
     // Post Tax Return only renders the projection columns.
@@ -967,30 +973,34 @@ const Table: React.FC = () => {
   }, [loadError]);
 
   /**
-   * Cell text for one row.
+   * Cell text for one row — Prod Dev's `cellDisplay` / `rawFmt` / `displayFmt`.
    *
-   * A percentage row bypasses the money formatter entirely — no FX, no scale,
-   * because 25% is 25% in any currency or denomination — but it is still
-   * FORMATTED: the "%" belongs in the cell, not only in the row label. The
-   * value used to be printed raw, so a margin the engine computes to four
-   * decimals rendered as "41.5584" next to a label reading "% EBIT Margin".
-   * It now reads "42%", with negatives in accounting parentheses: "(29%)".
+   * Money rows: FX + K/M/B scale, K = 0 / M = 1 / B = 2 decimals, negatives in
+   * parentheses.
    *
-   * An empty or zero cell shows "-", matching the reference.
+   * Percentage rows bypass FX and scale entirely (25% is 25% in any currency
+   * or denomination) and show up to 2 decimals with trailing zeros trimmed and
+   * no "%" sign — "41.56", "26" — exactly as Prod Dev's `groupNumberTrimmed`.
+   *
+   * An empty or zero cell shows "—", as in Prod Dev.
    */
   const cellText = (row: Row, raw: string | undefined): string => {
     const value = raw ?? "";
+    if (value.trim() === "") return "—";
+    const n = Number(value);
+    if (Number.isFinite(n) && n === 0) return "—";
     // EVERY percentage row, not just Tax Rate: margins, growth and post-tax
     // return are percentages too, and running one through the FX/scale
     // pipeline turns 58.3333 into "58" at K or "0.1" at M.
     if (isPercentRow(identityOf(row))) {
-      if (value.trim() === "") return "-";
-      const n = Number(value);
-      if (!Number.isFinite(n) || n === 0) return "-";
-      return formatPercent(n, numberFormat);
+      if (!Number.isFinite(n)) return "—";
+      const trimmed = String(parseFloat(Math.abs(n).toFixed(2)));
+      const decimals = trimmed.includes(".") ? trimmed.split(".")[1].length : 0;
+      // Scale "K" divides by 1 — this is only for grouping and separators.
+      return formatNumber(n, "K", numberFormat, decimals);
     }
     const shown = formatBaseToDisplayed(value);
-    return shown === "" ? "-" : shown;
+    return shown === "" ? "—" : shown;
   };
 
   /**
@@ -1284,7 +1294,7 @@ const Table: React.FC = () => {
 
   const cagrText = (row: Row, cols: number[]): string => {
     if (isNoTotalRow(identityOf(row)) || isPercentRow(identityOf(row))) {
-      return "-";
+      return "—";
     }
     const series = cols.map((i) => {
       const v = row.values[i];
@@ -1293,9 +1303,8 @@ const Table: React.FC = () => {
       return Number.isFinite(parsed) ? parsed : null;
     });
     const result = cagrOf(series);
-    // The same formatter as the percentage rows, so the CAGR column cannot end
-    // up at a different precision from the "% Margin" row beside it.
-    return result === null ? "-" : formatPercent(result, numberFormat);
+    // CAGR is M&A-only (Prod Dev has no such column), so it keeps its "%".
+    return result === null ? "—" : formatPercent(result, numberFormat);
   };
 
   /** Editor seed for one row — percentage rows are seeded unconverted. */
@@ -1329,13 +1338,13 @@ const Table: React.FC = () => {
    */
   const gridHead = (cagr: boolean) => (
     <thead>
-      <tr className="bg-[#f9fafb] text-xs font-semibold text-[#374151]">
+      <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
         {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]"></th>
+        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]"></th>
         {actualsColSpan > 0 && (
           <th
             colSpan={actualsColSpan}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]"
+            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase text-[#374151]"
             style={{ borderRight: PARTITION_BORDER }}
           >
             ACTUALS
@@ -1344,7 +1353,7 @@ const Table: React.FC = () => {
         {projYearIdx.length > 0 && (
           <th
             colSpan={projYearIdx.length}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]"
+            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase text-[#374151]"
           >
             PROJECTIONS
           </th>
@@ -1352,21 +1361,21 @@ const Table: React.FC = () => {
         {cagr && (
           <th
             rowSpan={2}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]"
+            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-[10px] font-bold uppercase text-[#374151]"
           >
             CAGR
           </th>
         )}
       </tr>
-      <tr className="bg-[#f9fafb] text-xs font-semibold text-[#374151]">
+      <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
         {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]">
+        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">
           LINE ITEM
         </th>
         {allYearIdx.map((i) => (
           <th
             key={i}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]"
+            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]"
             style={partitionStyle(i, actualsCount)}
           >
             {fyLabel(i)}
@@ -1394,7 +1403,7 @@ const Table: React.FC = () => {
         // Inline color forces white text — browser default <button> styling
         // can otherwise override the `text-white` utility class, which is
         // why this title showed black while the plain-<div> bars didn't.
-        style={{ color: "#fff" }}
+        style={{ color: "#fff", cursor: "pointer" }}
         className="flex w-full items-center gap-2 rounded-t bg-[#2d3748] px-3 py-2 text-left text-xs font-bold text-white"
       >
         {collapsed ? (
@@ -1443,7 +1452,7 @@ const Table: React.FC = () => {
                   {canDeleteRow(row, isReadonly) && (
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center text-[#9ca3af]"
+                      className="inline-flex cursor-pointer items-center justify-center text-[#9ca3af]"
                       onClick={() => removeRow(setRows, source, row.id)}
                       aria-label="Remove row"
                     >
@@ -1466,7 +1475,7 @@ const Table: React.FC = () => {
                 ) : (
                   <input
                     title={row.label}
-                    className={`w-full overflow-hidden bg-transparent text-ellipsis whitespace-nowrap outline-none ${labelTextClass(false)}`}
+                    className={`w-full overflow-hidden bg-transparent text-ellipsis whitespace-nowrap outline-none ${row.isCustom === false ? TEMPLATE_LABEL_CLASS : labelTextClass(false)}`}
                     value={row.label}
                     placeholder="New row label..."
                     onChange={(e) =>
@@ -1513,6 +1522,7 @@ const Table: React.FC = () => {
                     value={cagrText(row, cols)}
                     readOnly
                     calculated
+                    skipNav={false}
                     tabIndex={-1}
                   />
                 </td>
@@ -1523,14 +1533,13 @@ const Table: React.FC = () => {
             <tr className="bg-white">
               <td
                 colSpan={span}
-                className="border-b border-r border-[#e5e7eb] px-3 py-1.5"
+                className="border-b border-[#e5e7eb] px-[10px] py-1.5"
               >
                 <button
                   type="button"
-                  // Ordinary body text colour. The reference tints this control
-                  // with its brand crimson (#A5005A), which on this screen just
-                  // read as an error.
-                  className="flex items-center gap-1 text-[11px] font-semibold text-[#1f2937]"
+                  // Matches Prod Dev's "+ Add ... Line": 11px / 600 / black,
+                  // bottom rule only.
+                  className="flex cursor-pointer items-center gap-1 px-2 py-[3px] text-[11px] font-semibold text-black"
                   onClick={() =>
                     addRowInSection(
                       setRows,
@@ -1709,6 +1718,7 @@ const Table: React.FC = () => {
     string,
     { rows: Row[]; setRows: (r: Row[]) => void; parse: (v: string) => string }
   > = {
+    con: { rows: conRows, setRows: setConRows, parse: parseDisplayedToBase },
     cor: { rows: corRows, setRows: setCorRows, parse: parseDisplayedToBase },
     fcf: { rows: fcfRows, setRows: setFcfRows, parse: parseDisplayedToBase },
     ptr: { rows: ptrRows, setRows: setPtrRows, parse: parseDisplayedToBase },
@@ -1843,8 +1853,12 @@ const Table: React.FC = () => {
       if (cellExists(gridId, nr, nc))
         setSelection({ gridId, r1, c1, r2: nr, c2: nc });
     } else {
-      const t = nearestCell(gridId, r2, c2, dRow, dCol);
-      if (t) setSelection({ gridId, r1: t.r, c1: t.c, r2: t.r, c2: t.c });
+      // Prod Dev's navigation: same-column Up/Down across every table (except
+      // the NPV block, whose columns are not fiscal years), skipping
+      // calculated cells.
+      const t = nextNavCell(gridId, r2, c2, dRow, dCol, ["npv"]);
+      if (t)
+        setSelection({ gridId: t.gridId, r1: t.r, c1: t.c, r2: t.r, c2: t.c });
     }
   };
 
@@ -2087,42 +2101,77 @@ const Table: React.FC = () => {
         </div>
 
         <div className="p-4">
-          {/* Key inputs */}
-          <div className="w-full">
-            <div className="rounded-t bg-[#2d3748] px-3 py-2 text-xs font-bold uppercase text-white">
-              Key Inputs
-            </div>
-            <div className="overflow-auto rounded-b border">
-              <table className="w-full table-fixed border-collapse text-sm">
-                <tbody>
-                  {chunk(keyInputs, 2).map((pair, pairIdx) => (
-                    <tr key={pairIdx} className={rowBgClass(false)}>
-                      {pair.map((input) => (
-                        <React.Fragment key={input.code}>
-                          <td className="h-10 border-b border-r border-[#e5e7eb] px-3 align-middle">
-                            {input.label}
-                          </td>
-                          <td className="h-10 border-b border-r border-[#e5e7eb] px-3 text-right align-middle">
-                            <div className="flex items-center justify-end gap-2">
-                              <PercentInput
-                                value={input.value}
-                                onValueChange={(v) => setKeyInputValue(input.code, v)}
-                                readOnly={isReadonly}
-                              />
-                              <span className="text-sm text-slate-500">%</span>
-                            </div>
-                          </td>
-                        </React.Fragment>
-                      ))}
-                      {/* Pad an odd final row so its cells don't stretch to fill the row. */}
-                      {pair.length < 2 && (
-                        <td colSpan={2} className="border-b border-r border-[#e5e7eb]" />
-                      )}
+          {/* Key Inputs (left) and Consideration (right), side by side above
+              Combined Operating Results, as in the wireframe. */}
+          <div className="flex items-start gap-6">
+            {/* Key inputs — one input per row: INPUT | VALUE */}
+            <div className="w-1/3 shrink-0">
+              <div className="rounded-t bg-[#2d3748] px-3 py-2 text-xs font-bold uppercase text-white">
+                Key Inputs
+              </div>
+              <div className="overflow-auto rounded-b border">
+                <table className="w-full table-fixed border-collapse text-sm">
+                  <thead>
+                    <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
+                      <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">
+                        INPUT
+                      </th>
+                      <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">
+                        VALUE
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {keyInputs.map((input) => (
+                      <tr key={input.code} className={rowBgClass(false)}>
+                        <td className={`h-10 border-b border-r border-[#e5e7eb] px-3 align-middle ${TEMPLATE_LABEL_CLASS}`}>
+                          {input.label}
+                        </td>
+                        <td className="h-10 border-b border-r border-[#e5e7eb] px-3 text-right align-middle">
+                          <div className="flex items-center justify-end gap-2">
+                            <PercentInput
+                              value={input.value}
+                              onValueChange={(v) => setKeyInputValue(input.code, v)}
+                              readOnly={isReadonly}
+                            />
+                            <span className="text-sm text-slate-500">%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
+
+            {/* Consideration — Cash / Deferred / Contingent, moved out of
+                Combined Operating Results into its own panel. */}
+            {conRows.length > 0 && (
+              <div className="min-w-0 flex-1">
+                <div className="rounded-t bg-[#2d3748] px-3 py-2 text-xs font-bold uppercase text-white">
+                  Consideration
+                </div>
+                <div className="overflow-auto rounded-b border">
+                  <table className="w-full table-fixed border-collapse text-sm">
+                    <GridColgroup showActions={!isReadonly} yearCount={conYearIdx.length} />
+                    <thead>
+                      <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
+                        {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
+                        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">TYPE</th>
+                        {conYearIdx.map((i) => (
+                          <th key={i} className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">
+                            {fyLabel(i)}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {gridRows("con", conRows, conRows, setConRows, conYearIdx)}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Combined Operating Results */}
@@ -2165,11 +2214,11 @@ const Table: React.FC = () => {
               <table className="w-full min-w-[700px] table-fixed border-collapse text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={projYearIdx.length} />
                 <thead>
-                  <tr className="bg-[#f9fafb] text-xs font-semibold text-[#374151]">
+                  <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
                     {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]">LINE ITEM</th>
+                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">LINE ITEM</th>
                     {projYearIdx.map((i) => (
-                      <th key={i} className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]">
+                      <th key={i} className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">
                         {fyLabel(i)}
                       </th>
                     ))}
@@ -2199,11 +2248,11 @@ const Table: React.FC = () => {
                   ))}
                 </colgroup>
                 <thead>
-                  <tr className="bg-[#f9fafb] text-xs font-semibold text-[#374151]">
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]">Component</th>
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]">Target (Standalone)</th>
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]">Experian Factor</th>
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.3px] text-[#374151]">Total</th>
+                  <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
+                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">Component</th>
+                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">Target (Standalone)</th>
+                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">Experian Factor</th>
+                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2222,7 +2271,7 @@ const Table: React.FC = () => {
                           ) : (
                             <input
                               title={row.label}
-                              className={`w-full overflow-hidden bg-transparent text-ellipsis whitespace-nowrap outline-none ${labelTextClass(false)}`}
+                              className={`w-full overflow-hidden bg-transparent text-ellipsis whitespace-nowrap outline-none ${row.isCustom === false ? TEMPLATE_LABEL_CLASS : labelTextClass(false)}`}
                               value={row.label}
                               placeholder="New component..."
                               onChange={(e) =>

@@ -97,6 +97,57 @@ export const nearestCell = (
   return null;
 };
 
+/**
+ * Next cell for a single-step arrow move, following Prod Dev's
+ * `handleCellArrowNav`: cells are taken in DOM (= visual) order.
+ *
+ *  - Up/Down   the previous/next cell in the SAME COLUMN, crossing section and
+ *              table boundaries (Combined Operating Results -> Free Cash Flows
+ *              -> Post Tax Return ...), because Prod Dev's grid is one table.
+ *  - Left/Right the previous/next cell in the same row of the same grid.
+ *
+ * Cells marked `data-skipnav` (calculated figures) are passed over, as Prod
+ * Dev's calculated rows are plain text its navigation never lands on.
+ *
+ * `isolated` grids have their own column numbering (e.g. the NPV block's
+ * three fixed columns are not fiscal years), so vertical moves never cross
+ * into or out of them.
+ */
+export const nextNavCell = (
+  gridId: string,
+  row: number,
+  col: number,
+  dRow: number,
+  dCol: number,
+  isolated: string[] = [],
+): { gridId: string; r: number; c: number } | null => {
+  const current = findEl(gridId, row, col);
+  if (!current) return null;
+  const all = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-grid][data-row][data-col]"),
+  ).filter((el) => el === current || !el.hasAttribute("data-skipnav"));
+  const inIsolated = isolated.includes(gridId);
+  const line =
+    dRow !== 0
+      ? all.filter(
+          (el) =>
+            el.dataset.col === String(col) &&
+            (inIsolated
+              ? el.dataset.grid === gridId
+              : !isolated.includes(el.dataset.grid ?? "")),
+        )
+      : all.filter(
+          (el) => el.dataset.grid === gridId && el.dataset.row === String(row),
+        );
+  const target = line[line.indexOf(current) + (dRow !== 0 ? dRow : dCol)];
+  if (!target) return null;
+  return {
+    gridId: target.dataset.grid ?? gridId,
+    r: Number(target.dataset.row),
+    c: Number(target.dataset.col),
+  };
+};
+
 /** The current display value of a cell element (data-value attribute). */
 const cellValue = (el: HTMLElement | null): string =>
   el ? (el.getAttribute("data-value") ?? el.textContent ?? "") : "";

@@ -46,7 +46,7 @@ export default function Header() {
           <button
             id="fin-eval-back-btn"
             type="button"
-            className="inline-flex items-center gap-1.5 rounded border border-black/70 bg-white px-[14px] py-2 text-[13px] font-semibold text-black transition hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded border border-black/70 bg-white px-[14px] py-2 text-[13px] font-semibold text-black transition"
           >
             <svg
               width="14"
@@ -67,7 +67,7 @@ export default function Header() {
             <button
               id="fin-eval-export-btn"
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-md border border-black/70 bg-white px-[14px] py-2 text-[13px] font-semibold text-black transition hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-black/70 bg-white px-[14px] py-2 text-[13px] font-semibold text-black transition"
             >
               <svg
                 width="14"
@@ -91,7 +91,7 @@ export default function Header() {
             <button
               id="fin-eval-import-btn"
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-md border border-black/70 bg-white px-[14px] py-2 text-[13px] font-semibold text-black transition hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-black/70 bg-white px-[14px] py-2 text-[13px] font-semibold text-black transition"
             >
               <svg
                 width="14"
@@ -123,7 +123,7 @@ export default function Header() {
             <button
               id="fin-eval-save-model-btn"
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-md border border-black/70 bg-white px-[18px] py-2 text-[13px] font-bold text-black transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex items-center gap-1.5 rounded-md border border-black/70 bg-white px-[18px] py-2 text-[13px] font-bold text-black transition disabled:cursor-not-allowed disabled:opacity-70"
               onClick={requestSave}
               disabled={saving || !ready}
               title={ready ? undefined : "Nothing to save until the template loads"}

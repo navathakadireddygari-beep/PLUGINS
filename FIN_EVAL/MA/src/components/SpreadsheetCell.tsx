@@ -31,6 +31,12 @@ type Props = {
    * (`data-cell-nav="1" ... tabIndex={-1}`).
    */
   tabIndex?: number;
+  /**
+   * Skip this cell with arrow keys / Tab. Defaults to `calculated` — Prod Dev's
+   * calculated rows are plain text, so its navigation never lands on them. The
+   * CAGR summary cell passes `false` to stay reachable, like Prod Dev's TOTAL.
+   */
+  skipNav?: boolean;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -69,6 +75,7 @@ export default function SpreadsheetCell({
   readOnly = false,
   calculated = false,
   tabIndex,
+  skipNav = calculated,
   className = "w-full text-right",
   style,
 }: Props) {
@@ -97,24 +104,22 @@ export default function SpreadsheetCell({
       : "text-[#1f2937]";
 
   // The row supplies the resting surface (a calculated row is one continuous
-  // grey band), so only the active/selected states paint.
-  const stateClass = active
-    ? "bg-white ring-1 ring-inset ring-[#3b82f6]"
-    : selected
-      ? "bg-sky-50"
-      : "bg-transparent";
+  // grey band). Like Prod Dev, the clicked/focused cell gets NO border or fill —
+  // it is a plain borderless input with the caret in it. Only the OTHER cells of
+  // a multi-cell range (Shift+arrow / drag) are tinted, so a range stays visible.
+  const stateClass = !active && selected ? "bg-sky-50" : "bg-transparent";
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const el = e.currentTarget;
     // Left/Right move the CARET while there is text to move through, and only
-    // jump to the next cell at the edge — the reference's rule
-    // (`handleCellArrowNav`). A locked cell has no caret to preserve, so every
-    // arrow navigates.
+    // jump to the next cell at the edge — Prod Dev's `handleCellArrowNav` rule,
+    // exactly (it reads only `selectionStart`): Left navigates when the caret
+    // is at 0, Right when it is at the end. A locked cell has no caret to
+    // preserve, so every arrow navigates.
     if (!readOnly && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
       const caret = el.selectionStart ?? 0;
-      const hasRange = (el.selectionEnd ?? 0) !== caret;
-      if (e.key === "ArrowLeft" && (caret > 0 || hasRange)) return;
-      if (e.key === "ArrowRight" && (caret < el.value.length || hasRange)) return;
+      if (e.key === "ArrowLeft" && caret > 0) return;
+      if (e.key === "ArrowRight" && caret < el.value.length) return;
     }
     // Enter commits and drops to the next row, as it does in a spreadsheet.
     if (e.key === "Enter") {
@@ -148,8 +153,11 @@ export default function SpreadsheetCell({
       data-col={col}
       data-value={value}
       data-readonly={readOnly || undefined}
+      // Calculated figures are skipped by arrow keys and Tab, as in Prod Dev
+      // (where calculated rows are plain text, not inputs). Still clickable.
+      data-skipnav={skipNav || undefined}
       readOnly={readOnly}
-      tabIndex={tabIndex}
+      tabIndex={tabIndex ?? (skipNav ? -1 : undefined)}
       title={value || (readOnly ? "Read-only" : undefined)}
       placeholder="—"
       value={draft ?? value}
