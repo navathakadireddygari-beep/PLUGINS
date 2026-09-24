@@ -83,7 +83,7 @@ export default function KpiPanel({ rawHeader, displayScale, numberFormat }: Prop
 
         <div style={{ ...cardShell, borderLeftColor: "#8A0F8A" }}>
           <div style={labelStyle}>Investment Term</div>
-          <div style={valueStyle}>{fmtYears(rawHeader.contract_duration ?? rawHeader.number_of_years)}</div>
+          <div style={valueStyle}>{fmtYears(rawHeader.investment_term_years)}</div>
           <div style={subStyle}>Contract duration</div>
         </div>
       </div>

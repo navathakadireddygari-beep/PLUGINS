@@ -149,6 +149,7 @@ export type ApiHeader = {
   total_lease_value:         number | null;
   lease_terms_years:         number | null;
   investment:                number | null;
+  investment_term_years:     number | null;
   performance_metrics:       { hurdle_checks?: HurdleCheck[] } | null;
   region_id:                 number | null;
   entity_id:                 number | null;
@@ -285,6 +286,7 @@ export function createEmptyHeader(cfg: AppConfig): ApiHeader {
     total_lease_value:         null,
     lease_terms_years:         null,
     investment:                null,
+    investment_term_years:     null,
     performance_metrics:       null,
     region_id:                 null,
     entity_id:                 null,
@@ -659,6 +661,7 @@ function mapStagingHeader(
     total_lease_value:         header.totalLeaseValue    ?? null,
     lease_terms_years:         header.leaseTermsYears    ?? null,
     investment:                header.investment ?? header.totalCapexInvestment ?? null,
+    investment_term_years:     header.investmentTerm ?? null,
     performance_metrics:       header.performanceMetrics ?? null,
     region_id:                 null,
     entity_id:                 null,

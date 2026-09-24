@@ -738,7 +738,7 @@ function mapStagingHeader(data: Record<string, unknown>, cfg: AppConfig): ApiHea
     investment:                num(header.investment),
     total_capex_investment:    num(header.investment),
     annual_opex:               num(header.annualCost),
-    investment_term_years:     num(header.amortisationPeriodYears),
+    investment_term_years:     num(header.investmentTerm),
     performance_metrics:       (header.performanceMetrics as { hurdle_checks?: HurdleCheck[] }) ?? null,
     region_id:                 null,
     entity_id:                 null,
