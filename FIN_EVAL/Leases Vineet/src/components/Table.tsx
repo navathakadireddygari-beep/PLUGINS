@@ -1332,13 +1332,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {/* Scale label + toggle + info */}
                   <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, letterSpacing: 0.3, flexShrink: 0 }}>SCALE</span>
                   <div style={{ display: "flex", border: "1px solid #e5e7eb", borderRadius: 6, overflow: "hidden" }}>
-                    {SCALES.map((s, i) => (
+                    {SCALES.filter((s)=>s.key!=="B").map((s, i) => (
                       <button key={s.key} type="button" onClick={() => handleScaleChange(s.key)} style={toggleBtn(displayScale === s.key, i === 0)}>
                         {s.label}
                       </button>
                     ))}
                   </div>
-                  {infoIcon("scale", "Switch the denomination for all financial values. K = thousands (default, matches source data), M = millions, B = billions.")}
+                  {infoIcon("scale", "Switch the denomination for all financial values. K = thousands (default, matches source data), M = millions.")}
                 </div>
 
                 <div style={stripGroup({ flexWrap: "nowrap" })}>
