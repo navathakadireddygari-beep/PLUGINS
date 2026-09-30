@@ -9,7 +9,6 @@ type Props = {
   saving: boolean;
   canSave: boolean;
   error: string | null;
-  saved: boolean;
   onSave: () => void;
   onDiscard: () => void;
 };
@@ -25,7 +24,6 @@ export default function BuyPlanToolbar({
   saving,
   canSave,
   error,
-  saved,
   onSave,
   onDiscard,
 }: Props) {
@@ -50,7 +48,6 @@ export default function BuyPlanToolbar({
             {error}
           </span>
         )}
-        {!error && saved && !dirty && <span className="bp-status">Saved</span>}
         {dirty && (
           <button type="button" className="bp-btn" onClick={onDiscard} disabled={saving}>
             Discard

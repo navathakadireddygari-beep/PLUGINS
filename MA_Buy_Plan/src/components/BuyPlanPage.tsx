@@ -1,10 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useBuyPlan } from "@/hooks/useBuyPlan";
 import { useCurrencyFormat } from "@/context/CurrencyFormatContext";
 import { STORAGE_CURRENCY, type MoneySettings } from "@/lib";
 import BuyPlanHeader from "@/components/BuyPlanHeader";
 import BuyPlanToolbar from "@/components/BuyPlanToolbar";
 import BuyPlanTable from "@/components/BuyPlanTable";
+import Toast, { type ToastState } from "@/components/Toast";
 
 /** Static table headings (wireframe). */
 const LOCAL_TABLE = { title: "GSPC Proforma — Local Currency", caption: "Local Currency" };
@@ -20,6 +21,16 @@ export default function BuyPlanPage() {
   useEffect(() => {
     if (header) setProposalCurrencies(header.localCurrency, header.displayCurrency, header.exchangeRate);
   }, [header?.localCurrency, header?.displayCurrency, header?.exchangeRate, setProposalCurrencies]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Toast the save / load outcome, as FIN_EVAL/MA does.
+  const [toast, setToast] = useState<ToastState>(null);
+  const closeToast = useCallback(() => setToast(null), []);
+  useEffect(() => {
+    if (savedAt) setToast({ kind: "success", message: "Buy Plan saved successfully." });
+  }, [savedAt]);
+  useEffect(() => {
+    if (error) setToast({ kind: "error", message: error });
+  }, [error]);
 
   /**
    * One table per currency of the pair — local first, then US$ at actual rates
@@ -39,6 +50,7 @@ export default function BuyPlanPage() {
   if (!dataset) {
     return (
       <div className="bp-page">
+        <Toast toast={toast} onClose={closeToast} />
         <div className={`bp-status ${error ? "bp-status--error" : ""}`}>
           {error ?? (loading ? "Loading Buy Plan…" : "")}
         </div>
@@ -50,13 +62,13 @@ export default function BuyPlanPage() {
 
   return (
     <div className="bp-page">
+      <Toast toast={toast} onClose={closeToast} />
       <BuyPlanHeader header={dataset.header} />
       <BuyPlanToolbar
         dirty={dirty}
         saving={saving}
         canSave={!loading}
         error={error}
-        saved={savedAt !== null}
         onSave={() => void save()}
         onDiscard={discard}
       />

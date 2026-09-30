@@ -4,10 +4,16 @@
 
 body {
   margin: 0;
-  font-family: "Roboto", "Segoe UI", -apple-system, sans-serif;
-  background: #f8f9fa;
-  color: #343a40;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
   font-size: 13px;
+}
+
+/* Every enabled control gets a pointer, as in FIN_EVAL/MA. */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
 }
 
 .bp-page {
@@ -104,17 +110,13 @@ body {
 }
 
 /* ── Tables — FIN_EVAL/MA colour code ──
- * title / group bars #2d3748 white · column headers #e5e7eb / #374151
+ * title / group bars #2d3748 white · column headers #e5e7eb / #374151 (#d1d5db rules)
  * cells white, 1px #e5e7eb rules, 40px rows, 13px #1f2937
  * calculated rows #f3f4f6 bold #111 · negatives #DC2626
- * year partitions 2px #4b5563
+ * year partitions 2px #4b5563 · label col 180px · value cols 120px
  */
 .bp-table-card {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 .bp-table-title {
   background: #2d3748;
@@ -122,24 +124,29 @@ body {
   padding: 8px 12px;
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
+  border-radius: 4px 4px 0 0;
 }
 .bp-table-scroll {
-  overflow-x: auto;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
 }
 
 table.bp-table {
   width: 100%;
+  min-width: 700px;
   border-collapse: collapse;
-  font-size: 13px;
-  color: #1f2937;
   table-layout: fixed;
+  font-size: 14px;
 }
+/* Fixed layout: the table grows to the sum of these widths and the wrapper
+   scrolls sideways, rather than squeezing big figures into narrow columns. */
 .bp-col-label {
-  width: 200px;
+  width: 180px;
 }
-table.bp-table col:not(.bp-col-label) {
-  width: 84px;
+.bp-col-value {
+  width: 120px;
 }
 
 .bp-th-corner,
@@ -153,13 +160,14 @@ table.bp-table col:not(.bp-col-label) {
   font-weight: 700;
   text-transform: uppercase;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   border-bottom: 1px solid #d1d5db;
   border-right: 1px solid #d1d5db;
 }
 .bp-th-corner,
 .bp-th-sub--corner {
   text-align: left;
-  border-right: 2px solid #4b5563;
 }
 .bp-th-fy {
   text-align: center;
@@ -173,15 +181,16 @@ table.bp-table col:not(.bp-col-label) {
 }
 
 .bp-group-header {
-  padding: 6px 12px;
+  padding: 10px 14px;
   background: #2d3748;
   color: white;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
+/* No row hover colour — FIN_EVAL/MA has none. */
 .bp-row {
   background: white;
 }
@@ -190,56 +199,63 @@ table.bp-table col:not(.bp-col-label) {
 }
 .bp-row-label {
   height: 40px;
-  padding: 4px 12px;
+  padding: 0 12px;
+  overflow: hidden;
+  vertical-align: middle;
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+}
+/* Template line names bold #111827; long names ellipsed, full text on hover. */
+.bp-row-label-text {
   font-size: 12px;
   font-weight: 700;
   color: #111827;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-bottom: 1px solid #e5e7eb;
-  border-right: 2px solid #4b5563;
 }
-.bp-row--total .bp-row-label {
+.bp-row-label-text--calc {
   color: #111;
 }
 
 .bp-cell {
   height: 40px;
-  padding: 4px 12px;
+  padding: 0;
   text-align: right;
+  vertical-align: middle;
   border-bottom: 1px solid #e5e7eb;
   border-right: 1px solid #e5e7eb;
 }
-.bp-row--total .bp-cell {
+
+/* ── Grid cells — FIN_EVAL/MA's SpreadsheetCell ──
+ * Every cell is a borderless input: transparent at rest so the row surface
+ * shows through, no border or fill when focused (just the caret). A figure
+ * wider than its column is clipped; the full value is in the hover title.
+ */
+.bp-grid-cell {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  line-height: 40px;
+  text-align: right;
+  color: #1f2937;
+}
+.bp-grid-cell::placeholder {
+  color: #9ca3af;
+}
+.bp-grid-cell--calc {
   font-weight: 700;
   color: #111;
 }
-.bp-cell--neg {
-  color: #dc2626 !important;
-}
-
-/* ── Editable Buy Plan cells (transparent at rest, like MA's SpreadsheetCell) ── */
-.bp-cell--editable {
-  padding: 0;
-}
-.bp-cell-input {
-  width: 100%;
-  height: 40px;
-  padding: 4px 12px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: right;
-}
-.bp-cell-input:hover {
-  border-color: #d1d5db;
-}
-.bp-cell-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  background: white;
+.bp-grid-cell--neg {
+  color: #dc2626;
 }
 
 /* ── Save / status ── */
@@ -255,7 +271,7 @@ table.bp-table col:not(.bp-col-label) {
   border-radius: 6px;
   background: white;
   color: black;
-  cursor: pointer;
+  transition: color 150ms, background-color 150ms, border-color 150ms, opacity 150ms;
 }
 .bp-btn--save {
   padding: 8px 18px;
@@ -270,9 +286,49 @@ table.bp-table col:not(.bp-col-label) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  color: #1e8449;
+  font-size: 14px;
+  color: #64748b;
 }
 .bp-status--error {
-  color: #c0392b;
+  color: #dc2626;
+}
+
+/* ── Toast — FIN_EVAL/MA's Toast ── */
+.bp-toast {
+  position: fixed;
+  top: 50px;
+  right: 20px;
+  z-index: 400;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 260px;
+  max-width: 472px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+.bp-toast--success {
+  background: #f4fceb;
+  color: #436b1d;
+}
+.bp-toast--error {
+  background: white;
+  color: #111827;
+}
+.bp-toast-icon {
+  flex-shrink: 0;
+}
+.bp-toast-message {
+  flex: 1;
+}
+.bp-toast-close {
+  display: flex;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
 }
