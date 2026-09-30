@@ -42,6 +42,25 @@ type Props = {
 };
 
 /**
+ * A formatted figure is negative when it is in accounting parentheses — "(12)",
+ * "(0)" for a small negative rounded away, "(29%)" — or carries a leading minus.
+ */
+const isNegativeDisplay = (value: string | undefined): boolean => {
+  const t = String(value ?? "").trim();
+  return /^\(.*\)$/.test(t) || (t.startsWith("-") && /\d/.test(t));
+};
+
+/**
+ * Text being typed is negative once it has a leading "-" or "(" and a non-zero
+ * digit, matching Prod Dev's `val < 0`: "-500" and "(0.5" are red, a lone "-"
+ * or "-0" is not.
+ */
+const isNegativeDraft = (draft: string): boolean => {
+  const t = draft.trim();
+  return (t.startsWith("-") || t.startsWith("(")) && /[1-9]/.test(t);
+};
+
+/**
  * An editable grid cell, modelled on the reference project's cell rather than
  * on Excel.
  *
@@ -76,7 +95,7 @@ export default function SpreadsheetCell({
   calculated = false,
   tabIndex,
   skipNav = calculated,
-  className = "w-full text-right",
+  className = "mna:w-full mna:text-right",
   style,
 }: Props) {
   const api = useSpreadsheet();
@@ -94,20 +113,23 @@ export default function SpreadsheetCell({
 
   // Negatives render red in every row; the bold near-black is reserved for
   // computed figures (Prod Dev: `color: val < 0 ? "#DC2626" : "#1f2937"`).
-  const negative = /^\(.*\)$/.test(String(value ?? "").trim());
+  // Prod Dev colours by the live value, so a cell turns red AS the user types a
+  // "-" — check the draft while editing, the formatted value otherwise.
+  const negative =
+    draft !== null ? isNegativeDraft(draft) : isNegativeDisplay(value);
   const textClass = calculated
     ? negative
-      ? "font-bold text-[#DC2626]"
-      : "font-bold text-[#111]"
+      ? "mna:font-bold mna:text-[#DC2626]"
+      : "mna:font-bold mna:text-[#111]"
     : negative
-      ? "text-[#DC2626]"
-      : "text-[#1f2937]";
+      ? "mna:text-[#DC2626]"
+      : "mna:text-[#1f2937]";
 
   // The row supplies the resting surface (a calculated row is one continuous
   // grey band). Like Prod Dev, the clicked/focused cell gets NO border or fill —
   // it is a plain borderless input with the caret in it. Only the OTHER cells of
   // a multi-cell range (Shift+arrow / drag) are tinted, so a range stays visible.
-  const stateClass = !active && selected ? "bg-sky-50" : "bg-transparent";
+  const stateClass = !active && selected ? "mna:bg-sky-50" : "mna:bg-transparent";
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const el = e.currentTarget;
@@ -161,7 +183,7 @@ export default function SpreadsheetCell({
       title={value || (readOnly ? "Read-only" : undefined)}
       placeholder="—"
       value={draft ?? value}
-      className={`${className} h-full min-h-[2.5rem] border-none px-3 text-[13px] leading-10 outline-none ${textClass} ${stateClass}`}
+      className={`${className} mna:h-full mna:min-h-[2.5rem] mna:border-none mna:px-3 mna:text-[13px] mna:leading-10 mna:outline-none ${textClass} ${stateClass}`}
       style={{ ...style, cursor: readOnly ? "default" : "text" }}
       onMouseDown={(e) => api.select(e, pos)}
       onMouseEnter={() => api.hover(pos)}

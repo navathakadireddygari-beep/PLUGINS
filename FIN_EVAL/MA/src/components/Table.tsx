@@ -296,7 +296,7 @@ const isRowLocked = (row: Row, isReadonly: boolean): boolean =>
  * at all and the row silently renders unpainted.
  */
 const rowBgClass = (locked: boolean): string =>
-  locked ? "bg-[#f3f4f6]" : "bg-white";
+  locked ? "mna:bg-[#f3f4f6]" : "mna:bg-white";
 
 /**
  * Label cell text. Bold near-black marks a COMPUTED line specifically — not
@@ -305,22 +305,22 @@ const rowBgClass = (locked: boolean): string =>
  */
 const labelTextClass = (isCalculated: boolean | undefined): string =>
   isCalculated
-    ? "text-[12px] font-bold text-[#111]"
-    : "text-[12px] font-normal text-[#1f2937]";
+    ? "mna:text-[12px] mna:font-bold mna:text-[#111]"
+    : "mna:text-[12px] mna:font-normal mna:text-[#1f2937]";
 
 /** Template (non-custom) line names are bold #111827, as in Prod Dev. */
-const TEMPLATE_LABEL_CLASS = "text-[12px] font-bold text-[#111827]";
+const TEMPLATE_LABEL_CLASS = "mna:text-[12px] mna:font-bold mna:text-[#111827]";
 
 /**
  * The divider between the ACTUALS block and the PROJECTIONS block — a 2px
- * #4b5563 right border, defined as `.ma-partition` in globals.css.
+ * #4b5563 right border, defined as `.mna_partition` in globals.css.
  *
  * A class rather than an inline style: every utility is `!important` (so the
  * host page's global CSS cannot override the widget), and an `!important`
- * `border-r` would beat an inline border. `.ma-partition` is element-qualified
+ * `border-r` would beat an inline border. `.mna_partition` is element-qualified
  * so it out-ranks the cell's own `border-r` / `border-[...]` classes.
  */
-const PARTITION_CLASS = "ma-partition";
+const PARTITION_CLASS = "mna_partition";
 
 /** Right-hand partition on the last ACTUALS column, else nothing. */
 const partitionClass = (col: number, actualsCount: number): string =>
@@ -412,7 +412,7 @@ const PercentInput: React.FC<{
   return (
     <input
       readOnly={readOnly}
-      className={`w-20 text-right text-[13px] text-[#1f2937] outline-none ${readOnly ? "cursor-default bg-[#f3f4f6] text-[#6b7280]" : "bg-transparent"}`}
+      className={`mna:w-20 mna:text-right mna:text-[13px] mna:text-[#1f2937] mna:outline-none ${readOnly ? "mna:cursor-default mna:bg-[#f3f4f6] mna:text-[#6b7280]" : "mna:bg-transparent"}`}
       value={value}
       onChange={onChange}
       inputMode="decimal"
@@ -1337,13 +1337,13 @@ const Table: React.FC = () => {
    */
   const gridHead = (cagr: boolean) => (
     <thead>
-      <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-        {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]"></th>
+      <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+        {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
+        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]"></th>
         {actualsColSpan > 0 && (
           <th
             colSpan={actualsColSpan}
-            className={`border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase text-[#374151] ${PARTITION_CLASS}`}
+            className={`mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-center mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151] ${PARTITION_CLASS}`}
           >
             ACTUALS
           </th>
@@ -1351,7 +1351,7 @@ const Table: React.FC = () => {
         {projYearIdx.length > 0 && (
           <th
             colSpan={projYearIdx.length}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase text-[#374151]"
+            className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-center mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]"
           >
             PROJECTIONS
           </th>
@@ -1359,21 +1359,21 @@ const Table: React.FC = () => {
         {cagr && (
           <th
             rowSpan={2}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-[10px] font-bold uppercase text-[#374151]"
+            className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]"
           >
             CAGR
           </th>
         )}
       </tr>
-      <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-        {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">
+      <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+        {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
+        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
           LINE ITEM
         </th>
         {allYearIdx.map((i) => (
           <th
             key={i}
-            className={`border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]${partitionClass(i, actualsCount)}`}
+            className={`mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]${partitionClass(i, actualsCount)}`}
           >
             {fyLabel(i)}
           </th>
@@ -1401,12 +1401,12 @@ const Table: React.FC = () => {
         // can otherwise override the `text-white` utility class, which is
         // why this title showed black while the plain-<div> bars didn't.
         style={{ color: "#fff", cursor: "pointer" }}
-        className="flex w-full items-center gap-2 rounded-t bg-[#2d3748] px-3 py-2 text-left text-xs font-bold text-white"
+        className="mna:flex mna:w-full mna:items-center mna:gap-2 mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-left mna:text-xs mna:font-bold mna:text-white"
       >
         {collapsed ? (
-          <ChevronDown size={16} className="shrink-0" />
+          <ChevronDown size={16} className="mna:shrink-0" />
         ) : (
-          <ChevronUp size={16} className="shrink-0" />
+          <ChevronUp size={16} className="mna:shrink-0" />
         )}
         {title}
       </button>
@@ -1445,11 +1445,11 @@ const Table: React.FC = () => {
           {!collapsed && (
             <tr className={rowBgClass(locked)}>
               {!isReadonly && (
-                <td className="h-10 border-b border-r border-[#e5e7eb] p-0 text-center align-middle">
+                <td className="mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:p-0 mna:text-center mna:align-middle">
                   {canDeleteRow(row, isReadonly) && (
                     <button
                       type="button"
-                      className="inline-flex cursor-pointer items-center justify-center text-[#9ca3af]"
+                      className="mna:inline-flex mna:cursor-pointer mna:items-center mna:justify-center mna:text-[#9ca3af]"
                       onClick={() => removeRow(setRows, source, row.id)}
                       aria-label="Remove row"
                     >
@@ -1458,21 +1458,21 @@ const Table: React.FC = () => {
                   )}
                 </td>
               )}
-              <td className="h-10 overflow-hidden border-b border-r border-[#e5e7eb] px-3 align-middle">
+              <td className="mna:h-10 mna:overflow-hidden mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:align-middle">
                 {locked ? (
                   // A locked line is a LABEL, not a disabled field — the
                   // reference renders it as plain bold text, and an input box
                   // the user cannot type into only invites them to try.
                   <div
                     title={row.label}
-                    className={`overflow-hidden text-ellipsis whitespace-nowrap ${labelTextClass(row.isCalculated)}`}
+                    className={`mna:overflow-hidden mna:text-ellipsis mna:whitespace-nowrap ${labelTextClass(row.isCalculated)}`}
                   >
                     {row.label}
                   </div>
                 ) : (
                   <input
                     title={row.label}
-                    className={`w-full overflow-hidden bg-transparent text-ellipsis whitespace-nowrap outline-none ${row.isCustom === false ? TEMPLATE_LABEL_CLASS : labelTextClass(false)}`}
+                    className={`mna:w-full mna:overflow-hidden mna:bg-transparent mna:text-ellipsis mna:whitespace-nowrap mna:outline-none ${row.isCustom === false ? TEMPLATE_LABEL_CLASS : labelTextClass(false)}`}
                     value={row.label}
                     placeholder="New row label..."
                     onChange={(e) =>
@@ -1484,7 +1484,7 @@ const Table: React.FC = () => {
               {cols.map((i) => (
                 <td
                   key={i}
-                  className={`h-10 border-b border-r border-[#e5e7eb] p-0 text-right align-middle${partitionClass(i, actualsCount)}`}
+                  className={`mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:p-0 mna:text-right mna:align-middle${partitionClass(i, actualsCount)}`}
                 >
                   <SpreadsheetCell
                     gridId={gridId}
@@ -1510,7 +1510,7 @@ const Table: React.FC = () => {
                 // silently overwrite a year the user had scrolled out of view.
                 // Past the end, the guard rejects it and the cell is read-only
                 // in the only sense that counts.
-                <td className="h-10 border-b border-r border-[#e5e7eb] p-0 text-right align-middle">
+                <td className="mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:p-0 mna:text-right mna:align-middle">
                   <SpreadsheetCell
                     gridId={gridId}
                     row={rowIdx}
@@ -1526,16 +1526,16 @@ const Table: React.FC = () => {
             </tr>
           )}
           {showAdd && (
-            <tr className="bg-white">
+            <tr className="mna:bg-white">
               <td
                 colSpan={span}
-                className="border-b border-[#e5e7eb] px-[10px] py-1.5"
+                className="mna:border-b mna:border-[#e5e7eb] mna:px-[10px] mna:py-1.5"
               >
                 <button
                   type="button"
                   // Matches Prod Dev's "+ Add ... Line": 11px / 600 / black,
                   // bottom rule only.
-                  className="flex cursor-pointer items-center gap-1 px-2 py-[3px] text-[11px] font-semibold text-black"
+                  className="mna:flex mna:cursor-pointer mna:items-center mna:gap-1 mna:px-2 mna:py-[3px] mna:text-[11px] mna:font-semibold mna:text-black"
                   onClick={() =>
                     addRowInSection(
                       setRows,
@@ -1990,16 +1990,16 @@ const Table: React.FC = () => {
       {confirmDelete && (
         <div
           onClick={() => setConfirmDelete(null)}
-          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/45"
+          className="mna:fixed mna:inset-0 mna:z-[300] mna:flex mna:items-center mna:justify-center mna:bg-black/45"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="max-w-[420px] min-w-[340px] rounded-lg bg-white px-[22px] py-5 shadow-[0_10px_30px_rgba(0,0,0,.2)]"
+            className="mna:max-w-[420px] mna:min-w-[340px] mna:rounded-lg mna:bg-white mna:px-[22px] mna:py-5 mna:shadow-[0_10px_30px_rgba(0,0,0,.2)]"
           >
-            <div className="mb-2 text-[14px] font-bold text-[#111827]">
+            <div className="mna:mb-2 mna:text-[14px] mna:font-bold mna:text-[#111827]">
               Delete line item
             </div>
-            <div className="mb-[18px] text-[13px] text-[#374151]">
+            <div className="mna:mb-[18px] mna:text-[13px] mna:text-[#374151]">
               Are you sure you want to delete
               {confirmDelete.name ? (
                 <>
@@ -2011,11 +2011,11 @@ const Table: React.FC = () => {
               )}
               ?
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="mna:flex mna:justify-end mna:gap-2">
               <button
                 type="button"
                 onClick={() => setConfirmDelete(null)}
-                className="rounded-md border border-black bg-white px-3.5 py-1.5 text-[12px] font-semibold text-black"
+                className="mna:rounded-md mna:border mna:border-black mna:bg-white mna:px-3.5 mna:py-1.5 mna:text-[12px] mna:font-semibold mna:text-black"
               >
                 Cancel
               </button>
@@ -2025,7 +2025,7 @@ const Table: React.FC = () => {
                   confirmDelete.run();
                   setConfirmDelete(null);
                 }}
-                className="rounded-md border border-black bg-white px-3.5 py-1.5 text-[12px] font-bold text-black"
+                className="mna:rounded-md mna:border mna:border-black mna:bg-white mna:px-3.5 mna:py-1.5 mna:text-[12px] mna:font-bold mna:text-black"
               >
                 OK
               </button>
@@ -2034,12 +2034,12 @@ const Table: React.FC = () => {
         </div>
       )}
 
-      <div className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b p-3">
-          <div className="flex items-center gap-2">
+      <div className="mna:rounded-[10px] mna:border mna:border-slate-200 mna:bg-white mna:shadow-sm">
+        <div className="mna:flex mna:items-center mna:justify-between mna:border-b mna:p-3">
+          <div className="mna:flex mna:items-center mna:gap-2">
             {loading && (
-              <span className="flex items-center gap-2 text-[13px] text-[#6b7280]">
-                <RefreshCw size={14} className="animate-spin" />
+              <span className="mna:flex mna:items-center mna:gap-2 mna:text-[13px] mna:text-[#6b7280]">
+                <RefreshCw size={14} className="mna:animate-spin" />
                 Loading financial data…
               </span>
             )}
@@ -2050,24 +2050,24 @@ const Table: React.FC = () => {
               in the same sequence). MA had the stepper alone on the right and
               the other two stranded on the left, which read as two unrelated
               toolbars sharing a rule. */}
-          <div className="flex items-center gap-2">
+          <div className="mna:flex mna:items-center mna:gap-2">
             <button
               type="button"
               onClick={removeProjectionYear}
               disabled={isReadonly || projectionsShown <= 1}
-              className="h-7 w-7 rounded border border-[#d1d5db] text-gray-700 disabled:cursor-default disabled:border-[#f3f4f6] disabled:bg-[#f3f4f6] disabled:text-[#9ca3af] disabled:opacity-100"
+              className="mna:h-7 mna:w-7 mna:rounded mna:border mna:border-[#d1d5db] mna:text-gray-700 mna:disabled:cursor-default mna:disabled:border-[#f3f4f6] mna:disabled:bg-[#f3f4f6] mna:disabled:text-[#9ca3af] mna:disabled:opacity-100"
               aria-label="Decrease years"
             >
               −
             </button>
-            <div className="min-w-[60px] text-center text-sm font-semibold text-slate-800">
+            <div className="mna:min-w-[60px] mna:text-center mna:text-sm mna:font-semibold mna:text-slate-800">
               {projectionsShown} Years
             </div>
             <button
               type="button"
               onClick={addProjectionYear}
               disabled={isReadonly}
-              className="h-7 w-7 rounded border border-[#d1d5db] text-gray-700 disabled:cursor-default disabled:border-[#f3f4f6] disabled:bg-[#f3f4f6] disabled:text-[#9ca3af] disabled:opacity-100"
+              className="mna:h-7 mna:w-7 mna:rounded mna:border mna:border-[#d1d5db] mna:text-gray-700 mna:disabled:cursor-default mna:disabled:border-[#f3f4f6] mna:disabled:bg-[#f3f4f6] mna:disabled:text-[#9ca3af] mna:disabled:opacity-100"
               aria-label="Increase years"
             >
               +
@@ -2081,7 +2081,7 @@ const Table: React.FC = () => {
                 disabled={!template?.raw}
                 // Black outline, as both references give this one control, so
                 // it reads as the primary action of the group.
-                className="rounded border border-black bg-white px-3 py-1.5 text-[12px] font-bold text-black disabled:cursor-default disabled:border-[#f3f4f6] disabled:bg-[#f3f4f6] disabled:text-[#9ca3af]"
+                className="mna:rounded mna:border mna:border-black mna:bg-white mna:px-3 mna:py-1.5 mna:text-[12px] mna:font-bold mna:text-black mna:disabled:cursor-default mna:disabled:border-[#f3f4f6] mna:disabled:bg-[#f3f4f6] mna:disabled:text-[#9ca3af]"
               >
                 + Add Section
               </button>
@@ -2089,30 +2089,30 @@ const Table: React.FC = () => {
             <button
               type="button"
               onClick={toggleAll}
-              className="rounded border border-[#d1d5db] bg-white px-3 py-1.5 text-[12px] text-[#374151]"
+              className="mna:rounded mna:border mna:border-[#d1d5db] mna:bg-white mna:px-3 mna:py-1.5 mna:text-[12px] mna:text-[#374151]"
             >
               {allExpanded ? "Collapse All" : "Expand All"}
             </button>
           </div>
         </div>
 
-        <div className="p-4">
+        <div className="mna:p-4">
           {/* Key Inputs (left) and Consideration (right), side by side above
               Combined Operating Results, as in the wireframe. */}
-          <div className="flex items-start gap-6">
+          <div className="mna:flex mna:items-start mna:gap-6">
             {/* Key inputs — one input per row: INPUT | VALUE */}
-            <div className="w-1/3 shrink-0">
-              <div className="rounded-t bg-[#2d3748] px-3 py-2 text-xs font-bold uppercase text-white">
+            <div className="mna:w-1/3 mna:shrink-0">
+              <div className="mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-xs mna:font-bold mna:uppercase mna:text-white">
                 Key Inputs
               </div>
-              <div className="overflow-auto rounded-b border">
-                <table className="w-full table-fixed border-collapse text-sm">
+              <div className="mna:overflow-auto mna:rounded-b">
+                <table className="mna:w-full mna:table-fixed mna:border-collapse mna:text-sm">
                   <thead>
-                    <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-                      <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">
+                    <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+                      <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
                         INPUT
                       </th>
-                      <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">
+                      <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
                         VALUE
                       </th>
                     </tr>
@@ -2120,17 +2120,17 @@ const Table: React.FC = () => {
                   <tbody>
                     {keyInputs.map((input) => (
                       <tr key={input.code} className={rowBgClass(false)}>
-                        <td className={`h-10 border-b border-r border-[#e5e7eb] px-3 align-middle ${TEMPLATE_LABEL_CLASS}`}>
+                        <td className={`mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:align-middle ${TEMPLATE_LABEL_CLASS}`}>
                           {input.label}
                         </td>
-                        <td className="h-10 border-b border-r border-[#e5e7eb] px-3 text-right align-middle">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:text-right mna:align-middle">
+                          <div className="mna:flex mna:items-center mna:justify-end mna:gap-2">
                             <PercentInput
                               value={input.value}
                               onValueChange={(v) => setKeyInputValue(input.code, v)}
                               readOnly={isReadonly}
                             />
-                            <span className="text-sm text-slate-500">%</span>
+                            <span className="mna:text-sm mna:text-slate-500">%</span>
                           </div>
                         </td>
                       </tr>
@@ -2143,19 +2143,19 @@ const Table: React.FC = () => {
             {/* Consideration — Cash / Deferred / Contingent, moved out of
                 Combined Operating Results into its own panel. */}
             {conRows.length > 0 && (
-              <div className="min-w-0 flex-1">
-                <div className="rounded-t bg-[#2d3748] px-3 py-2 text-xs font-bold uppercase text-white">
+              <div className="mna:min-w-0 mna:flex-1">
+                <div className="mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-xs mna:font-bold mna:uppercase mna:text-white">
                   Consideration
                 </div>
-                <div className="overflow-auto rounded-b border">
-                  <table className="w-full table-fixed border-collapse text-sm">
+                <div className="mna:overflow-auto mna:rounded-b">
+                  <table className="mna:w-full mna:table-fixed mna:border-collapse mna:text-sm">
                     <GridColgroup showActions={!isReadonly} yearCount={conYearIdx.length} />
                     <thead>
-                      <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-                        {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-                        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">TYPE</th>
+                      <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+                        {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
+                        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">TYPE</th>
                         {conYearIdx.map((i) => (
-                          <th key={i} className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">
+                          <th key={i} className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
                             {fyLabel(i)}
                           </th>
                         ))}
@@ -2171,12 +2171,12 @@ const Table: React.FC = () => {
           </div>
 
           {/* Combined Operating Results */}
-          <div className="mt-6">
-            <div className="rounded-t bg-[#2d3748] px-3 py-2 text-xs font-bold text-white">
+          <div className="mna:mt-6">
+            <div className="mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-xs mna:font-bold mna:text-white">
               Combined Operating Results
             </div>
-            <div className="overflow-auto rounded-b border">
-              <table className="w-full min-w-[700px] table-fixed border-collapse text-sm">
+            <div className="mna:overflow-auto mna:rounded-b">
+              <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={allYearIdx.length} cagr />
                 {gridHead(true)}
                 <tbody>
@@ -2187,11 +2187,11 @@ const Table: React.FC = () => {
           </div>
 
           {/* Combined Free Cash Flows */}
-          <div className="mt-6">
+          <div className="mna:mt-6">
             {panelTitle("fcf", "Combined Free Cash Flows")}
             {!isPanelCollapsed("fcf") && (
-            <div className="overflow-auto rounded-b border">
-              <table className="w-full min-w-[700px] table-fixed border-collapse text-sm">
+            <div className="mna:overflow-auto mna:rounded-b">
+              <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={allYearIdx.length} />
                 {gridHead(false)}
                 <tbody>
@@ -2203,18 +2203,18 @@ const Table: React.FC = () => {
           </div>
 
           {/* Post Tax Return */}
-          <div className="mt-6">
+          <div className="mna:mt-6">
             {panelTitle("ptr", "Post Tax Return")}
             {!isPanelCollapsed("ptr") && (
-            <div className="overflow-auto rounded-b border">
-              <table className="w-full min-w-[700px] table-fixed border-collapse text-sm">
+            <div className="mna:overflow-auto mna:rounded-b">
+              <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={projYearIdx.length} />
                 <thead>
-                  <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-                    {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">LINE ITEM</th>
+                  <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+                    {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">LINE ITEM</th>
                     {projYearIdx.map((i) => (
-                      <th key={i} className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">
+                      <th key={i} className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
                         {fyLabel(i)}
                       </th>
                     ))}
@@ -2229,11 +2229,11 @@ const Table: React.FC = () => {
           </div>
 
           {/* NPV Calculation */}
-          <div className="mt-6 w-full">
+          <div className="mna:mt-6 mna:w-full">
             {panelTitle("npv", "NPV Calculation")}
             {!isPanelCollapsed("npv") && (
-            <div className="overflow-hidden rounded-b border bg-white">
-              <table className="w-full table-fixed border-collapse text-sm">
+            <div className="mna:overflow-hidden mna:rounded-b mna:bg-white">
+              <table className="mna:w-full mna:table-fixed mna:border-collapse mna:text-sm">
                 {/* No actions column: the NPV block takes neither new rows
                     nor deletions, so a permanently empty 36px gutter would be
                     dead space. */}
@@ -2244,11 +2244,11 @@ const Table: React.FC = () => {
                   ))}
                 </colgroup>
                 <thead>
-                  <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">Component</th>
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">Target (Standalone)</th>
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">Experian Factor</th>
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">Total</th>
+                  <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">Component</th>
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">Target (Standalone)</th>
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">Experian Factor</th>
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2256,18 +2256,18 @@ const Table: React.FC = () => {
                     const locked = isRowLocked(row, isReadonly);
                     return (
                       <tr key={row.id} className={rowBgClass(locked)}>
-                        <td className="h-10 overflow-hidden border-b border-r border-[#e5e7eb] px-3 align-middle">
+                        <td className="mna:h-10 mna:overflow-hidden mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:align-middle">
                           {locked ? (
                             <div
                               title={row.label}
-                              className={`overflow-hidden text-ellipsis whitespace-nowrap ${labelTextClass(row.isCalculated)}`}
+                              className={`mna:overflow-hidden mna:text-ellipsis mna:whitespace-nowrap ${labelTextClass(row.isCalculated)}`}
                             >
                               {row.label}
                             </div>
                           ) : (
                             <input
                               title={row.label}
-                              className={`w-full overflow-hidden bg-transparent text-ellipsis whitespace-nowrap outline-none ${row.isCustom === false ? TEMPLATE_LABEL_CLASS : labelTextClass(false)}`}
+                              className={`mna:w-full mna:overflow-hidden mna:bg-transparent mna:text-ellipsis mna:whitespace-nowrap mna:outline-none ${row.isCustom === false ? TEMPLATE_LABEL_CLASS : labelTextClass(false)}`}
                               value={row.label}
                               placeholder="New component..."
                               onChange={(e) =>
@@ -2277,12 +2277,12 @@ const Table: React.FC = () => {
                           )}
                         </td>
                         {[0, 1, 2].map((c) => (
-                          <td key={c} className="h-10 border-b border-r border-[#e5e7eb] p-0 text-right align-middle">
+                          <td key={c} className="mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:p-0 mna:text-right mna:align-middle">
                             <SpreadsheetCell
                               gridId="npv"
                               row={rowIdx}
                               col={c}
-                              className="w-full text-right"
+                              className="mna:w-full mna:text-right"
                               value={cellText(row, row.values[c])}
                               editValue={cellSeed(row, row.values[c])}
                               readOnly={locked}
@@ -2303,9 +2303,9 @@ const Table: React.FC = () => {
               No panel title of its own: each section carries its own dark bar,
               and a wrapper would be a title for a block that has no name. */}
           {cusRows.length > 0 && (
-            <div className="mt-6">
-              <div className="overflow-auto rounded border">
-                <table className="w-full min-w-[700px] table-fixed border-collapse text-sm">
+            <div className="mna:mt-6">
+              <div className="mna:overflow-auto mna:rounded">
+                <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                   <GridColgroup
                     showActions={!isReadonly}
                     yearCount={allYearIdx.length}

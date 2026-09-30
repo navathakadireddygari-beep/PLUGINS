@@ -11,8 +11,8 @@ const App = () => {
         {/* Lets the header's "Save Model" button reach the save logic that
             lives inside <Table>. Renders no markup. */}
         <SaveModelProvider>
-          <div className="ma-widget min-h-screen bg-slate-50 text-slate-900">
-            <div className="flex w-full flex-col gap-3 py-6">
+          <div className="mna_widget mna:min-h-screen mna:bg-slate-50 mna:text-slate-900">
+            <div className="mna:flex mna:w-full mna:flex-col mna:gap-3 mna:py-6">
               <Header />
               <Table />
             </div>

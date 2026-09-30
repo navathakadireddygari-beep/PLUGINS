@@ -39,14 +39,14 @@ export default function Header() {
   const isReadonly = readonly || isHostReadonly();
 
   return (
-    <header className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-end border-b border-slate-200 bg-white px-6 py-4">
-        <div className="flex flex-wrap items-center gap-2">
+    <header className="mna:overflow-hidden mna:rounded-3xl mna:border mna:border-slate-200 mna:bg-white mna:shadow-sm">
+      <div className="mna:flex mna:items-center mna:justify-end mna:border-b mna:border-slate-200 mna:bg-white mna:px-6 mna:py-4">
+        <div className="mna:flex mna:flex-wrap mna:items-center mna:gap-2">
           {/* Back is always visible regardless of proposal status */}
           <button
             id="fin-eval-back-btn"
             type="button"
-            className="inline-flex items-center gap-1.5 rounded border border-black/70 bg-white px-[14px] py-2 text-[13px] font-semibold text-black transition"
+            className="mna:inline-flex mna:items-center mna:gap-1.5 mna:rounded mna:border mna:border-black/70 mna:bg-white mna:px-[14px] mna:py-2 mna:text-[13px] mna:font-semibold mna:text-black mna:transition"
           >
             <svg
               width="14"
@@ -67,7 +67,7 @@ export default function Header() {
             <button
               id="fin-eval-export-btn"
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-md border border-black/70 bg-white px-[14px] py-2 text-[13px] font-semibold text-black transition"
+              className="mna:inline-flex mna:items-center mna:gap-1.5 mna:rounded-md mna:border mna:border-black/70 mna:bg-white mna:px-[14px] mna:py-2 mna:text-[13px] mna:font-semibold mna:text-black mna:transition"
             >
               <svg
                 width="14"
@@ -91,7 +91,7 @@ export default function Header() {
             <button
               id="fin-eval-import-btn"
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-md border border-black/70 bg-white px-[14px] py-2 text-[13px] font-semibold text-black transition"
+              className="mna:inline-flex mna:items-center mna:gap-1.5 mna:rounded-md mna:border mna:border-black/70 mna:bg-white mna:px-[14px] mna:py-2 mna:text-[13px] mna:font-semibold mna:text-black mna:transition"
             >
               <svg
                 width="14"
@@ -113,7 +113,7 @@ export default function Header() {
           )}
           {saveError && !saving && (
             <span
-              className="max-w-xs truncate text-sm text-red-600"
+              className="mna:max-w-xs mna:truncate mna:text-sm mna:text-red-600"
               title={saveError}
             >
               {saveError}
@@ -123,7 +123,7 @@ export default function Header() {
             <button
               id="fin-eval-save-model-btn"
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-md border border-black/70 bg-white px-[18px] py-2 text-[13px] font-bold text-black transition disabled:cursor-not-allowed disabled:opacity-70"
+              className="mna:inline-flex mna:items-center mna:gap-1.5 mna:rounded-md mna:border mna:border-black/70 mna:bg-white mna:px-[18px] mna:py-2 mna:text-[13px] mna:font-bold mna:text-black mna:transition mna:disabled:cursor-not-allowed mna:disabled:opacity-70"
               onClick={requestSave}
               disabled={saving || !ready}
               title={ready ? undefined : "Nothing to save until the template loads"}
@@ -151,7 +151,7 @@ export default function Header() {
 
       {/* Toolbar strip — one nowrap row that scrolls rather than wrapping,
           matching the reference project's layout and metrics exactly. */}
-      <div className="mx-6 my-4" style={stripCard}>
+      <div className="mna:mx-6 mna:my-4" style={stripCard}>
         <div style={stripRow}>
           <CurrencyToggle
             currency={currency}

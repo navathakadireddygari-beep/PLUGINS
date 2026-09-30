@@ -10,9 +10,15 @@
  * important unlayered ones.
  *
  * Consequence: a utility now also beats an inline `style` on the same element,
- * so never set the same property both ways (see `.ma-partition` below).
+ * so never set the same property both ways (see `.mna_partition` below).
+ *
+ * `prefix(mna)`: every utility is written `mna:<class>` (e.g. `mna:border`,
+ * `mna:hover:bg-white`), so no host stylesheet rule for a common name such as
+ * `.border`, `.hidden` or `.uppercase` can ever match the widget's elements.
+ * Tailwind v4 only supports a variant-style prefix, hence `mna:` not `mna_`.
+ * Hand-written classes below use `mna_` instead.
  */
-@import "tailwindcss" important;
+@import "tailwindcss" important prefix(mna);
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -133,13 +139,13 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply mna:border-border mna:outline-ring/50;
     }
   body {
-    @apply bg-background text-foreground;
+    @apply mna:bg-background mna:text-foreground;
     }
   html {
-    @apply font-sans;
+    @apply mna:font-sans;
     }
   /* Tailwind v4 resets buttons to cursor: default. Prod Dev gives every
      clickable control a pointer, so restore it for enabled buttons. */
@@ -155,8 +161,8 @@
  * which are equally !important and in the same layer.
  */
 @layer utilities {
-  th.ma-partition,
-  td.ma-partition {
+  th.mna_partition,
+  td.mna_partition {
     border-right: 2px solid #4b5563 !important;
   }
 }
@@ -171,14 +177,14 @@
  * rules by specificity, while every widget utility (!important) still wins
  * over it wherever one is set.
  */
-.ma-widget table {
+.mna_widget table {
   border-collapse: collapse;
   border-spacing: 0;
   margin: 0;
   background: transparent;
 }
-.ma-widget th,
-.ma-widget td {
+.mna_widget th,
+.mna_widget td {
   background-image: none;
   box-shadow: none;
   text-shadow: none;
@@ -186,7 +192,7 @@
   font-family: inherit;
   vertical-align: middle;
 }
-.ma-widget button {
+.mna_widget button {
   background-image: none;
   box-shadow: none;
   text-shadow: none;
@@ -196,9 +202,9 @@
   line-height: inherit;
   font-family: inherit;
 }
-.ma-widget input,
-.ma-widget select,
-.ma-widget textarea {
+.mna_widget input,
+.mna_widget select,
+.mna_widget textarea {
   background-image: none;
   box-shadow: none;
   border-radius: 0;

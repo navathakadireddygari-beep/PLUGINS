@@ -103,7 +103,14 @@ export default function BuyPlanCell({
     }
   };
 
-  const textClass = `${calculated ? " bp-grid-cell--calc" : ""}${negative ? " bp-grid-cell--neg" : ""}`;
+  // Red follows the live value while typing, as in Prod Dev (`val < 0`): a
+  // leading "-" / "(" with a non-zero digit, so a lone "-" or "-0" stays black.
+  const draftText = draft?.trim() ?? "";
+  const isNegative =
+    draft !== null
+      ? (draftText.startsWith("-") || draftText.startsWith("(")) && /[1-9]/.test(draftText)
+      : negative;
+  const textClass = `${calculated ? " bp-grid-cell--calc" : ""}${isNegative ? " bp-grid-cell--neg" : ""}`;
 
   return (
     <input

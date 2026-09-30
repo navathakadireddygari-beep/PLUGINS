@@ -39,17 +39,17 @@ export default function Toast({ toast, onClose, autoDismissMs = 3500 }: Props) {
   return (
     <div
       role="status"
-      className={`fixed top-[50px] right-5 z-[400] mt-2.5 flex max-w-[472px] min-w-[260px] items-center gap-2.5 rounded-lg px-3.5 py-3 text-[13px] font-semibold shadow-[0_6px_20px_rgba(0,0,0,.18)] ${
-        isSuccess ? "bg-[#f4fceb] text-[#436b1d]" : "bg-white text-[#111827]"
+      className={`mna:fixed mna:top-[50px] mna:right-5 mna:z-[400] mna:mt-2.5 mna:flex mna:max-w-[472px] mna:min-w-[260px] mna:items-center mna:gap-2.5 mna:rounded-lg mna:px-3.5 mna:py-3 mna:text-[13px] mna:font-semibold mna:shadow-[0_6px_20px_rgba(0,0,0,.18)] ${
+        isSuccess ? "mna:bg-[#f4fceb] mna:text-[#436b1d]" : "mna:bg-white mna:text-[#111827]"
       }`}
     >
-      <Icon size={18} className="shrink-0" />
-      <span className="flex-1">{toast.message}</span>
+      <Icon size={18} className="mna:shrink-0" />
+      <span className="mna:flex-1">{toast.message}</span>
       {toast.action && (
         <button
           type="button"
           onClick={toast.action.onClick}
-          className="shrink-0 rounded border border-current px-2 py-[3px] text-[12px] font-semibold whitespace-nowrap"
+          className="mna:shrink-0 mna:rounded mna:border mna:border-current mna:px-2 mna:py-[3px] mna:text-[12px] mna:font-semibold mna:whitespace-nowrap"
         >
           {toast.action.label}
         </button>
@@ -58,7 +58,7 @@ export default function Toast({ toast, onClose, autoDismissMs = 3500 }: Props) {
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="flex cursor-pointer border-none bg-transparent p-0"
+        className="mna:flex mna:cursor-pointer mna:border-none mna:bg-transparent mna:p-0"
       >
         <X size={14} />
       </button>
