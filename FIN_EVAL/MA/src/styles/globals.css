@@ -1,4 +1,18 @@
-@import "tailwindcss";
+/*
+ * `important`: every Tailwind utility is emitted with !important.
+ *
+ * The widget is mounted inside an APEX page whose global stylesheet styles
+ * bare elements (th, td, button, input, table …). Tailwind v4 puts its
+ * utilities in a cascade layer, and ANY unlayered rule beats a layered one
+ * regardless of specificity — so a host `th { … }` was silently winning over
+ * the widget's own `bg-[#e5e7eb]` / `text-[10px]` / `uppercase` on the table
+ * headings. Important layered declarations beat the host's normal AND
+ * important unlayered ones.
+ *
+ * Consequence: a utility now also beats an inline `style` on the same element,
+ * so never set the same property both ways (see `.ma-partition` below).
+ */
+@import "tailwindcss" important;
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -133,4 +147,61 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
     }
+}
+
+/*
+ * ACTUALS | PROJECTIONS divider on a header or body cell. Element-qualified
+ * (0,1,1) so it out-ranks the cell's own `border-r` / `border-[…]` utilities,
+ * which are equally !important and in the same layer.
+ */
+@layer utilities {
+  th.ma-partition,
+  td.ma-partition {
+    border-right: 2px solid #4b5563 !important;
+  }
+}
+
+/*
+ * Host-page neutraliser, scoped to the widget root.
+ *
+ * Covers decorations a host theme commonly puts on bare elements that the
+ * widget never sets through a utility (so `important` alone cannot shield
+ * them): gradients, shadows, letter-spacing, fixed heights, rounded inputs.
+ * Deliberately UNLAYERED and NOT !important — it out-ranks ordinary host
+ * rules by specificity, while every widget utility (!important) still wins
+ * over it wherever one is set.
+ */
+.ma-widget table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin: 0;
+  background: transparent;
+}
+.ma-widget th,
+.ma-widget td {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: normal;
+  font-family: inherit;
+  vertical-align: middle;
+}
+.ma-widget button {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  min-height: 0;
+  line-height: inherit;
+  font-family: inherit;
+}
+.ma-widget input,
+.ma-widget select,
+.ma-widget textarea {
+  background-image: none;
+  box-shadow: none;
+  border-radius: 0;
+  min-height: 0;
+  font-family: inherit;
 }

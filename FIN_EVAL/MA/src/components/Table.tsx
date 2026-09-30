@@ -312,20 +312,19 @@ const labelTextClass = (isCalculated: boolean | undefined): string =>
 const TEMPLATE_LABEL_CLASS = "text-[12px] font-bold text-[#111827]";
 
 /**
- * The divider between the ACTUALS block and the PROJECTIONS block. Dark grey so
- * the two halves of the grid read as separate at a glance; the 2px weight is
- * what distinguishes it from the ordinary 1px cell rules.
+ * The divider between the ACTUALS block and the PROJECTIONS block — a 2px
+ * #4b5563 right border, defined as `.ma-partition` in globals.css.
+ *
+ * A class rather than an inline style: every utility is `!important` (so the
+ * host page's global CSS cannot override the widget), and an `!important`
+ * `border-r` would beat an inline border. `.ma-partition` is element-qualified
+ * so it out-ranks the cell's own `border-r` / `border-[...]` classes.
  */
-const PARTITION_BORDER = "2px solid #4b5563";
+const PARTITION_CLASS = "ma-partition";
 
 /** Right-hand partition on the last ACTUALS column, else nothing. */
-const partitionStyle = (
-  col: number,
-  actualsCount: number,
-): React.CSSProperties | undefined =>
-  actualsCount > 0 && col === actualsCount - 1
-    ? { borderRight: PARTITION_BORDER }
-    : undefined;
+const partitionClass = (col: number, actualsCount: number): string =>
+  actualsCount > 0 && col === actualsCount - 1 ? ` ${PARTITION_CLASS}` : "";
 
 /* ─────────────────── Which rows can be added / deleted ───────────────
  * Per SECTION, not per table, because the first grid renders three sections
@@ -1331,7 +1330,7 @@ const Table: React.FC = () => {
    * PROJECTIONS banners over the fiscal-year labels, with the CAGR column
    * spanning both rows where the grid carries one.
    *
-   * One copy, because `actualsColSpan`, `partitionStyle` and the read-only
+   * One copy, because `actualsColSpan`, `partitionClass` and the read-only
    * gutter all have to agree with the BODY those grids render through
    * `gridRows` — three hand-maintained copies is how a header ends up claiming
    * a column the body never draws.
@@ -1344,8 +1343,7 @@ const Table: React.FC = () => {
         {actualsColSpan > 0 && (
           <th
             colSpan={actualsColSpan}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase text-[#374151]"
-            style={{ borderRight: PARTITION_BORDER }}
+            className={`border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase text-[#374151] ${PARTITION_CLASS}`}
           >
             ACTUALS
           </th>
@@ -1375,8 +1373,7 @@ const Table: React.FC = () => {
         {allYearIdx.map((i) => (
           <th
             key={i}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]"
-            style={partitionStyle(i, actualsCount)}
+            className={`border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]${partitionClass(i, actualsCount)}`}
           >
             {fyLabel(i)}
           </th>
@@ -1487,8 +1484,7 @@ const Table: React.FC = () => {
               {cols.map((i) => (
                 <td
                   key={i}
-                  className="h-10 border-b border-r border-[#e5e7eb] p-0 text-right align-middle"
-                  style={partitionStyle(i, actualsCount)}
+                  className={`h-10 border-b border-r border-[#e5e7eb] p-0 text-right align-middle${partitionClass(i, actualsCount)}`}
                 >
                   <SpreadsheetCell
                     gridId={gridId}
