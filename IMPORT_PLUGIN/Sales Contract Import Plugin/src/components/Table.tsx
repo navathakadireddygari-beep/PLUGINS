@@ -1100,10 +1100,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
               onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => { setStripTooltipPos(e.currentTarget.getBoundingClientRect()); setStripTooltip(kind); }}
               onMouseLeave={() => setStripTooltip(null)}
             >
-              <span style={{ width: 18, height: 18, borderRadius: 999, border: "1.5px solid #9ca3af", color: "#9ca3af", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, cursor: "default", userSelect: "none" }}>i</span>
+              <span style={{ width: 15, height: 15, borderRadius: 999, border: "1.5px solid #9ca3af", color: "#9ca3af", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, cursor: "default", userSelect: "none" }}>i</span>
               {stripTooltip === kind && stripTooltipPos && createPortal(
                 // Overlays the page via a portal so the tooltip never inflates the scrollable strip.
-                <span style={{ position: "fixed", left: stripTooltipPos.right + 6, top: stripTooltipPos.top - 4, background: DARK_TOGGLE, color: "#fff", padding: "6px 10px", borderRadius: 4, fontSize: 13, whiteSpace: "normal", width: 360, lineHeight: 1.5, zIndex: 9999, boxShadow: "0 4px 14px rgba(0,0,0,.25)", pointerEvents: "none" }}>
+                <span style={{ position: "fixed", left: stripTooltipPos.right + 6, top: stripTooltipPos.top - 4, background: DARK_TOGGLE, color: "#fff", padding: "6px 10px", borderRadius: 4, fontSize: 12, whiteSpace: "normal", width: 360, lineHeight: 1.5, zIndex: 9999, boxShadow: "0 4px 14px rgba(0,0,0,.25)", pointerEvents: "none" }}>
                   {tooltipText}
                 </span>,
                 document.body
@@ -1122,7 +1122,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   </button>
                 ))}
               </div>
-              {infoIcon("currency", `Local Currency is ${local}. All values are displayed in ${display}.`)}
+              {infoIcon("currency", `Local Currency is ${local} — all values are displayed in ${display}. Change Local Currency in Proposal Section to enable a USD/local toggle.`)}
 
               {/* Divider */}
               <div style={{ width: 1, height: 24, background: "#e5e7eb" }} />
@@ -1136,7 +1136,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   </button>
                 ))}
               </div>
-              {infoIcon("scale", "Switch the denomination for all financial values. K = thousands (default), M = millions, B = billions.")}
+              {infoIcon("scale", "Switch the denomination for all financial values. Values arrive in thousands: K = thousands (as-is), M = millions (÷1,000), B = billions (÷1,000,000).")}
 
               {/* Divider */}
               <div style={{ width: 1, height: 24, background: "#e5e7eb" }} />

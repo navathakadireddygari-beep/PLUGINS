@@ -1179,7 +1179,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
               <div className="currency-strip-row">
               {/* Currency label + toggle + info */}
               <span className="strip-label">CURRENCY</span>
-              {infoIcon("currency", `Local Currency is ${local}. All values are displayed in ${display}.`)}
               <div className="toggle-group">
                 {currencies.map((cur) => (
                   <button key={cur} type="button" className={`toggle-btn${display === cur ? " active" : ""}`} onClick={() => handleCurrencyChange(cur)}>
@@ -1187,6 +1186,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   </button>
                 ))}
               </div>
+              {infoIcon("currency", `Local Currency is ${local} — all values are displayed in ${display}. Change Local Currency in Proposal Section to enable a USD/local toggle.`)}
 
               <div className="strip-divider" />
 
@@ -1199,7 +1199,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   </button>
                 ))}
               </div>
-              {infoIcon("scale", "Switch the denomination for all financial values. K = thousands (default), M = millions, B = billions.")}
+              {infoIcon("scale", "Switch the denomination for all financial values. Values arrive in thousands: K = thousands (as-is), M = millions (÷1,000), B = billions (÷1,000,000).")}
 
               <div className="strip-divider" />
 

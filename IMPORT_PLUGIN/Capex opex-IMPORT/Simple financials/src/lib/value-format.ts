@@ -12,7 +12,7 @@ export const SCALE_OPTIONS: { code: ScaleCode; label: string }[] = [
 export const SCALE_DIVISOR: Record<ScaleCode, number> = { K: 1, M: 1000, B: 1000000 };
 
 export const SCALE_TOOLTIP =
-  "Switch the denomination for all financial values. K = thousands (native), M = millions, B = billions.";
+  "Switch the denomination for all financial values. Values arrive in thousands: K = thousands (as-is), M = millions (÷1,000), B = billions (÷1,000,000).";
 
 // Decimal places shown depend on the active scale: K = whole numbers,
 // M = 1 decimal, B = 2 decimals.

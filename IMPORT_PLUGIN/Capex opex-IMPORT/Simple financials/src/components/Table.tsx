@@ -1276,15 +1276,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
               onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => { setStripTooltipPos(e.currentTarget.getBoundingClientRect()); setStripTooltip(kind); }}
               onMouseLeave={() => setStripTooltip(null)}
             >
-              <span style={{ width: 18, height: 18, borderRadius: 999, border: "1.5px solid #9ca3af", color: "#9ca3af", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, cursor: "default", userSelect: "none" }}>i</span>
+              <span style={{ width: 15, height: 15, borderRadius: 999, border: "1.5px solid #9ca3af", color: "#9ca3af", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, cursor: "default", userSelect: "none" }}>i</span>
               {stripTooltip === kind && stripTooltipPos && createPortal(
                 // Overlays the page via a portal so the tooltip never inflates the scrollable strip.
                 <span
                   style={{
                     position: "fixed",
-                    left: align === "right" ? stripTooltipPos.left - 300 - 6 : stripTooltipPos.right + 6,
+                    left: align === "right" ? stripTooltipPos.left - 360 - 6 : stripTooltipPos.right + 6,
                     top: stripTooltipPos.top - 4,
-                    background: DARK_TOGGLE, color: "#fff", padding: "6px 10px", borderRadius: 4, fontSize: 13, whiteSpace: "normal", width: 300, lineHeight: 1.5, zIndex: 9999, boxShadow: "0 4px 14px rgba(0,0,0,.25)", pointerEvents: "none",
+                    background: DARK_TOGGLE, color: "#fff", padding: "6px 10px", borderRadius: 4, fontSize: 12, whiteSpace: "normal", width: 360, lineHeight: 1.5, zIndex: 9999, boxShadow: "0 4px 14px rgba(0,0,0,.25)", pointerEvents: "none",
                   }}
                 >
                   {tooltipText}

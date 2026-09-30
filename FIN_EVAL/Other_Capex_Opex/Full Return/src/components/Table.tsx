@@ -1309,7 +1309,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     </button>
                   ))}
                 </div>
-                {infoIcon("scale", "Switch the denomination for all financial values. K = thousands (default), M = millions, B = billions.")}
+                {infoIcon("scale", "Switch the denomination for all financial values. Values arrive in thousands: K = thousands (as-is), M = millions (÷1,000), B = billions (÷1,000,000).")}
 
                 <div className="strip-divider" />
 

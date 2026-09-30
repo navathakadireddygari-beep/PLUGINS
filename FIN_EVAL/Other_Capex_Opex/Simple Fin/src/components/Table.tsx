@@ -1305,7 +1305,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   </button>
                 ))}
               </div>
-              {infoIcon("currency", `Local Currency is ${localRaw ? local : "not set"}. Display Currency is ${display}.`)}
+              {infoIcon("currency", `Local Currency is ${local} — all values are displayed in ${display}. Change Local Currency in Proposal Section to enable a USD/local toggle.`)}
 
               <div className="strip-divider" />
 

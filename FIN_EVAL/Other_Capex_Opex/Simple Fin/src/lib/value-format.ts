@@ -15,7 +15,7 @@ export const SCALE_DIVISOR: Record<ScaleCode, number> = { K: 1, M: 1000, B: 1000
 export const SCALE_DECIMALS: Record<ScaleCode, number> = { K: 0, M: 1, B: 2 };
 
 export const SCALE_TOOLTIP =
-  "Switch the denomination for all financial values. K = thousands (native), M = millions, B = billions.";
+  "Switch the denomination for all financial values. Values arrive in thousands: K = thousands (as-is), M = millions (÷1,000), B = billions (÷1,000,000).";
 
 /* ─────────────────────────── Number format ────────────────────────── */
 export type NumberFormatCode = "US" | "DE" | "FR" | "IN" | "CH";
