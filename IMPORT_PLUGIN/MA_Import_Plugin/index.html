@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>M&amp;A Import</title>
+    <script>
+      // ── Widget config (single source of truth) ──────────────────
+      // Read by src/config/app-config.ts at runtime.
+      // Import plugin: file_id identifies the staged import
+      // (finEvaluationStaging GET/PUT, finEvalStagingMigrate POST);
+      // proposal_id is the proposal Save Model migrates it into.
+      window.__APP_CONFIG__ = {
+        file_id:          null,   // number — staged import file id
+        proposal_id:      1134,   // number | null
+        spc_type_id:      null,   // number | null  e.g. 105
+        template_type_id: null,   // number | null  e.g. 301
+        app_user:     "arvind.tammineni@test.exp.com",
+        app_roles:    "APP_FIN_GIS_SPC_AUTHOR_SPC_ALL,APP_FIN_GIS_RLS_NA_AUTOMOTIVE_SPC_ALL",
+        app_language: "en",
+        // Use the direct GIS ORDS base so the frontend builds the exact remote
+        // endpoint without passing through the local Vite proxy.
+        api_endpoint: "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
+        // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
+        // ajaxId:   "ajaxId",
+        // flowId:   "flowId",
+        // stepId:   "stepId",
+        // instance: "instance",
+      };
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
