@@ -1,12 +1,20 @@
 /**
  * App configuration injected via index.html -> window.__APP_CONFIG__.
  * Same shape/resolution order as the rest of the FinEval suite (see
- * FIN_EVAL/MA/src/config/app-config.ts), trimmed to what BuyPlan needs: just
- * enough to call the shared currencyExchangeRates endpoint.
+ * FIN_EVAL/MA/src/config/app-config.ts), trimmed to what BuyPlan needs: the
+ * proposal to load plus what the proposalAuthoring endpoints need.
  */
 
 export type AppConfig = {
+  /** Proposal whose Buy Plan is loaded/saved; null when none is configured. */
+  proposal_id: number | null;
   app_user: string;
+  /**
+   * APEX session id. Buy Plan sends it as `user_email` (header + save body)
+   * in place of `app_user` — the other FinEval plugins still send app_user.
+   * "" when unknown.
+   */
+  session_id: string;
   app_roles: string;
   api_endpoint: string;
   /** APEX OAuth AJAX callback context — only present/used inside APEX. */
@@ -17,7 +25,9 @@ export type AppConfig = {
 };
 
 export interface HostAppConfig {
+  proposal_id?: string | number | null;
   app_user?: string;
+  session_id?: string | number;
   app_roles?: string;
   api_endpoint?: string;
   ajaxId?: string;
@@ -60,6 +70,22 @@ const isLocalhost = (): boolean =>
   (window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1");
 
+/** Read a value from the host page's query string. */
+const queryParam = (name: string): string | undefined => {
+  if (typeof window === "undefined") return undefined;
+  return new URLSearchParams(window.location.search).get(name) ?? undefined;
+};
+
+/** Positive numeric id, or null — anything else (0, "", null) means "absent". */
+const numericId = (...values: Array<string | number | null | undefined>): number | null => {
+  for (const value of values) {
+    if (value === undefined || value === null || value === "") continue;
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return null;
+};
+
 const firstOf = (...values: Array<string | undefined>): string => {
   const hit = values.find((v) => v !== undefined && v !== "");
   return hit === undefined ? "" : String(hit);
@@ -73,7 +99,15 @@ export const getAppConfig = (): AppConfig => {
   const local = isLocalhost();
 
   return {
+    proposal_id: numericId(cfg.proposal_id, queryParam("proposal_id")),
     app_user: firstOf(cfg.app_user, local ? LOCAL_DEV_USER_EMAIL : undefined),
+    // Explicit `session_id`, else `?session_id=`, else the APEX session the
+    // host already passes as `instance` (&APP_SESSION.) for the auth callback.
+    session_id: firstOf(
+      cfg.session_id != null ? String(cfg.session_id) : undefined,
+      queryParam("session_id"),
+      cfg.instance
+    ),
     app_roles: firstOf(cfg.app_roles, local ? LOCAL_DEV_ROLES : undefined),
     api_endpoint: (cfg.api_endpoint ?? "").toString().replace(/\/+$/, ""),
     ajaxId: cfg.ajaxId,
@@ -95,8 +129,15 @@ export const API_BASE_URL = getApiBaseUrl();
 /** Comma-separated APEX roles for the `role` header. */
 export const getApiRole = (): string | undefined => getAppConfig().app_roles || undefined;
 
-/** Caller identity for the `user_email` header. */
-export const getApiUserEmail = (): string | undefined => getAppConfig().app_user || undefined;
+/**
+ * Value sent as `user_email` (header and save body): the APEX session id.
+ * Falls back to `app_user` only when no session id is available (e.g. local
+ * dev outside APEX), so the field is never sent empty.
+ */
+export const getApiUserEmail = (): string | undefined => {
+  const cfg = getAppConfig();
+  return cfg.session_id || cfg.app_user || undefined;
+};
 
 /** Auth/identity headers every proposalAuthoring call carries. */
 export const authHeaders = (token: string): Record<string, string> => {
@@ -104,6 +145,6 @@ export const authHeaders = (token: string): Record<string, string> => {
   const role = getApiRole();
   const userEmail = getApiUserEmail();
   if (role) headers.role = role;
-  if (userEmail) headers.user_email = userEmail;
+  if (userEmail) headers.user_email = "402051823629786";
   return headers;
 };

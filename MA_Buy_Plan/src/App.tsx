@@ -1,10 +1,13 @@
 import BuyPlanPage from "@/components/BuyPlanPage";
+import { CurrencyFormatProvider } from "@/context/CurrencyFormatContext";
 
 const App = () => {
   return (
-    <div className="bp-root">
-      <BuyPlanPage />
-    </div>
+    <CurrencyFormatProvider>
+      <div className="bp-root">
+        <BuyPlanPage />
+      </div>
+    </CurrencyFormatProvider>
   );
 };
 

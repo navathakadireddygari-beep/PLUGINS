@@ -1,34 +1,39 @@
-import { PROPOSAL_META } from "@/config/proposal-meta";
+import type { BuyPlanHeaderInfo } from "@/types";
 
-export default function BuyPlanHeader() {
+const formatDate = (iso: string | null): string | null => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+export default function BuyPlanHeader({ header }: { header: BuyPlanHeaderInfo }) {
+  const goLive = formatDate(header.plannedGoLive);
   return (
     <div className="bp-header-card">
       <div className="bp-header-top">
         <div>
-          <div className="bp-badge">{PROPOSAL_META.badge}</div>
-          <h1 className="bp-title">{PROPOSAL_META.title}</h1>
-          <div className="bp-subtitle">{PROPOSAL_META.subtitle}</div>
-        </div>
-        <div className="bp-ebs">
-          <div className="bp-ebs-label">EBS Project Code</div>
-          <span className="bp-ebs-code">{PROPOSAL_META.ebsProjectCode}</span>
+          <div className="bp-badge">
+            GSPC BuyPlan{header.code ? ` — ${header.code}` : ""}
+          </div>
+          <h1 className="bp-title">{header.title}</h1>
+          <div className="bp-subtitle">BuyPlan — GSPC Proforma Financials</div>
         </div>
       </div>
       <div className="bp-meta-row">
+        {header.status && (
+          <span>
+            <strong>Status:</strong> {header.status}
+          </span>
+        )}
+        {goLive && (
+          <span>
+            <strong>Planned Go-Live:</strong> {goLive}
+          </span>
+        )}
         <span>
-          <strong>Deal Sponsor:</strong> {PROPOSAL_META.dealSponsor}
-        </span>
-        <span>
-          <strong>Corp Dev Lead:</strong> {PROPOSAL_META.corpDevLead}
-        </span>
-        <span>
-          <strong>Finance Lead:</strong> {PROPOSAL_META.financeLead}
-        </span>
-        <span>
-          <strong>Y/E:</strong> {PROPOSAL_META.yearEnd}
-        </span>
-        <span>
-          <strong>FBR Rate:</strong> {PROPOSAL_META.fbrRate}
+          <strong>Local Currency:</strong> {header.localCurrency}
         </span>
       </div>
     </div>

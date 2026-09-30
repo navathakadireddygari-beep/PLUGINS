@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { CurrencyCode, ScaleId } from "@/types";
 import { SCALES } from "@/lib/scale";
+import { currencySymbol } from "@/lib/currency-conversion";
 import type { RateSource } from "@/hooks/useExchangeRate";
 
 type Props = {
+  localCurrency: CurrencyCode;
   currency: CurrencyCode;
   setCurrency: (c: CurrencyCode) => void;
   scale: ScaleId;
@@ -14,12 +16,9 @@ type Props = {
   rateError: string | null;
   onRefreshRate: () => void;
   onManualRate: (value: number) => void;
+  /** Right-aligned slot (Save / Discard). */
+  actions?: ReactNode;
 };
-
-const CURRENCY_OPTIONS: { id: CurrencyCode; label: string }[] = [
-  { id: "EUR", label: "€ EUR" },
-  { id: "USD", label: "$ USD" },
-];
 
 const RATE_SOURCE_LABEL: Record<RateSource, string> = {
   live: "Live rate",
@@ -28,6 +27,7 @@ const RATE_SOURCE_LABEL: Record<RateSource, string> = {
 };
 
 export default function BuyPlanControls({
+  localCurrency,
   currency,
   setCurrency,
   scale,
@@ -38,10 +38,15 @@ export default function BuyPlanControls({
   rateError,
   onRefreshRate,
   onManualRate,
+  actions,
 }: Props) {
   // Local text buffer so typing a rate doesn't fight the formatted prop value.
   const [rateText, setRateText] = useState(rate.toFixed(4));
   useEffect(() => setRateText(rate.toFixed(4)), [rate]);
+
+  // Local currency and USD; a USD proposal has just the one.
+  const currencyOptions = [...new Set([localCurrency, "USD"])];
+  const converting = currency === "USD" && localCurrency !== "USD";
 
   return (
     <div className="bp-controls-card">
@@ -49,14 +54,14 @@ export default function BuyPlanControls({
         <div className="bp-control-group">
           <span className="bp-control-label">Currency</span>
           <div className="bp-toggle">
-            {CURRENCY_OPTIONS.map((opt) => (
+            {currencyOptions.map((code) => (
               <button
-                key={opt.id}
+                key={code}
                 type="button"
-                className={opt.id === currency ? "active" : ""}
-                onClick={() => setCurrency(opt.id)}
+                className={code === currency ? "active" : ""}
+                onClick={() => setCurrency(code)}
               >
-                {opt.label}
+                {currencySymbol(code).trim()} {code}
               </button>
             ))}
           </div>
@@ -76,7 +81,7 @@ export default function BuyPlanControls({
             ))}
           </div>
         </div>
-        {currency === "USD" && (
+        {converting && (
           <div className="bp-control-group bp-fx-group">
             <span className="bp-control-label">FX Rate</span>
             <span className="bp-fx-fixed">1 USD =</span>
@@ -87,7 +92,7 @@ export default function BuyPlanControls({
               onChange={(e) => setRateText(e.target.value)}
               onBlur={() => onManualRate(Number(rateText))}
             />
-            <span className="bp-fx-fixed">EUR</span>
+            <span className="bp-fx-fixed">{localCurrency}</span>
             <button
               type="button"
               className="bp-fx-refresh"
@@ -103,6 +108,7 @@ export default function BuyPlanControls({
             </span>
           </div>
         )}
+        {actions && <div className="bp-actions">{actions}</div>}
       </div>
     </div>
   );

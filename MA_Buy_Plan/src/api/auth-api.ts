@@ -109,7 +109,7 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
   // new one via: POST {base}/oauth/token with the client_credentials grant.
   // Tokens live ~1 hour, so this goes stale quickly and is a stopgap, not a
   // configuration — a 401 here means it needs replacing.
-  const ACCESS_TOKEN = "_gT9SOFQN7yBweEn8c1L4A";
+  const ACCESS_TOKEN = "wJ5sO4NM9dT0C7ms01B5sw";
   return {
     accessToken: ACCESS_TOKEN,
     token_type: "Bearer",

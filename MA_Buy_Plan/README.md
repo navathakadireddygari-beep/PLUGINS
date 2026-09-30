@@ -4,64 +4,46 @@ Standalone Vite/React/TS widget for the **BuyPlan** panel shown in the M&A
 wireframe's left-hand nav once a GSPC proposal reaches Approved status
 (`M_A_Authoring 08-05 (2).html` → `sb-buyplan` / `prop-buyplan`).
 
-Renders the "GSPC Proforma Financials" tables — Revenue and EBIT, each broken
-into FORECAST / Buy Plan / Variance columns per fiscal year (FY26–FY31) —
-with an EUR/USD currency toggle backed by a live exchange rate, K/M/B scale
+Renders the "GSPC Proforma Financials" table — every active section of the
+proposal's M&A financial evaluation (Revenue, Costs, Returns Analysis), each
+line broken into FORECAST / Buy Plan / Variance columns per fiscal year — with
+a local/USD currency toggle backed by a live exchange rate, K/M/B scale
 toggles, plus the Data Lake (purple) vs Financial Evaluation (blue) colour key.
 
-Row/group data (Revenue, EBIT, EBIT Margin %) is still the mock figures
-transcribed from the wireframe, stored in EUR. The **currency conversion is
-real**: switching to USD calls the same `currencyExchangeRates` endpoint the
-rest of the FinEval suite uses (see `api/currency-exchange-api.ts`), with a
-manual-rate fallback when no live rate is available (no host config, no auth,
-network failure, etc.) — see "Currency API" below.
+## Buy Plan API
 
-## Structure
+Buy Plan is stored on the financial evaluation itself, so it uses the same
+endpoints as FIN_EVAL/MA (`api/buy-plan-api.ts`):
 
-```
-src/
-  App.tsx              entry component
-  main.tsx             React root mount
-  types.ts             BuyPlan data model (rows/groups/dataset)
-  config/
-    app-config.ts        window.__APP_CONFIG__ reader (api_endpoint, auth ids)
-    proposal-meta.ts      static proposal header info
-  api/
-    auth-api.ts           bearer token (APEX ajax, or OAuth for local dev)
-    currency-exchange-api.ts   POST currencyExchangeRates -> usd_fbr
-  hooks/
-    useExchangeRate.ts     live fetch + manual override + fallback state
-  data/
-    buyplan-data.ts        single EUR-based mock dataset
-  lib/
-    format.ts               money/percent/variance formatting (scale-aware decimals)
-    scale.ts                 K/M/B scale helper (same convention as FIN_EVAL/MA)
-    currency-conversion.ts   EUR -> USD via the fetched/manual rate
-  components/
-    BuyPlanPage.tsx         composes header + controls + colour key + table
-    BuyPlanHeader.tsx
-    BuyPlanControls.tsx      currency + scale toggles, FX rate input/refresh
-    ColourKey.tsx
-    BuyPlanTable.tsx         the Revenue/EBIT proforma table, "+ Add Row" included
-  styles/globals.css
-```
+- **GET** `{api_endpoint}/GIS/proposalAuthoring/financialEvaluation?proposal_id=X`
+  — per line, `year_values.fyNN.spc_projected_amount` is the FORECAST and
+  `buy_plan_amount` is the Buy Plan. Fiscal-year columns come from the payload.
+- **PUT** `{api_endpoint}/GIS/proposalAuthoring/{proposal_id}/financialEvaluation`
+  — body `{ sections: [{ fin_eval_section_id, lines: [{ fin_eval_line_id,
+  account, year_values }] }] }`, holding every section with an edit and all of
+  that section's input (`is_calculated: "N"`) lines. Year buckets echo the GET
+  with `buy_plan_amount` replaced; `total` is re-summed.
 
-## Currency API
+Buy Plan cells are editable on input lines only. Calculated lines (subtotals,
+EBIT, EBIT Margin %) are the server's and refresh from a re-GET after saving.
+`proposal_id` comes from `window.__APP_CONFIG__` or `?proposal_id=`.
 
-`useExchangeRate` fetches `EUR`'s `usd_fbr` ("1 USD = usd_fbr EUR") from
-`{api_endpoint}/GIS/proposalAuthoring/currencyExchangeRates` on mount and
-whenever "⟳" is clicked. Auth follows the same 2-path pattern as the other
-FinEval plugins:
+Amounts are in the proposal's `local_currency`, in thousands (the base the
+K/M/B toggles assume).
 
-- **Inside APEX**: the page's own `wwv_flow.ajax` callback — no secret ships
-  in this bundle.
-- **Standalone / local dev**: OAuth2 client-credentials at
-  `{api_endpoint}/oauth/token`. Set `VITE_BUYPLAN_BASIC_AUTH` in a local
-  `.env` (base64 `client_id:client_secret`) to exercise this path; it is
-  deliberately **not** hardcoded anywhere in the repo.
+## Currency, scale and number format
 
-Either path failing throws, and the UI falls back to the wireframe's static
-`0.85` rate with an editable input — it never fabricates a "live" number.
+Copied from FIN_EVAL/MA so every figure converts exactly as it does there:
+`context/CurrencyFormatContext.tsx` owns currency / scale / number format / FX
+rate, and `lib/` (formats, currency-conversion, number-format, format) does the
+math. Stored amounts are USD in thousands; `usd_fbr` ("1 USD = rate <local>",
+fetched from `currencyExchangeRates`) multiplies them into the local currency;
+K/M/B divide by 1 / 1,000 / 1,000,000.
+
+The top bar (`BuyPlanToolbar`) reuses MA's `CurrencyToggle`, `NumberFormatToolbar`
+and `FxCard`. Two tables render: "GSPC Proforma — Local Currency" and
+"GSPC Proforma — US$ at Actual Rates" (just the US$ one for a USD proposal).
+Buy Plan is typed into the table whose currency is selected in the top bar.
 
 ## Dev
 
