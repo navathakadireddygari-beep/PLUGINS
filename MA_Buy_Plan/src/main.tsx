@@ -261,7 +261,7 @@ if (_hasInitialConfig) {
   );
 
   init(
-    "root",
+    "ma-buyplan-root",
     _initialConfig
   );
 } else {

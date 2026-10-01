@@ -80,11 +80,7 @@ export default function Header() {
             <button
               id="fin-eval-validate-btn"
               type="button"
-              className={`inline-flex items-center gap-1.5 rounded-md border bg-white px-[14px] py-2 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
-                issueCount > 0
-                  ? "border-[#DC2626] text-[#DC2626]"
-                  : "border-[#04A500] text-[#04A500]"
-              }`}
+              className="inline-flex items-center gap-1.5 rounded-md border border-black/70 bg-white px-[14px] py-2 text-[13px] font-semibold text-black transition disabled:cursor-not-allowed disabled:opacity-70"
               onClick={requestSave}
               disabled={busy || !ready}
               title={

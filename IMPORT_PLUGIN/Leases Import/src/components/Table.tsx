@@ -940,7 +940,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 type="button"
                 disabled={deletingRow}
                 onClick={() => setConfirmDelete(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: deletingRow ? "not-allowed" : "pointer" }}
               >
                 Cancel
               </button>
@@ -985,7 +985,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     setDeletingRow(false);
                   }
                 }}
-                style={{ padding: "6px 14px", background: BRAND, color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: deletingRow ? "not-allowed" : "pointer", opacity: deletingRow ? 0.7 : 1 }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: deletingRow ? "not-allowed" : "pointer", opacity: deletingRow ? 0.7 : 1 }}
               >
                 {deletingRow ? "Deleting…" : "OK"}
               </button>
@@ -1014,14 +1014,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteYear(null)}
-                style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => removeYear(confirmDeleteYear.year)}
-                style={{ padding: "6px 14px", background: "#DC2626", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                style={{ padding: "6px 14px", background: "#fff", color: "#000", border: "1px solid #000", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
               >
                 Delete
               </button>
@@ -1060,7 +1060,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 onClick={validateModel}
                 disabled={validating || loading}
                 title={validationErrors.length ? `${validationErrors.length} validation issue${validationErrors.length > 1 ? "s" : ""}` : undefined}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: `1px solid ${validationErrors.length ? "#DC2626" : "#04A500"}`, borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: validationErrors.length ? "#DC2626" : "#04A500", cursor: validating || loading ? "not-allowed" : "pointer", opacity: validating || loading ? 0.7 : 1 }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: validating || loading ? "not-allowed" : "pointer", opacity: validating || loading ? 0.7 : 1 }}
               >
                 <Check size={14} />
                 {validating ? "Validating…" : "Validate"}
@@ -1077,7 +1077,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 type="button"
                 onClick={saveDraft}
                 disabled={savingDraft || loading}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, background: BRAND, color: "#fff", cursor: savingDraft || loading ? "not-allowed" : "pointer", opacity: savingDraft || loading ? 0.7 : 1 }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 700, background: "#fff", color: "#000", cursor: savingDraft || loading ? "not-allowed" : "pointer", opacity: savingDraft || loading ? 0.7 : 1 }}
               >
                 <Save size={14} />
                 {savingDraft ? "Saving…" : "Save Model"}
@@ -1411,7 +1411,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     {!isReadonly && !isNetTab && addSource && addSource.isNewLineRequired !== "N" && (
                       <tr key={`${group.id}-add`}>
                         <td colSpan={numYears + 3} style={{ padding: "7px 12px", borderBottom: "1px solid #e5e7eb" }}>
-                          <button type="button" onClick={() => addValueRow(addSource.id)} style={{ fontSize: 12, background: "none", border: "none", cursor: "pointer", color: BRAND, fontWeight: 700, padding: 0 }}>
+                          <button type="button" onClick={() => addValueRow(addSource.id)} style={{ fontSize: 12, background: "none", border: "none", cursor: "pointer", color: "#000", fontWeight: 700, padding: 0 }}>
                             + Add {getAddLineLabel(addSource)} Line
                           </button>
                         </td>
@@ -1719,7 +1719,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     return (<>
                       {!isNetTab && (hasOngoing ? regularEditable : editable).map((v, i) => renderEditable(v, i))}
                       {!isNetTab && group.isNewLineRequired !== "N" && (
-                        <tr key="add-btn"><td colSpan={3 + numYears + 1} style={{ padding: "6px 10px", borderBottom: "1px solid #e5e7eb" }}><button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 11, background: "none", border: "none", cursor: "pointer", color: BRAND, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, height: 15 }}>+ Add {getAddLineLabel(group)} Line</button></td></tr>
+                        <tr key="add-btn"><td colSpan={3 + numYears + 1} style={{ padding: "6px 10px", borderBottom: "1px solid #e5e7eb" }}><button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 11, background: "none", border: "none", cursor: "pointer", color: "#000", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, height: 15 }}>+ Add {getAddLineLabel(group)} Line</button></td></tr>
                       )}
                       {hasOngoing && !isNetTab ? (<>
                         {calcInitial.map(renderCalcRow)}
