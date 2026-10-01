@@ -105,6 +105,10 @@ const nameLooksLikePercent = (name: string | null | undefined): boolean => {
 export const isPercentRow = (row: RowIdentity): boolean =>
   matchesAny(row, PERCENT_IDS) || nameLooksLikePercent(row.name);
 
+/** A NON_FINANCIAL row (e.g. a custom count/metric) — bypasses FX and scale, same as a percentage row. */
+export const isNonFinancialRow = (row: RowIdentity): boolean =>
+  tok(row.lineIdentifier) === "NONFINANCIAL";
+
 /**
  * Should this keystroke be accepted in a percentage cell? Rejects letters,
  * negatives, values above 100 and more than 2 decimal places, while still

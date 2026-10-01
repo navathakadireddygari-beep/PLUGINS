@@ -665,10 +665,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // Active number-format spec (thousands/decimal separators) — display only.
   const numFmt = getNumFmt(numberFormat);
 
-  const displayFmt = (n: number): string => {
+  const displayFmt = (n: number, bypassScale = false): string => {
     if (!n) return "—";
-    const v = (n * fxMultiplier) / scaleDivisor(displayScale);
-    const formatted = formatNumber(Math.abs(v), numFmt, scaleDecimals(displayScale));
+    const v = bypassScale ? n : (n * fxMultiplier) / scaleDivisor(displayScale);
+    const formatted = formatNumber(Math.abs(v), numFmt, bypassScale ? 0 : scaleDecimals(displayScale));
     return v < 0 ? `(${formatted})` : formatted;
   };
 
@@ -680,15 +680,21 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return name.endsWith("%") || /PCT|PERCENT|MARGIN_?%/.test(ident);
   };
 
+  // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like percent rows.
+  const isNonFinancialRow = (value: ValueRow): boolean =>
+    (value.lineIdentifier || "").toUpperCase() === "NON_FINANCIAL";
+
   const displayPercent = (n: number): string => {
     if (!n) return "—";
     const formatted = formatNumber(Math.abs(n), numFmt, 0);
     return n < 0 ? `(${formatted}%)` : `${formatted}%`;
   };
 
-  // Row-aware formatter: percent rows bypass currency/scale conversion.
-  const displayRow = (value: ValueRow, n: number): string =>
-    isPercentRow(value) ? displayPercent(n) : displayFmt(n);
+  // Row-aware formatter: percent and NON_FINANCIAL rows bypass currency/scale conversion.
+  // `forceNonFinancial` lets a calculated section-TOTAL row inherit its section's bypass
+  // even when the total's own lineIdentifier doesn't carry NON_FINANCIAL itself.
+  const displayRow = (value: ValueRow, n: number, forceNonFinancial = false): string =>
+    isPercentRow(value) ? displayPercent(n) : (isNonFinancialRow(value) || forceNonFinancial) ? displayFmt(n, true) : displayFmt(n);
 
   const targetGoLive = (): string => {
     const raw = rawHeader?.date_placed_in_service;
@@ -810,22 +816,23 @@ export default function PivotTableWithAPI(): React.ReactElement {
   /* ── Numeric value cells: display in the selected number format, but keep the
      stored value a raw number (so the API is unaffected). While a cell is
      focused we show an ungrouped buffer (numEdit) so typing is unambiguous. ── */
-  const numCellText = (cellKey: string, storedVal: number): string => {
+  const numCellText = (cellKey: string, storedVal: number, bypassScale = false): string => {
     if (numEdit && numEdit.key === cellKey) return numEdit.text;
     if (storedVal === 0) return "";
+    if (bypassScale) return formatNumber(storedVal, numFmt, 0);
     return formatNumber((storedVal * fxMultiplier) / scaleDivisor(displayScale), numFmt, scaleDecimals(displayScale));
   };
-  const numCellFocus = (cellKey: string, storedVal: number): void => {
+  const numCellFocus = (cellKey: string, storedVal: number, bypassScale = false): void => {
     if (isReadOnly) return;
-    const dv = storedVal === 0 ? 0 : (storedVal * fxMultiplier) / scaleDivisor(displayScale);
-    setNumEdit({ key: cellKey, text: storedVal === 0 ? "" : plainNumber(dv, numFmt, scaleDecimals(displayScale)) });
+    const dv = bypassScale ? storedVal : (storedVal === 0 ? 0 : (storedVal * fxMultiplier) / scaleDivisor(displayScale));
+    setNumEdit({ key: cellKey, text: storedVal === 0 ? "" : plainNumber(dv, numFmt, bypassScale ? 0 : scaleDecimals(displayScale)) });
   };
-  const numCellChange = (gId: string, vId: string, year: number, cellKey: string, raw: string): void => {
+  const numCellChange = (gId: string, vId: string, year: number, cellKey: string, raw: string, bypassScale = false): void => {
     if (isReadOnly) return;
     if (raw !== "" && /[^\d\s.,'-]/.test(raw)) return;   // digits + separators only
     setNumEdit({ key: cellKey, text: raw });
     const num = parseFormatted(raw, numFmt);
-    updateCellValue(gId, vId, year, String((num * scaleDivisor(displayScale)) / fxMultiplier));
+    updateCellValue(gId, vId, year, bypassScale ? String(num) : String((num * scaleDivisor(displayScale)) / fxMultiplier));
   };
   const numCellBlur = (): void => setNumEdit(null);
   // Percentage cells: numeric only, range 0–100, max 2 decimal places. Unlike
@@ -1534,6 +1541,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {group.expanded && (() => {
                     const editable = group.values.filter((v) => v.isCalculated !== "Y");
                     const calc     = group.values.filter((v) => v.isCalculated === "Y");
+                    // Bypass scale on this section's own calculated TOTAL row only when every
+                    // editable line in it is NON_FINANCIAL (mixed sections still scale).
+                    const groupAllNonFinancial = editable.length > 0 && editable.every(isNonFinancialRow);
 
                     const renderEditable = (value: ValueRow, idx: number) => {
                       const acKey = `${group.id}|${value.id}`;
@@ -1640,6 +1650,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           )}
                           {data.years.map((year: number, yi: number) => {
                             const val = value.yearValues[year] ?? 0;
+                            const nonFinRow = isNonFinancialRow(value);
                             return (
                               <td key={year} style={{ ...TD, padding: "4px 12px" }}>
                                 {isPercentRow(value)
@@ -1647,10 +1658,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                   : (
                                 <input type="text"
                                   className="spc-nav-cell"
-                                  value={numCellText(`${value.id}-${year}`, val)}
+                                  value={numCellText(`${value.id}-${year}`, val, nonFinRow)}
                                   placeholder="—"
-                                  onFocus={() => numCellFocus(`${value.id}-${year}`, val)}
-                                  onChange={(e) => numCellChange(group.id, value.id, year, `${value.id}-${year}`, e.target.value)}
+                                  onFocus={() => numCellFocus(`${value.id}-${year}`, val, nonFinRow)}
+                                  onChange={(e) => numCellChange(group.id, value.id, year, `${value.id}-${year}`, e.target.value, nonFinRow)}
                                   onBlur={numCellBlur}
                                   onClick={(e) => e.stopPropagation()}
                                   onKeyDown={handleCellNav}
@@ -1666,7 +1677,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               <input type="text"
                                 className="spc-nav-cell"
                                 readOnly
-                                value={displayFmt(t)}
+                                value={displayRow(value, t)}
                                 onClick={(e) => e.stopPropagation()}
                                 onKeyDown={handleCellNav}
                                 style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28 }}
@@ -1689,9 +1700,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         <td colSpan={fixedColSpan} style={{ ...TD, padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
                         {data.years.map((year: number) => {
                           const val = value.yearValues[year] ?? 0;
-                          return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{displayRow(value, val)}</td>);
+                          return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{displayRow(value, val, groupAllNonFinancial)}</td>);
                         })}
-                        {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{displayRow(value, t)}</td>; })()}
+                        {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{displayRow(value, t, groupAllNonFinancial)}</td>; })()}
                       </tr>
                     );
 
@@ -1709,9 +1720,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           <td colSpan={fixedColSpan} style={{ ...TD, padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
-                            return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{displayRow(value, val)}</td>);
+                            return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{displayRow(value, val, groupAllNonFinancial)}</td>);
                           })}
-                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{displayRow(value, t)}</td>; })()}
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{displayRow(value, t, groupAllNonFinancial)}</td>; })()}
                         </tr>
                       ))}
                     </>);

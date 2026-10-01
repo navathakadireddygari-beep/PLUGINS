@@ -656,21 +656,28 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return formatNumber(rate, numberFormat, decimals);
   };
 
-  const formatDisplayValue = (n: number, useNetStyle = false): string => {
+  // NON_FINANCIAL lines (e.g. custom counts/metrics) are stored and shown as-is — no K/M/B scale, no FX.
+  const isNonFinancialRow = (v?: { lineIdentifier?: string }): boolean =>
+    (v?.lineIdentifier ?? "").toUpperCase() === "NON_FINANCIAL";
+
+  const formatDisplayValue = (n: number, useNetStyle = false, bypassScale = false): string => {
     if (!n) return useNetStyle ? "–" : "—";
     // Decimals follow the scale: K = 0, M = 2, B = 2.
-    const formatted = formatScaledValue(n, numberFormat, displayScale, fxMultiplier, undefined, false, !useNetStyle);
+    const formatted = bypassScale
+      ? formatScaledValue(n, numberFormat, "K", 1, undefined, false, !useNetStyle)
+      : formatScaledValue(n, numberFormat, displayScale, fxMultiplier, undefined, false, !useNetStyle);
     return useNetStyle ? formatted.replace(/^-/, '–') : formatted;
   };
 
-  const formatEditableInputValue = (raw: number): string => {
+  const formatEditableInputValue = (raw: number, bypassScale = false): string => {
     if (raw === 0) return "";
-    const scaled = (raw * fxMultiplier) / scaleDivisorFor(displayScale);
-    const formatted = formatNumber(Math.abs(scaled), numberFormat, scaleDecimalsFor(displayScale));
+    const scaled = bypassScale ? raw : (raw * fxMultiplier) / scaleDivisorFor(displayScale);
+    const decimals = bypassScale ? 0 : scaleDecimalsFor(displayScale);
+    const formatted = formatNumber(Math.abs(scaled), numberFormat, decimals);
     return scaled < 0 ? `(${formatted})` : formatted;
   };
 
-  const displayFmt = (n: number): string => formatDisplayValue(n, false);
+  const displayFmt = (n: number, bypassScale = false): string => formatDisplayValue(n, false, bypassScale);
 
   const getGroupTab = (group: Group): 'current' | 'proposed' | 'net' | null => {
     const st = (group.sectionType || '').toUpperCase();
@@ -820,6 +827,21 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return direct + kids.reduce((s, kid) => s + computeDescendantTotal(kid, year), 0);
   };
 
+  // A section's aggregate total bypasses K/M/B scale only when every editable
+  // line in it (and its descendants) is NON_FINANCIAL — mixed sections still scale.
+  const isSectionNonFinancial = (g: Group): { hasAny: boolean; allNonFinancial: boolean } => {
+    const direct = g.values.filter((v) => v.isCalculated !== 'Y');
+    const kids = groupChildrenOf.get(effectiveId(g) ?? -1) || [];
+    let hasAny = direct.length > 0;
+    let allNonFinancial = direct.every((v) => isNonFinancialRow(v));
+    for (const kid of kids) {
+      const r = isSectionNonFinancial(kid);
+      if (r.hasAny) hasAny = true;
+      allNonFinancial = allNonFinancial && r.allNonFinancial;
+    }
+    return { hasAny, allNonFinancial };
+  };
+
   // Every section from the API shows its own row — no merging.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isMergedSection = (_g: Group): boolean => false;
@@ -945,16 +967,19 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const updateCellValue = (gId: string, vId: string, year: number, raw: string): void => {
     if (isReadonly) return;
     const entered = parseFloat(raw.replace(/,/g, "")) || 0;
-    // Reverse display conversion: state is always USD.
-    // stateUSD = enteredDisplayValue × scaleDivisor / fxMultiplier
-    const n = entered * scaleDivisorFor(displayScale) / fxMultiplier;
     setData((p) => p ? ({
       ...p,
       groups: p.groups.map((g) => {
         if (g.id !== gId) return g;
         const withValue: Group = {
           ...g,
-          values: g.values.map((v) => v.id === vId ? { ...v, yearValues: { ...v.yearValues, [year]: n } } : v),
+          values: g.values.map((v) => {
+            if (v.id !== vId) return v;
+            // Reverse display conversion: state is always USD (stateUSD = enteredDisplayValue × scaleDivisor / fxMultiplier) —
+            // except NON_FINANCIAL rows, which store the entered number as-is.
+            const n = isNonFinancialRow(v) ? entered : entered * scaleDivisorFor(displayScale) / fxMultiplier;
+            return { ...v, yearValues: { ...v.yearValues, [year]: n } };
+          }),
         };
         return recomputeGroup(withValue, p.years);
       }),
@@ -998,7 +1023,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     for (let c = 0; c < maxC; c++) { if (rawRows.every((r) => { const v = (r[c] ?? "").trim(); return !v || isNumericCell(v); })) { vs = c; break; } }
     const parsedRows: number[][] = rawRows.map((cols) => cols.slice(vs).map((c) => parseExcelValue(c)));
     if (!parsedRows.length) return;
-    setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = val * scaleDivisorFor(displayScale) / fxMultiplier; }); return { ...v, yearValues: nv }; }) }; return recomputeGroup(withValues, p.years); }) }; });
+    setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; const bypass = isNonFinancialRow(v); parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = bypass ? val : val * scaleDivisorFor(displayScale) / fxMultiplier; }); return { ...v, yearValues: nv }; }) }; return recomputeGroup(withValues, p.years); }) }; });
     const grp = data.groups.find((g) => g.id === gId);
     const si  = grp ? grp.values.findIndex((v) => v.id === vId) : 0;
     setPasteToast({ gId, count: grp ? Math.min(parsedRows.length, grp.values.length - si) : parsedRows.length });
@@ -1602,6 +1627,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   return acc;
                 }, {});
                 const sectionTotal = data.years.reduce((s, y) => s + (sectionValues[y] || 0), 0);
+                const { hasAny: sectionHasValues, allNonFinancial: sectionAllNonFinancial } = isSectionNonFinancial(group);
+                const sectionBypassScale = sectionHasValues && sectionAllNonFinancial;
                 const addSource    = getAddSource(group);
                 const isNetTab     = activeTab === 'net';
 
@@ -1630,11 +1657,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         </td>
                         {data.years.map((year: number) => (
                           <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                            {isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                            {isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0, sectionBypassScale)}
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                          {isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal)}
+                          {isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
                         </td>
                       </tr>
                     ) : (
@@ -1652,11 +1679,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         </td>
                         {data.years.map((year: number) => (
                           <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                            {isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                            {isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0, sectionBypassScale)}
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                          {isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal)}
+                          {isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
                         </td>
                       </tr>
                     )}
@@ -1685,20 +1712,20 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               style={{ width: "100%", border: "none", background: isReadonly ? "#f3f4f6" : "transparent", fontSize: 12, color: "#1f2937", outline: "none", textOverflow: "ellipsis", height: 30 }}
                             />
                           </td>
-                          {data.years.map((year: number, yi: number) => {
+                          {(() => { const bypassScale = isNonFinancialRow(value); return data.years.map((year: number, yi: number) => {
                             const stored = value.yearValues[year] ?? 0;
-                            const scaled = (stored * fxMultiplier) / scaleDivisorFor(displayScale);
+                            const scaled = bypassScale ? stored : (stored * fxMultiplier) / scaleDivisorFor(displayScale);
                             const isEditingThis = editingCell?.gId === src.id && editingCell?.vId === value.id && editingCell?.year === year;
                             return (
                               <td key={year} style={{ ...TD, padding: "4px 14px", background: isReadonly ? "#f3f4f6" : "#fff" }}>
                                 <input type="text"
                                   data-nav-row={navRow}
                                   data-nav-col={yi}
-                                  value={isEditingThis ? editingCell.raw : formatEditableInputValue(stored)}
+                                  value={isEditingThis ? editingCell.raw : formatEditableInputValue(stored, bypassScale)}
                                   placeholder="—"
                                   readOnly={isReadonly}
                                   onFocus={() => {
-                                    const displayed = stored === 0 ? "" : String(parseFloat(scaled.toFixed(scaleDecimalsFor(displayScale))));
+                                    const displayed = stored === 0 ? "" : bypassScale ? String(stored) : String(parseFloat(scaled.toFixed(scaleDecimalsFor(displayScale))));
                                     setEditingCell({ gId: src.id, vId: value.id, year, raw: displayed });
                                   }}
                                   onChange={(e) => {
@@ -1718,8 +1745,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                 />
                               </td>
                             );
-                          })}
-                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: t < 0 ? "#DC2626" : "#1f2937" }}>{displayFmt(t)}</td>; })()}
+                          }); })()}
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: t < 0 ? "#DC2626" : "#1f2937" }}>{displayFmt(t, isNonFinancialRow(value))}</td>; })()}
                         </tr>
                       );
                     })}
@@ -1735,16 +1762,19 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       </tr>
                     )}
 
-                    {/* Calculated / summary line rows — read-only, but still keyboard-navigable */}
+                    {/* Calculated / summary line rows — read-only, but still keyboard-navigable.
+                        A custom section's own "Total <name>" row bypasses scale too when every
+                        editable sibling in the section is NON_FINANCIAL (same flag as the header bar). */}
                     {group.expanded && calculated.map(({ value }) => {
                       const navRow = navRowCounter++;
+                      const rowBypassScale = sectionBypassScale || isNonFinancialRow(value);
                       return (
                       <tr key={value.id} style={{ background: isNetTab ? "#fff" : "#f3f4f6" }}>
                         <td colSpan={2} style={{ ...TD, padding: "4px 14px", fontSize: 12, fontWeight: 700, color: "#1f2937", background: isNetTab ? "#fff" : "#f3f4f6" }}>{value.name}</td>
                         {data.years.map((year: number, yi: number) => {
                           const val = value.yearValues[year] ?? 0;
                           const col = isNetTab ? netColor(val) : (val < 0 ? "#DC2626" : "#1f2937");
-                          const text = isNetTab ? netFmt(val) : displayFmt(val);
+                          const text = isNetTab ? netFmt(val) : displayFmt(val, rowBypassScale);
                           return (
                             <td key={year} style={{ ...TD, padding: "4px 14px", background: isNetTab ? "#fff" : "#f3f4f6" }}>
                               <input
@@ -1763,7 +1793,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {(() => {
                           const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
                           const col = isNetTab ? netColor(t) : (t < 0 ? "#DC2626" : "#1f2937");
-                          return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{isNetTab ? netFmt(t) : displayFmt(t)}</td>;
+                          return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{isNetTab ? netFmt(t) : displayFmt(t, rowBypassScale)}</td>;
                         })()}
                       </tr>
                       );

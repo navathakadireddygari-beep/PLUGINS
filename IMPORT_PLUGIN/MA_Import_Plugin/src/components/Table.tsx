@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronDown, ChevronUp, RefreshCw, Trash2 } from "lucide
 import {
   clampPercent,
   isNoTotalRow,
+  isNonFinancialRow,
   isPercentRow,
   isValidPercentInput,
   type RowIdentity,
@@ -1064,6 +1065,11 @@ const Table: React.FC = () => {
       // Scale "K" divides by 1 — this is only for grouping and separators.
       return formatNumber(n, "K", numberFormat, decimals);
     }
+    // NON_FINANCIAL rows (custom counts/metrics) also bypass FX + scale entirely.
+    if (isNonFinancialRow(identityOf(row))) {
+      if (!Number.isFinite(n)) return "—";
+      return formatNumber(n, "K", numberFormat, 0);
+    }
     const shown = formatBaseToDisplayed(value);
     return shown === "" ? "—" : shown;
   };
@@ -1373,10 +1379,10 @@ const Table: React.FC = () => {
     return result === null ? "—" : formatPercent(result, numberFormat);
   };
 
-  /** Editor seed for one row — percentage rows are seeded unconverted. */
+  /** Editor seed for one row — percentage and NON_FINANCIAL rows are seeded unconverted. */
   const cellSeed = (row: Row, raw: string | undefined): string => {
     const value = raw ?? "";
-    if (isPercentRow(identityOf(row))) {
+    if (isPercentRow(identityOf(row)) || isNonFinancialRow(identityOf(row))) {
       return value === "" || Number(value) === 0 ? "" : value;
     }
     return formatBaseToEditable(value);
@@ -1843,6 +1849,15 @@ const Table: React.FC = () => {
               target.values[cc] = Number.isFinite(n)
                 ? String(clampPercent(n))
                 : "";
+            }
+          } else if (isNonFinancialRow(identityOf(target))) {
+            // NON_FINANCIAL bypasses the currency/scale parse — stored as the raw number.
+            const trimmed = String(cell).trim();
+            if (trimmed === "") {
+              target.values[cc] = "";
+            } else {
+              const n = Number(trimmed.replace(/[^0-9.-]/g, ""));
+              target.values[cc] = Number.isFinite(n) ? String(n) : "";
             }
           } else {
             target.values[cc] = a.parse(cell);

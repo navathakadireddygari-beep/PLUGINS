@@ -816,6 +816,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const isPercentRow = (v: ValueRow): boolean =>
     matchesAny(v, PERCENT_DISPLAY_IDS) || /%/.test(v.name ?? "");
 
+  // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like percent rows.
+  const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
+
   // Raw formatter: no fx, no scale, trailing zero decimals trimmed (26 not
   // 26.00) — used for percentage rows. Fully independent of the K/M/B toggle —
   // neither the value nor its decimal precision shifts when scale changes.
@@ -1490,11 +1493,17 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {group.expanded && (() => {
                     const editable = group.values.filter((v) => v.isCalculated !== "Y");
                     const calc     = group.values.filter((v) => v.isCalculated === "Y");
+                    // Bypass scale on this section's calculated/total rows only when every
+                    // editable line in it is NON_FINANCIAL (mixed sections still scale).
+                    const groupAllNonFinancial = editable.length > 0 && editable.every(isNonFinancialRow);
 
                     const renderEditable = (value: ValueRow, _idx: number) => {
                       const acKey = `${group.id}|${value.id}`;
                       const isAC  = activeAutocomplete === acKey;
                       const bg    = "#fff";
+                      // Percentage rows AND NON_FINANCIAL rows bypass fx/scale conversion entirely.
+                      const pctRow = isPercentRow(value);
+                      const rawRow = pctRow || isNonFinancialRow(value);
                       // Non-custom lines (is_custom === "N") come from the template and
                       // must not have their name edited — on top of the read-only rule.
                       const nameLocked = isReadonly || value.isCustom === "N";
@@ -1535,9 +1544,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           )}
                           {data.years.map((year: number, yi: number) => {
                             const val = value.yearValues[year] ?? 0;
-                            // Percentage rows bypass fx conversion and K/M/B scaling entirely.
-                            const pctRow = isPercentRow(value);
-                            const rawRow = pctRow;
                             return (
                               <td key={year} style={{ ...TD, padding: "4px 12px" }}>
                                 <input type="text"
@@ -1589,7 +1595,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                   onKeyDown={(e) => handleCellArrowNav(e, value.id, "total")}
                                 />
                               : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return (
-                                  <input type="text" readOnly value={isPercentRow(value) ? rawFmt(t) : displayFmt(t)} data-cell-nav="1" data-vid={value.id} data-year="total" tabIndex={-1}
+                                  <input type="text" readOnly value={rawRow ? rawFmt(t) : displayFmt(t)} data-cell-nav="1" data-vid={value.id} data-year="total" tabIndex={-1}
                                     style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28, cursor: "default" }}
                                     onKeyDown={(e) => handleCellArrowNav(e, value.id, "total")}
                                   />
@@ -1614,11 +1620,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         )}
                         {data.years.map((year: number) => {
                           const val = value.yearValues[year] ?? 0;
-                          return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{isPercentRow(value) ? rawFmt(val) : displayFmt(val)}</td>);
+                          const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial;
+                          return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{rawRow ? rawFmt(val) : displayFmt(val)}</td>);
                         })}
                         {isNoTotalRow(value)
                           ? <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>—</td>
-                          : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{isPercentRow(value) ? rawFmt(t) : displayFmt(t)}</td>; })()
+                          : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial; return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{rawRow ? rawFmt(t) : displayFmt(t)}</td>; })()
                         }
                       </tr>
                     );
@@ -1640,11 +1647,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           )}
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
-                            return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{isPercentRow(value) ? rawFmt(val) : displayFmt(val)}</td>);
+                            const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial;
+                            return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{rawRow ? rawFmt(val) : displayFmt(val)}</td>);
                           })}
                           {isNoTotalRow(value)
                             ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>—</td>
-                            : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{isPercentRow(value) ? rawFmt(t) : displayFmt(t)}</td>; })()
+                            : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial; return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{rawRow ? rawFmt(t) : displayFmt(t)}</td>; })()
                           }
                         </tr>
                       ))}
