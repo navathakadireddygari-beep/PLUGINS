@@ -1308,7 +1308,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
               <tr style={{ background: "#e5e7eb", height: 42 }}>
                 <th style={TH({ width: 40, background: "#e5e7eb" })} />
                 <th style={TH({ textAlign: "left", background: "#e5e7eb", paddingLeft: 14 })}>LINE ITEM</th>
-                <th style={TH({ textAlign: "left", background: "#e5e7eb", paddingLeft: 14 })}>TARGET GO-LIVE DATE (UAT)</th>
+                <th style={TH({ textAlign: "left", background: "#e5e7eb", paddingLeft: 14 })}>TARGET GO-LIVE DATE</th>
                 {data.years.map((year: number) => (
                   <th key={year} style={TH({ textAlign: "right", background: "#e5e7eb", paddingRight: 14 })}>
                     {data.columnLabels[year] || `FY${String(year).slice(2)}`}

@@ -149,6 +149,6 @@ export const authHeaders = (token: string): Record<string, string> => {
   const role = getApiRole();
   const userEmail = getApiUserEmail();
   if (role) headers.role = role;
-  if (userEmail) headers.user_email = "402051823629786";
+  if (userEmail) headers.user_email = userEmail;
   return headers;
 };
