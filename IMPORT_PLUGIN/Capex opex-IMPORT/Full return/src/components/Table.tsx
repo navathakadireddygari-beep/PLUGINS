@@ -1368,23 +1368,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
         </div>
       </div>
 
-      {/* ── Pivot tables — sections split into OPEX / CAPEX / everything-else blocks, blocks ordered by each section's display_order ── */}
+      {/* ── Pivot table — sections remain in API display_order ── */}
       {(() => {
-        const opexGroups  = data.groups.filter((g) => g.sectionType === "OPEX");
-        const capexGroups = data.groups.filter((g) => g.sectionType === "CAPITAL_INVESTMENT");
-        const restGroups  = data.groups.filter((g) => g.sectionType !== "OPEX" && g.sectionType !== "CAPITAL_INVESTMENT");
-
-        // Blocks keep sections grouped by type, but the blocks themselves are
-        // ordered by display_order so the overall layout still follows it.
-        const minDisplayOrder = (groups: Group[]): number =>
-          Math.min(...groups.map((g) => g.displayOrder ?? Number.MAX_SAFE_INTEGER));
-
-        const tableBlocks: { groups: Group[] }[] = [
-          ...(opexGroups.length  ? [{ groups: opexGroups }]  : []),
-          ...(capexGroups.length ? [{ groups: capexGroups }] : []),
-          ...(restGroups.length  ? [{ groups: restGroups }] : []),
-        ].sort((a, b) => minDisplayOrder(a.groups) - minDisplayOrder(b.groups));
-
         const renderGroupTable = (groups: Group[]) => (
           <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "100%", minWidth: 700, borderCollapse: "collapse", tableLayout: "fixed" }}>
@@ -1672,15 +1657,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
           </div>
         );
 
-        return (
-          <>
-            {tableBlocks.map((block, i) => (
-              <div key={i}>
-                {renderGroupTable(block.groups)}
-              </div>
-            ))}
-          </>
-        );
+        return renderGroupTable(data.groups);
       })()}
 
     </div>

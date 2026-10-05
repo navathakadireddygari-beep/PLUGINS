@@ -962,15 +962,21 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // "New Line Item" rows in the DB.
   const addGroup = (): void => {
     const newId = generateId();
-    setData((p) => p ? ({
-      ...p,
-      groups: [...p.groups, {
-        id: newId, name: "", expanded: true,
-        sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
-        displayOrder: p.groups.length + 1,
-        values: [blankRow(p)],
-      }],
-    }) : p);
+    setData((p) => {
+      if (!p) return p;
+      // Templates number sections in steps of 10, so continue past the highest
+      // one rather than counting groups — otherwise the new section sorts first.
+      const maxOrder = p.groups.reduce((m, g) => Math.max(m, g.displayOrder ?? 0), 0);
+      return {
+        ...p,
+        groups: [...p.groups, {
+          id: newId, name: "", expanded: true,
+          sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
+          displayOrder: maxOrder + 10,
+          values: [blankRow(p)],
+        }],
+      };
+    });
     // Focuses the new section's name input, which auto-scrolls it into view.
     setEditingGroupId(newId);
     setEditingGroupName("");
@@ -1384,22 +1390,22 @@ export default function PivotTableWithAPI(): React.ReactElement {
         </div>
       </div>
 
-      {/* ── Pivot tables — sections split into OPEX / CAPEX / everything-else blocks, blocks ordered by each section's display_order ── */}
+      {/* ── Pivot tables — sections render in display_order; consecutive sections of the same category share a table ── */}
       {(() => {
-        const opexGroups  = data.groups.filter((g) => g.sectionType === "OPEX");
-        const capexGroups = data.groups.filter((g) => g.sectionType === "CAPITAL_INVESTMENT");
-        const restGroups  = data.groups.filter((g) => g.sectionType !== "OPEX" && g.sectionType !== "CAPITAL_INVESTMENT");
+        const categoryOf = (g: Group): string =>
+          g.sectionType === "OPEX" || g.sectionType === "CAPITAL_INVESTMENT" ? g.sectionType : "OTHER";
 
-        // Blocks keep sections grouped by type, but the blocks themselves are
-        // ordered by display_order so the overall layout still follows it.
-        const minDisplayOrder = (groups: Group[]): number =>
-          Math.min(...groups.map((g) => g.displayOrder ?? Number.MAX_SAFE_INTEGER));
-
-        const tableBlocks: { groups: Group[] }[] = [
-          ...(opexGroups.length  ? [{ groups: opexGroups }]  : []),
-          ...(capexGroups.length ? [{ groups: capexGroups }] : []),
-          ...(restGroups.length  ? [{ groups: restGroups }] : []),
-        ].sort((a, b) => minDisplayOrder(a.groups) - minDisplayOrder(b.groups));
+        // display_order is the single source of truth for section order; only
+        // adjacent same-category sections are merged into one table so they
+        // keep sharing a horizontal scrollbar.
+        const tableBlocks: { groups: Group[] }[] = [];
+        [...data.groups]
+          .sort((a, b) => (a.displayOrder ?? Number.MAX_SAFE_INTEGER) - (b.displayOrder ?? Number.MAX_SAFE_INTEGER))
+          .forEach((g) => {
+            const last = tableBlocks[tableBlocks.length - 1];
+            if (last && categoryOf(last.groups[0]) === categoryOf(g)) last.groups.push(g);
+            else tableBlocks.push({ groups: [g] });
+          });
 
         // Each table block gets its own scroll container, so scrolling one block
         // never drags another sideways. Sections inside a block share the table

@@ -10,13 +10,15 @@
       // Case 1 — proposal exists:  set proposal_id, leave spc_type_id null
       // Case 2 — no proposal yet:  set spc_type_id, leave proposal_id null
       window.__APP_CONFIG__ = {
-        proposal_id:  989,                // number | null  e.g. 1234
-        file_id: 421,
+        proposal_id:  1309,                // number | null  e.g. 1234
+        file_id: 358,
         spc_type_id:  102,     
-        template_type_id: 309,           // number | null  e.g. 1062  (101=PRODUCT_DEVELOPMENT template)
-        app_user:     "satish.mallagundla@test.exp.com",
+        template_type_id: 303,           // number | null  e.g. 1062  (101=PRODUCT_DEVELOPMENT template)
+        app_user:     409999549613042,
         // Direct ORDS endpoint (no Vite proxy) — CORS must be enabled server-side.
-        api_endpoint: "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
+        // api_endpoint: "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
+        api_endpoint: "https://gisuat.uk.experian.com/ords/xxexp_gis_v1",
+
         // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
         // ajaxId:   "ajaxId",
         // flowId:   "flowId",

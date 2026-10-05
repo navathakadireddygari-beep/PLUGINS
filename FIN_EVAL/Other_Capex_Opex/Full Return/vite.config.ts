@@ -25,7 +25,7 @@ export default defineConfig(({ command }) => ({
   server: {
     proxy: {
       "/api": {
-        target:       "https://gisdev.uk.experian.eeco",
+        target:       "https://gisuat.uk.experian.com",
         changeOrigin: true,   // rewrites the Host header to match target
         secure:       false,  // skips SSL validation for self-signed cert on :8443
         rewrite:      (p) => p.replace(/^\/api/, "/ords/xxexp_gis_v1"),

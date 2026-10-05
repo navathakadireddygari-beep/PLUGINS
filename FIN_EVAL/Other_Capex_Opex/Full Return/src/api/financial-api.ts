@@ -10,7 +10,7 @@
  * (set in index.html) and are read via `getAppConfig`.
  */
 import type { AppConfig } from "../config/app-config";
-import { fetchAuthToken, extractToken } from "./auth-api";
+import { fetchAuthToken, extractToken, parseFirstJsonObject } from "./auth-api";
 
 /* ─────────────────────────── UI-side types ──────────────────────── */
 export type YearValues = Record<number, number>;
@@ -450,7 +450,7 @@ export async function getAccountCodes(cfg: AppConfig, sectionCode: string): Prom
 
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
-  const json = await res.json();
+  const json = parseFirstJsonObject(await res.text(), "account-codes") as Record<string, unknown> & { data?: unknown; items?: unknown; rows?: unknown };
 
   const rows: Record<string, unknown>[] =
     Array.isArray(json)        ? json        :
@@ -491,7 +491,9 @@ export async function getFinancialData(
   }
 
   // Response format: { apiStatus, apiMessage, data: { items: ApiHeader } }
-  const raw = await res.json() as Record<string, unknown>;
+  const rawText = await res.text();
+  console.log("[getFinancialData] raw body length:", rawText.length, rawText.slice(0, 500));
+  const raw = parseFirstJsonObject(rawText, "getFinancialData");
 
   // API may return HTTP 200 with apiStatus "E" for business-logic errors
   const rawStatus = (raw.apiStatus || raw.api_status || "") as string;
@@ -500,11 +502,27 @@ export async function getFinancialData(
     throw new Error(rawMsg || "Failed to load financial data.");
   }
 
-  const items = (raw.data as Record<string, unknown> | null)?.items;
-  const dataArray: unknown[] = items != null ? [items] : [];
+  const data  = raw.data as Record<string, unknown> | unknown[] | null | undefined;
+  const items = (data as Record<string, unknown> | null)?.items;
+
+  // ORDS wraps the header differently per handler: data.items may be the header
+  // object or an array of them, and some handlers return data/items at top level.
+  const candidate =
+    Array.isArray(items)      ? items[0] :
+    items != null             ? items    :
+    Array.isArray(data)       ? data[0]  :
+    Array.isArray(raw.items)  ? (raw.items as unknown[])[0] :
+    data != null && (data as Record<string, unknown>).sections ? data :
+    raw.sections != null      ? raw      : null;
+
+  const dataArray: unknown[] = candidate != null ? [candidate] : [];
 
   const json: ApiResponse = { data: dataArray as ApiHeader[] };
   console.log("[getFinancialData] data array length:", dataArray.length, dataArray[0]);
+
+  if (!dataArray.length) {
+    console.error("[getFinancialData] no header found in response. Top-level keys:", Object.keys(raw), "data:", data);
+  }
 
   const result = transformApiData(json);
   console.log("[getFinancialData] transformApiData result:", result ? `${result.table.groups.length} groups, ${result.table.years.length} years` : "null → using createEmptyTable");
