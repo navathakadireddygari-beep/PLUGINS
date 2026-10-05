@@ -1,0 +1,406 @@
+curl --request get \
+  --url https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1/GIS/MA/buyPlan \
+  --header 'authorization: Bearer 7tibcJrpErkSJLKZ1XxbEQ' \
+  --header 'currency: USD' \
+  --header 'proposal_id: 890'
+  
+  
+response:
+{
+  "apiStatus": "S",
+  "apiMessage": "Success",
+  "data": {
+    "proposal_info": {
+      "proposal_code": "NA-MA-2026-890",
+      "proposal_title": "temp testing",
+      "currency_code": "USD",
+      "fx_rate": 1,
+      "target_year_end": "30 Sep 2025",
+      "display_currency": "USD",
+      "proration_months": 6,
+      "first_fy_key": "fy26"
+    },
+    "fiscal_years": [
+      "fy24",
+      "fy25",
+      "fy26",
+      "fy27",
+      "fy28",
+      "fy29",
+      "fy30",
+      "fy31",
+      "fy32",
+      "fy33"
+    ],
+    "sections": [
+      {
+        "section_code": "REVENUE",
+        "section_label": "Revenue",
+        "fy_data": {
+          "fy24": {
+            "forecast_usd": 998000,
+            "buyplan_usd": 0,
+            "variance_usd": 998000
+          },
+          "fy25": {
+            "forecast_usd": 989000,
+            "buyplan_usd": 0,
+            "variance_usd": 989000
+          },
+          "fy26": {
+            "forecast_usd": 1295500,
+            "buyplan_usd": 900000,
+            "variance_usd": 395500
+          },
+          "fy27": {
+            "forecast_usd": 715000,
+            "buyplan_usd": 715000,
+            "variance_usd": 0
+          },
+          "fy28": {
+            "forecast_usd": 619000,
+            "buyplan_usd": 0,
+            "variance_usd": 619000
+          },
+          "fy29": {
+            "forecast_usd": 0,
+            "buyplan_usd": 0,
+            "variance_usd": null
+          },
+          "fy30": {
+            "forecast_usd": 0,
+            "buyplan_usd": 0,
+            "variance_usd": null
+          },
+          "fy31": {
+            "forecast_usd": 0,
+            "buyplan_usd": 0,
+            "variance_usd": null
+          },
+          "fy32": {
+            "forecast_usd": 0,
+            "buyplan_usd": 0,
+            "variance_usd": null
+          },
+          "fy33": {
+            "forecast_usd": 0,
+            "buyplan_usd": 0,
+            "variance_usd": null
+          }
+        }
+      },
+      {
+        "section_code": "EBIT",
+        "section_label": "EBIT",
+        "fy_data": {
+          "fy24": {
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy25": {
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy26": {
+            "forecast_usd": null,
+            "buyplan_usd": 575000,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy27": {
+            "forecast_usd": null,
+            "buyplan_usd": 420000,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy28": {
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy29": {
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy30": {
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy31": {
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy32": {
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy33": {
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          }
+        }
+      }
+    ]
+  }
+}
+
+curl --request get \
+  --url https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1/GIS/MA/buyPlan \
+  --header 'authorization: Bearer 7tibcJrpErkSJLKZ1XxbEQ' \
+  --header 'proposal_id: 890'
+  
+response , since we are not passing USD or local currency, it will give local as well as USD
+
+{
+  "apiStatus": "S",
+  "apiMessage": "Success",
+  "data": {
+    "proposal_info": {
+      "proposal_code": "NA-MA-2026-890",
+      "proposal_title": "temp testing",
+      "currency_code": "USD",
+      "fx_rate": 1,
+      "target_year_end": "30 Sep 2025",
+      "display_currency": "BOTH",
+      "proration_months": 6,
+      "first_fy_key": "fy26"
+    },
+    "fiscal_years": [
+      "fy24",
+      "fy25",
+      "fy26",
+      "fy27",
+      "fy28",
+      "fy29",
+      "fy30",
+      "fy31",
+      "fy32",
+      "fy33"
+    ],
+    "sections": [
+      {
+        "section_code": "REVENUE",
+        "section_label": "Revenue",
+        "fy_data": {
+          "fy24": {
+            "forecast_local": 998000,
+            "buyplan_local": 0,
+            "variance_local": 998000,
+            "forecast_usd": 998000,
+            "buyplan_usd": 0,
+            "variance_usd": 998000
+          },
+          "fy25": {
+            "forecast_local": 989000,
+            "buyplan_local": 0,
+            "variance_local": 989000,
+            "forecast_usd": 989000,
+            "buyplan_usd": 0,
+            "variance_usd": 989000
+          },
+          "fy26": {
+            "forecast_local": 1295500,
+            "buyplan_local": 900000,
+            "variance_local": 395500,
+            "forecast_usd": 1295500,
+            "buyplan_usd": 900000,
+            "variance_usd": 395500
+          },
+          "fy27": {
+            "forecast_local": 715000,
+            "buyplan_local": 715000,
+            "variance_local": 0,
+            "forecast_usd": 715000,
+            "buyplan_usd": 715000,
+            "variance_usd": 0
+          },
+          "fy28": {
+            "forecast_local": 619000,
+            "buyplan_local": 0,
+            "variance_local": 619000,
+            "forecast_usd": 619000,
+            "buyplan_usd": 0,
+            "variance_usd": 619000
+          },
+          "fy29": {
+            "forecast_local": 0,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": 0,
+            "buyplan_usd": 0,
+            "variance_usd": null
+          },
+          "fy30": {
+            "forecast_local": 0,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": 0,
+            "buyplan_usd": 0,
+            "variance_usd": null
+          },
+          "fy31": {
+            "forecast_local": 0,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": 0,
+            "buyplan_usd": 0,
+            "variance_usd": null
+          },
+          "fy32": {
+            "forecast_local": 0,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": 0,
+            "buyplan_usd": 0,
+            "variance_usd": null
+          },
+          "fy33": {
+            "forecast_local": 0,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": 0,
+            "buyplan_usd": 0,
+            "variance_usd": null
+          }
+        }
+      },
+      {
+        "section_code": "EBIT",
+        "section_label": "EBIT",
+        "fy_data": {
+          "fy24": {
+            "forecast_local": null,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy25": {
+            "forecast_local": null,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy26": {
+            "forecast_local": null,
+            "buyplan_local": 575000,
+            "variance_local": null,
+            "forecast_usd": null,
+            "buyplan_usd": 575000,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy27": {
+            "forecast_local": null,
+            "buyplan_local": 420000,
+            "variance_local": null,
+            "forecast_usd": null,
+            "buyplan_usd": 420000,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy28": {
+            "forecast_local": null,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy29": {
+            "forecast_local": null,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy30": {
+            "forecast_local": null,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy31": {
+            "forecast_local": null,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy32": {
+            "forecast_local": null,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          },
+          "fy33": {
+            "forecast_local": null,
+            "buyplan_local": 0,
+            "variance_local": null,
+            "forecast_usd": null,
+            "buyplan_usd": 0,
+            "variance_usd": null,
+            "ebit_margin_pct": null
+          }
+        }
+      }
+    ]
+  }
+}
+
+
+
+
+curl --request post \
+  --url https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1/GIS/MA/buyPlan/adjustment \
+  --header 'authorization: Bearer 7tibcJrpErkSJLKZ1XxbEQ' \
+  --header 'content-type: application/json' \
+  --data '{
+  "proposal_id": 890,
+  "fin_eval_section_id": 11932,
+  "description": "adjustment testing FY26",
+  "amount": 50000,
+  "fiscal_year": 2026,
+  "created_by": 12345
+}'
+
+response
+
+{
+  "apiStatus": "S",
+  "apiMessage": "Adjustment created",
+  "data": {
+    "pir_adjustment_id": 5
+  }
+}
