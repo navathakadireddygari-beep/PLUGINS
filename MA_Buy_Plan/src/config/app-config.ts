@@ -2,12 +2,14 @@
  * App configuration injected via index.html -> window.__APP_CONFIG__.
  * Same shape/resolution order as the rest of the FinEval suite (see
  * FIN_EVAL/MA/src/config/app-config.ts), trimmed to what BuyPlan needs: the
- * proposal to load plus what the proposalAuthoring endpoints need.
+ * proposal to load plus what the GIS endpoints need.
  */
 
 export type AppConfig = {
   /** Proposal whose Buy Plan is loaded/saved; null when none is configured. */
   proposal_id: number | null;
+  /** Numeric GIS user id, sent as `created_by` on Buy Plan adjustments. */
+  user_id: number | null;
   app_user: string;
   /**
    * APEX session id. Buy Plan sends it as `user_email` (header + save body)
@@ -26,6 +28,7 @@ export type AppConfig = {
 
 export interface HostAppConfig {
   proposal_id?: string | number | null;
+  user_id?: string | number | null;
   app_user?: string;
   session_id?: string | number;
   app_roles?: string;
@@ -100,6 +103,7 @@ export const getAppConfig = (): AppConfig => {
 
   return {
     proposal_id: numericId(cfg.proposal_id, queryParam("proposal_id")),
+    user_id: numericId(cfg.user_id, queryParam("user_id")),
     app_user: firstOf(cfg.app_user, local ? LOCAL_DEV_USER_EMAIL : undefined),
     // Explicit `session_id`, else `?session_id=`, else the APEX session the
     // host already passes as `instance` (&APP_SESSION.) for the auth callback.
@@ -139,7 +143,7 @@ export const getApiUserEmail = (): string | undefined => {
   return cfg.session_id || cfg.app_user || undefined;
 };
 
-/** Auth/identity headers every proposalAuthoring call carries. */
+/** Auth/identity headers every GIS call carries. */
 export const authHeaders = (token: string): Record<string, string> => {
   const headers: Record<string, string> = { authorization: `Bearer ${token}` };
   const role = getApiRole();

@@ -6,21 +6,36 @@ import BuyPlanHeader from "@/components/BuyPlanHeader";
 import BuyPlanToolbar from "@/components/BuyPlanToolbar";
 import BuyPlanTable from "@/components/BuyPlanTable";
 import Toast, { type ToastState } from "@/components/Toast";
+import type { CurrencySide } from "@/types";
 
 /** Static table headings (wireframe). */
 const LOCAL_TABLE = { title: "GSPC Proforma — Local Currency", caption: "Local Currency" };
 const USD_TABLE = { title: "GSPC Proforma — US$ at Actual Rates", caption: "US$ at Actual Rates" };
 
 export default function BuyPlanPage() {
-  const { dataset, loading, saving, error, dirty, savedAt, setBuyPlan, save, discard } = useBuyPlan();
+  const {
+    dataset,
+    newRows,
+    loading,
+    saving,
+    error,
+    dirty,
+    savedAt,
+    addRow,
+    setRowDescription,
+    setRowAmount,
+    removeRow,
+    save,
+    discard,
+  } = useBuyPlan();
   const { currency, localCurrency, settings, setProposalCurrencies } = useCurrencyFormat();
 
-  // Hand the proposal's currencies (and its stored rate) to the shared
-  // context, exactly as FIN_EVAL/MA does once its GET lands.
+  // Hand the proposal's currency and FX rate (both from the Buy Plan GET) to
+  // the shared context that drives the toolbar and the formatters.
   const header = dataset?.header;
   useEffect(() => {
-    if (header) setProposalCurrencies(header.localCurrency, header.displayCurrency, header.exchangeRate);
-  }, [header?.localCurrency, header?.displayCurrency, header?.exchangeRate, setProposalCurrencies]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (header) setProposalCurrencies(header.localCurrency, header.localCurrency, header.fxRate);
+  }, [header?.localCurrency, header?.fxRate, setProposalCurrencies]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Toast the save / load outcome, as FIN_EVAL/MA does.
   const [toast, setToast] = useState<ToastState>(null);
@@ -34,16 +49,16 @@ export default function BuyPlanPage() {
 
   /**
    * One table per currency of the pair — local first, then US$ at actual rates
-   * — each rendered through the same settings with only `currency` pinned. A
-   * USD proposal has a single table. Buy Plan is typed into the table whose
-   * currency is selected in the top bar; the other mirrors it, converted.
+   * — each showing that currency's figures from the GET. A USD proposal has a
+   * single table. New rows are typed into the table whose currency is selected
+   * in the top bar; the other mirrors them, converted.
    */
   const tables = useMemo(() => {
     const local = (localCurrency ?? STORAGE_CURRENCY).toUpperCase();
     const pinned = (code: string): MoneySettings => ({ ...settings, currency: code });
-    const list = [];
-    if (local !== STORAGE_CURRENCY) list.push({ ...LOCAL_TABLE, code: local, settings: pinned(local) });
-    list.push({ ...USD_TABLE, code: STORAGE_CURRENCY, settings: pinned(STORAGE_CURRENCY) });
+    const list: Array<typeof LOCAL_TABLE & { side: CurrencySide; code: string; settings: MoneySettings }> = [];
+    if (local !== STORAGE_CURRENCY) list.push({ ...LOCAL_TABLE, side: "local", code: local, settings: pinned(local) });
+    list.push({ ...USD_TABLE, side: "usd", code: STORAGE_CURRENCY, settings: pinned(STORAGE_CURRENCY) });
     return list;
   }, [localCurrency, settings]);
 
@@ -76,11 +91,16 @@ export default function BuyPlanPage() {
         <BuyPlanTable
           key={table.code}
           dataset={dataset}
+          newRows={newRows}
+          side={table.side}
           title={table.title}
           caption={table.caption}
           settings={table.settings}
           editable={!saving && (tables.length === 1 || table.code === editCurrency)}
-          onBuyPlanChange={setBuyPlan}
+          onAddRow={addRow}
+          onRowDescription={setRowDescription}
+          onRowAmount={setRowAmount}
+          onRemoveRow={removeRow}
         />
       ))}
     </div>

@@ -2,127 +2,125 @@
  * BuyPlan data model.
  *
  * Two layers:
- *  - Wire types for the M&A financialEvaluation endpoint (the same GET/PUT the
- *    Financial Evaluation screen uses — Buy Plan reads/writes the
- *    `buy_plan_amount` bucket of each line's year values).
- *  - The view model the "GSPC Proforma Financials" table renders.
+ *  - Wire types for the M&A Buy Plan endpoints:
+ *      GET  /GIS/MA/buyPlan             (headers: proposal_id [, currency])
+ *      POST /GIS/MA/buyPlan/adjustment  (one adjustment = one section + one FY)
+ *  - The view model the "GSPC Proforma Financials" tables render.
  */
 
 export type VarianceTone = "pos" | "neg" | "flat";
 
 /* ───────────────────────────── Wire types ───────────────────────────── */
 
-export type YesNo = "Y" | "N";
-
-/** One fiscal year's cell values for a line item. */
-export interface FinEvalYearValue {
-  spc_projected_amount: number | null;
-  ytd_budgeted_forecast: number | null;
-  ytd_actuals: number | null;
-  variance: number | null;
-  buy_plan_amount: number | null;
-  forecast_buyplan_variance: number | null;
-}
-
-/** Year buckets keyed by `fy24`…`fy33`, plus a `total` bucket. */
-export type FinEvalYearValues = Record<string, FinEvalYearValue | null>;
-
-export interface FinEvalLine {
-  fin_eval_line_id: number | null;
-  fin_eval_section_id?: number | null;
-  line_type: string | null;
-  line_item_name: string;
-  is_calculated: YesNo;
-  is_read_only?: YesNo;
-  account: string | null;
-  display_order: number;
-  year_values: FinEvalYearValues | null;
-  status?: string | null;
-}
-
-export interface FinEvalSection {
-  fin_eval_section_id: number | null;
-  section_name: string;
-  section_type: string;
-  display_order: number;
-  status?: string | null;
-  lines: FinEvalLine[] | null;
-}
-
-/** The `data.items` object of GET /GIS/proposalAuthoring/financialEvaluation. */
-export interface FinancialEvaluationResponse {
-  fin_eval_header_id: number | null;
-  proposal_id: number | null;
-  proposal_title: string | null;
-  proposal_code?: string | null;
-  proposal_status?: string | null;
-  planned_go_live_date?: string | null;
-  local_currency: string | null;
-  display_currency: string | null;
-  exchange_rate: number | null;
-  sections: FinEvalSection[] | null;
-}
-
 /**
- * Body of PUT /GIS/proposalAuthoring/{proposal_id}/financialEvaluation: the
- * whole GET payload echoed back (fields this screen never reads included, hence
- * the index signature) plus the caller's `user_email`.
+ * One fiscal year of a section. Without a `currency` header the GET returns
+ * both the `_local` and `_usd` triples; with one, only that currency's.
+ * `variance_*` is computed by the server (forecast − buy plan) and is null
+ * where there is no forecast to compare against.
  */
-export type BuyPlanSavePayload = FinancialEvaluationResponse & {
-  user_email: string;
-  [key: string]: unknown;
-};
+export interface BuyPlanFyData {
+  forecast_local?: number | null;
+  buyplan_local?: number | null;
+  variance_local?: number | null;
+  forecast_usd?: number | null;
+  buyplan_usd?: number | null;
+  variance_usd?: number | null;
+  /** EBIT section only. */
+  ebit_margin_pct?: number | null;
+}
+
+export interface BuyPlanSection {
+  /** "REVENUE" | "EBIT". */
+  section_code: string;
+  section_label: string;
+  /** Needed to POST an adjustment against this section. */
+  fin_eval_section_id?: number | null;
+  /** Keyed by lower-case fiscal-year bucket, e.g. `fy26`. */
+  fy_data: Record<string, BuyPlanFyData | null> | null;
+}
+
+export interface BuyPlanProposalInfo {
+  proposal_code: string | null;
+  proposal_title: string | null;
+  /** The proposal's local currency. */
+  currency_code: string | null;
+  /** `1 USD = fx_rate <currency_code>`. */
+  fx_rate: number | null;
+  target_year_end: string | null;
+  /** The `currency` header echoed back, or "BOTH" when none was sent. */
+  display_currency: string | null;
+  proration_months: number | null;
+  /** First fiscal year the Buy Plan covers, e.g. `fy26`. */
+  first_fy_key: string | null;
+}
+
+/** The `data` object of GET /GIS/MA/buyPlan. */
+export interface BuyPlanResponse {
+  proposal_info: BuyPlanProposalInfo | null;
+  fiscal_years: string[] | null;
+  sections: BuyPlanSection[] | null;
+}
+
+/** Body of POST /GIS/MA/buyPlan/adjustment. */
+export interface BuyPlanAdjustmentPayload {
+  proposal_id: number;
+  fin_eval_section_id: number;
+  description: string;
+  amount: number;
+  /** Four-digit year, e.g. 2026 for `fy26`. */
+  fiscal_year: number;
+  created_by: number;
+}
 
 /* ───────────────────────────── View model ───────────────────────────── */
 
-/**
- * A single FY's Forecast vs Buy Plan pair, as stored: USD, in thousands — the
- * same base FIN_EVAL/MA stores and converts from (see lib/currency-conversion).
- */
+/** Which of the GET's two value sets a table shows. */
+export type CurrencySide = "local" | "usd";
+
+/** One FY's Forecast / Buy Plan / Variance, as the server sent them. */
 export interface Figures {
   forecast: number | null;
   buyPlan: number | null;
+  variance: number | null;
 }
 
-export interface BuyPlanRow {
-  /** `fin_eval_line_id` as a string — the key edits are tracked under. */
-  key: string;
-  lineId: number | null;
+/** Fiscal-year bucket -> figures. */
+export type FyFigures = Record<string, Figures>;
+
+export interface BuyPlanSectionView {
+  /** `section_code`, e.g. "REVENUE". */
+  code: string;
   label: string;
-  /** "percent" rows (e.g. EBIT Margin %) are not currency and never converted. */
-  kind: "money" | "percent";
-  /** Server-calculated line (subtotal, EBIT, …): shown bold, never editable. */
-  isCalculated: boolean;
-  /** Buy Plan cells accept input. */
-  editable: boolean;
-  /** Keyed by lower-case fiscal-year bucket, e.g. `fy25`. */
-  values: Record<string, Figures>;
-}
-
-export interface BuyPlanGroup {
-  id: string;
   sectionId: number | null;
-  title: string;
-  rows: BuyPlanRow[];
+  /** The section's own figures, per currency side. */
+  values: Record<CurrencySide, FyFigures>;
 }
 
 export interface BuyPlanHeaderInfo {
   proposalId: number | null;
   title: string;
   code: string | null;
-  status: string | null;
-  plannedGoLive: string | null;
+  targetYearEnd: string | null;
   /** The proposal's local currency, null when the payload states none. */
   localCurrency: string | null;
-  displayCurrency: string | null;
-  exchangeRate: number | null;
+  fxRate: number | null;
 }
 
 export interface BuyPlanDataset {
   header: BuyPlanHeaderInfo;
-  /** Fiscal-year buckets the evaluation carries, chronological (`fy24`…). */
+  /** Fiscal-year buckets shown, chronological, from `first_fy_key` on. */
   fiscalYears: string[];
-  groups: BuyPlanGroup[];
-  /** Untouched GET payload — the PUT echoes each edited line's buckets from it. */
-  raw: FinancialEvaluationResponse;
+  sections: BuyPlanSectionView[];
+}
+
+/**
+ * A row the user added with "+ Add Row", not yet saved. Amounts are kept in
+ * USD (the currency the Financial Evaluation stores in) and POSTed per FY.
+ */
+export interface NewBuyPlanRow {
+  key: string;
+  sectionCode: string;
+  description: string;
+  /** Fiscal-year bucket -> USD amount. */
+  amounts: Record<string, number | null>;
 }

@@ -1,22 +1,32 @@
 import { Fragment } from "react";
 import BuyPlanCell from "@/components/BuyPlanCell";
-import type { BuyPlanDataset } from "@/types";
+import type {
+  BuyPlanDataset,
+  BuyPlanSectionView,
+  CurrencySide,
+  Figures,
+  NewBuyPlanRow,
+  VarianceTone,
+} from "@/types";
 import {
   CURRENCIES,
+  computeDisplayMultiplier,
   formatBaseToDisplayed,
   formatBaseToEditable,
   formatPercent,
   parseDisplayedToBase,
   scaleDecimals,
   scaleDivisor,
-  toDisplayCurrency,
   type MoneySettings,
 } from "@/lib";
 import { percentVariance } from "@/lib/variance";
-import type { VarianceTone } from "@/types";
 
 type Props = {
   dataset: BuyPlanDataset;
+  /** Unsaved "+ Add Row" rows, all sections. */
+  newRows: NewBuyPlanRow[];
+  /** Which of the GET's value sets this table shows. */
+  side: CurrencySide;
   /** Static table heading, e.g. "GSPC Proforma — Local Currency". */
   title: string;
   /** Static corner caption, e.g. "Local Currency". */
@@ -26,40 +36,38 @@ type Props = {
    * `currency` pinned to THIS table's currency.
    */
   settings: MoneySettings;
-  /** Buy Plan cells accept input (only in the table of the selected currency). */
+  /** New rows can be added / typed into here (the selected currency's table). */
   editable: boolean;
-  /** Commit a Buy Plan cell in STORED units (USD thousands); null clears it. */
-  onBuyPlanChange: (lineKey: string, bucket: string, amount: number | null) => void;
+  onAddRow: (sectionCode: string) => void;
+  onRowDescription: (key: string, description: string) => void;
+  /** Commit a new row's amount in USD; null clears it. */
+  onRowAmount: (key: string, fy: string, amount: number | null) => void;
+  onRemoveRow: (key: string) => void;
 };
 
 /** Percent cells: one decimal, as in the wireframe ("51.9%"). */
 const PERCENT_CELL_DECIMALS = 1;
 
-/**
- * Forecast − Buy Plan, run through the SAME conversion + scale + number format
- * as every other cell. A missing side counts as 0 (as the server's totals do);
- * a variance that rounds to zero at the current scale shows "—".
- */
-function moneyVariance(
-  forecast: number | null,
-  buyPlan: number | null,
-  settings: MoneySettings
-): { text: string; tone: VarianceTone } {
-  if (forecast === null && buyPlan === null) return { text: "—", tone: "flat" };
-  const diff = (forecast ?? 0) - (buyPlan ?? 0);
-  const shown =
-    toDisplayCurrency(diff, settings.currency, settings.fxRate, settings.localCurrency) /
-    scaleDivisor(settings.scale);
-  const factor = 10 ** scaleDecimals(settings.scale);
-  if (Math.round(shown * factor) === 0) return { text: "—", tone: "flat" };
-  return { text: formatBaseToDisplayed(diff, settings), tone: diff < 0 ? "neg" : "pos" };
-}
+const EMPTY: Figures = { forecast: null, buyPlan: null, variance: null };
+
+/** Variance as the server computes it: forecast − buy plan, none without a forecast. */
+const varianceOf = (forecast: number | null, buyPlan: number | null): number | null =>
+  forecast === null || forecast === 0 ? null : forecast - (buyPlan ?? 0);
+
+/** "30 Sep 2025" -> "30 SEPTEMBER", as the wireframe's year-end caption. */
+const yearEndCaption = (value: string | null): string | null => {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime())
+    ? value
+    : `${d.getDate()} ${d.toLocaleString("en-GB", { month: "long" })}`.toUpperCase();
+};
 
 /**
- * Commit a typed Buy Plan value: parse it back to STORED units, ignore a no-op,
- * and pass null when the cell was cleared.
+ * Commit a typed amount: parse it back to USD, ignore a no-op, and pass null
+ * when the cell was cleared.
  */
-function commitBuyPlan(
+function commitAmount(
   text: string,
   base: number | null,
   settings: MoneySettings,
@@ -75,23 +83,184 @@ function commitBuyPlan(
   if (base === null || Math.abs(next - base) > 1e-9) onCommit(next);
 }
 
+function TrashIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 6h18" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
 export default function BuyPlanTable({
   dataset,
+  newRows,
+  side,
   title,
   caption,
   settings,
   editable,
-  onBuyPlanChange,
+  onAddRow,
+  onRowDescription,
+  onRowAmount,
+  onRemoveRow,
 }: Props) {
-  const { fiscalYears, groups } = dataset;
+  const { fiscalYears, sections, header } = dataset;
   const colCount = 1 + fiscalYears.length * 3;
   const symbol = CURRENCIES[settings.currency]?.symbol ?? settings.currency;
   const unit = `${symbol}${settings.scale}`;
   const lastIndex = fiscalYears.length - 1;
-  // One grid per table; rows are numbered across groups so arrow keys run
-  // straight through the whole table (and on into the next one).
-  const gridId = `bp-${settings.currency}`;
+  const gridId = `bp-${side}`;
   let rowIdx = 0;
+
+  // Server figures are already in this table's currency, so they are only
+  // scaled and formatted — never FX-converted.
+  const plain: MoneySettings = { ...settings, fxRate: 1 };
+  // New-row amounts are USD; this converts them into this table's currency.
+  const fx = computeDisplayMultiplier(settings.currency, settings.localCurrency, settings.fxRate);
+
+  const money = (value: number | null) => formatBaseToDisplayed(value, plain);
+
+  /** A variance in this table's currency; "—" when absent or zero at this scale. */
+  const varianceCell = (value: number | null): { text: string; tone: VarianceTone } => {
+    if (value === null) return { text: "—", tone: "flat" };
+    const factor = 10 ** scaleDecimals(settings.scale);
+    if (Math.round((value / scaleDivisor(settings.scale)) * factor) === 0) return { text: "—", tone: "flat" };
+    return { text: money(value), tone: value < 0 ? "neg" : "pos" };
+  };
+
+  const rowsOf = (code: string) => newRows.filter((r) => r.sectionCode === code);
+
+  /** The section's figures with its new rows' amounts added to the Buy Plan. */
+  const totalOf = (section: BuyPlanSectionView | undefined, fy: string): Figures => {
+    if (!section) return EMPTY;
+    const base = section.values[side][fy] ?? EMPTY;
+    const added = rowsOf(section.code).reduce((sum, r) => sum + (r.amounts[fy] ?? 0) * fx, 0);
+    const buyPlan = base.buyPlan === null && added === 0 ? null : (base.buyPlan ?? 0) + added;
+    return { forecast: base.forecast, buyPlan, variance: varianceOf(base.forecast, buyPlan) };
+  };
+
+  const revenue = sections.find((s) => s.code === "REVENUE");
+  const marginOf = (ebit: number | null, rev: number | null) =>
+    ebit === null || !rev ? null : (ebit / rev) * 100;
+
+  const readOnlyCell = (r: number, c: number, value: string, negative: boolean, calculated = false) => (
+    <BuyPlanCell gridId={gridId} row={r} col={c} value={value} readOnly calculated={calculated} negative={negative} />
+  );
+
+  const varClass = (i: number) => `bp-cell${i === lastIndex ? "" : " bp-border-var"}`;
+
+  /** A locked row of money figures: the server's section row, or the total. */
+  const figuresRow = (key: string, label: string, figures: (fy: string) => Figures, calculated: boolean) => {
+    const r = rowIdx++;
+    return (
+      <tr key={key} className={`bp-row bp-row--locked${calculated ? " bp-row--total" : ""}`}>
+        <td className="bp-row-label">
+          <div title={label} className={`bp-row-label-text${calculated ? " bp-row-label-text--calc" : ""}`}>
+            {label}
+          </div>
+        </td>
+        {fiscalYears.map((fy, i) => {
+          const { forecast, buyPlan, variance } = figures(fy);
+          const v = varianceCell(variance);
+          return (
+            <Fragment key={fy}>
+              <td className="bp-cell">{readOnlyCell(r, i * 3, money(forecast), (forecast ?? 0) < 0, calculated)}</td>
+              <td className="bp-cell">{readOnlyCell(r, i * 3 + 1, money(buyPlan), (buyPlan ?? 0) < 0, calculated)}</td>
+              <td className={varClass(i)}>{readOnlyCell(r, i * 3 + 2, v.text, v.tone === "neg", calculated)}</td>
+            </Fragment>
+          );
+        })}
+      </tr>
+    );
+  };
+
+  /** A row the user added: only its description and Buy Plan amounts are editable. */
+  const newRow = (row: NewBuyPlanRow) => {
+    const r = rowIdx++;
+    return (
+      <tr key={row.key} className="bp-row bp-row--new">
+        <td className="bp-row-label">
+          <div className="bp-row-label-edit">
+            {editable ? (
+              <input
+                className="bp-row-label-input"
+                value={row.description}
+                placeholder="New row label..."
+                title={row.description}
+                onChange={(e) => onRowDescription(row.key, e.target.value)}
+              />
+            ) : (
+              <div title={row.description} className="bp-row-label-text bp-row-label-text--custom">
+                {row.description || "—"}
+              </div>
+            )}
+            {editable && (
+              <button
+                type="button"
+                className="bp-row-delete"
+                onClick={() => onRemoveRow(row.key)}
+                aria-label="Remove row"
+                title="Remove row"
+              >
+                <TrashIcon />
+              </button>
+            )}
+          </div>
+        </td>
+        {fiscalYears.map((fy, i) => {
+          const amount = row.amounts[fy] ?? null;
+          return (
+            <Fragment key={fy}>
+              <td className="bp-cell">{readOnlyCell(r, i * 3, "", false)}</td>
+              <td className="bp-cell">
+                <BuyPlanCell
+                  gridId={gridId}
+                  row={r}
+                  col={i * 3 + 1}
+                  value={formatBaseToDisplayed(amount, settings)}
+                  editValue={formatBaseToEditable(amount, settings)}
+                  readOnly={!editable}
+                  negative={(amount ?? 0) < 0}
+                  onCommit={(text) => commitAmount(text, amount, settings, (value) => onRowAmount(row.key, fy, value))}
+                />
+              </td>
+              {/* No forecast to compare against, so no variance. */}
+              <td className={varClass(i)}>{readOnlyCell(r, i * 3 + 2, "", false)}</td>
+            </Fragment>
+          );
+        })}
+      </tr>
+    );
+  };
+
+  /** EBIT Margin % — EBIT over Revenue, each side including any new rows. */
+  const marginRow = (ebit: BuyPlanSectionView) => {
+    const r = rowIdx++;
+    return (
+      <tr key={`${ebit.code}-margin`} className="bp-row bp-row--locked bp-row--total">
+        <td className="bp-row-label">
+          <div className="bp-row-label-text bp-row-label-text--calc">EBIT Margin %</div>
+        </td>
+        {fiscalYears.map((fy, i) => {
+          const e = totalOf(ebit, fy);
+          const rev = totalOf(revenue, fy);
+          const forecast = marginOf(e.forecast, rev.forecast);
+          const buyPlan = marginOf(e.buyPlan, rev.buyPlan);
+          const v = percentVariance(forecast, buyPlan);
+          const pct = (n: number | null) => formatPercent(n, settings.numberFormat, PERCENT_CELL_DECIMALS);
+          return (
+            <Fragment key={fy}>
+              <td className="bp-cell">{readOnlyCell(r, i * 3, pct(forecast), (forecast ?? 0) < 0, true)}</td>
+              <td className="bp-cell">{readOnlyCell(r, i * 3 + 1, pct(buyPlan), (buyPlan ?? 0) < 0, true)}</td>
+              <td className={varClass(i)}>{readOnlyCell(r, i * 3 + 2, v.text, v.tone === "neg", true)}</td>
+            </Fragment>
+          );
+        })}
+      </tr>
+    );
+  };
 
   return (
     <div className="bp-table-card">
@@ -114,17 +283,15 @@ export default function BuyPlanTable({
                 {caption} — {unit}
               </th>
               {fiscalYears.map((fy, i) => (
-                <th
-                  key={fy}
-                  colSpan={3}
-                  className={`bp-th-fy${i === lastIndex ? "" : " bp-border-var"}`}
-                >
+                <th key={fy} colSpan={3} className={`bp-th-fy${i === lastIndex ? "" : " bp-border-var"}`}>
                   {fy.toUpperCase()}
                 </th>
               ))}
             </tr>
             <tr>
-              <th className="bp-th-sub bp-th-sub--corner">{settings.currency}</th>
+              <th className="bp-th-sub bp-th-sub--corner">
+                {yearEndCaption(header.targetYearEnd) ?? settings.currency}
+              </th>
               {fiscalYears.map((fy, i) => (
                 <Fragment key={fy}>
                   <th className="bp-th-sub">FORECAST</th>
@@ -135,92 +302,39 @@ export default function BuyPlanTable({
             </tr>
           </thead>
           <tbody>
-            {groups.map((group) => (
-              <Fragment key={group.id}>
-                <tr>
-                  <td className="bp-group-header" colSpan={colCount}>
-                    {group.title}
-                  </td>
-                </tr>
-                {group.rows.map((row) => {
-                  const r = rowIdx++;
-                  const calculated = !!row.isCalculated;
-                  return (
-                    <tr key={row.key} className={`bp-row${calculated ? " bp-row--total" : ""}`}>
-                      <td className="bp-row-label">
-                        <div
-                          title={row.label}
-                          className={`bp-row-label-text${calculated ? " bp-row-label-text--calc" : ""}`}
+            {sections.map((section) => {
+              const added = rowsOf(section.code);
+              const canAdd = section.sectionId !== null;
+              return (
+                <Fragment key={section.code}>
+                  <tr>
+                    <td className="bp-group-header" colSpan={colCount}>
+                      {section.label}
+                    </td>
+                  </tr>
+                  {figuresRow(section.code, section.label, (fy) => section.values[side][fy] ?? EMPTY, false)}
+                  {added.map(newRow)}
+                  {added.length > 0 &&
+                    figuresRow(`${section.code}-total`, "Proforma Total", (fy) => totalOf(section, fy), true)}
+                  {section.code === "EBIT" && marginRow(section)}
+                  {editable && (
+                    <tr className="bp-row">
+                      <td colSpan={colCount} className="bp-add-row-cell">
+                        <button
+                          type="button"
+                          className="bp-add-row"
+                          disabled={!canAdd}
+                          title={canAdd ? undefined : "This section has no fin_eval_section_id — adjustments cannot be saved."}
+                          onClick={() => onAddRow(section.code)}
                         >
-                          {row.label}
-                        </div>
+                          + Add Row
+                        </button>
                       </td>
-                      {fiscalYears.map((fy, i) => {
-                        const varTd = `bp-cell${i === lastIndex ? "" : " bp-border-var"}`;
-                        const { forecast, buyPlan } = row.values[fy] ?? { forecast: null, buyPlan: null };
-                        const col = i * 3;
-                        const cell = (c: number, value: string, negative: boolean) => (
-                          <BuyPlanCell
-                            gridId={gridId}
-                            row={r}
-                            col={col + c}
-                            value={value}
-                            readOnly
-                            calculated={calculated}
-                            negative={negative}
-                          />
-                        );
-
-                        if (row.kind === "percent") {
-                          const variance = percentVariance(forecast, buyPlan);
-                          return (
-                            <Fragment key={fy}>
-                              <td className="bp-cell">
-                                {cell(0, formatPercent(forecast, settings.numberFormat, PERCENT_CELL_DECIMALS), (forecast ?? 0) < 0)}
-                              </td>
-                              <td className="bp-cell">
-                                {cell(1, formatPercent(buyPlan, settings.numberFormat, PERCENT_CELL_DECIMALS), (buyPlan ?? 0) < 0)}
-                              </td>
-                              <td className={varTd}>{cell(2, variance.text, variance.tone === "neg")}</td>
-                            </Fragment>
-                          );
-                        }
-
-                        const variance = moneyVariance(forecast, buyPlan, settings);
-                        const cellEditable = editable && row.editable;
-                        return (
-                          <Fragment key={fy}>
-                            <td className="bp-cell">
-                              {cell(0, formatBaseToDisplayed(forecast, settings), (forecast ?? 0) < 0)}
-                            </td>
-                            <td className="bp-cell">
-                              {cellEditable ? (
-                                <BuyPlanCell
-                                  gridId={gridId}
-                                  row={r}
-                                  col={col + 1}
-                                  value={formatBaseToDisplayed(buyPlan, settings)}
-                                  editValue={formatBaseToEditable(buyPlan, settings)}
-                                  negative={(buyPlan ?? 0) < 0}
-                                  onCommit={(text) =>
-                                    commitBuyPlan(text, buyPlan, settings, (value) =>
-                                      onBuyPlanChange(row.key, fy, value)
-                                    )
-                                  }
-                                />
-                              ) : (
-                                cell(1, formatBaseToDisplayed(buyPlan, settings), (buyPlan ?? 0) < 0)
-                              )}
-                            </td>
-                            <td className={varTd}>{cell(2, variance.text, variance.tone === "neg")}</td>
-                          </Fragment>
-                        );
-                      })}
                     </tr>
-                  );
-                })}
-              </Fragment>
-            ))}
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

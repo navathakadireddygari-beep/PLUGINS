@@ -12,9 +12,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -35,7 +33,6 @@ import {
   type NumberFormatId,
   type ScaleId,
 } from "@/lib";
-import { fetchCurrencyExchangeRate } from "@/api/currency-exchange-api";
 
 export interface CurrencyFormatContextValue {
   // ---- state (single source of truth) ----
@@ -51,11 +48,7 @@ export interface CurrencyFormatContextValue {
   fxRate: string;
   /** Parsed numeric FX rate (falls back to 0 when invalid). */
   fxRateNumber: number;
-  /**
-   * True once a REAL rate is in hand — the proposal's stored `exchange_rate`
-   * or a live fetch. False means `fxRate` is still the hardcoded placeholder,
-   * which must never be written back to the proposal.
-   */
+  /** True once the Buy Plan GET's `fx_rate` is in hand. */
   fxRateKnown: boolean;
   /** The proposal's local currency from the loaded header, or null. */
   localCurrency: string | null;
@@ -67,9 +60,9 @@ export interface CurrencyFormatContextValue {
   currencies: CurrencyCode[];
   /** True when there is a conversion worth showing (display differs from local). */
   showFx: boolean;
-  /** Live-rate fetch in flight. */
+  /** Always false — the rate arrives with the Buy Plan GET, not separately. */
   fxLoading: boolean;
-  /** Live-rate fetch failed; the UI falls back to 1:1. */
+  /** Set when a non-USD proposal has no usable rate; the UI falls back to 1:1. */
   fxError: string | null;
 
   // ---- setters ----
@@ -88,13 +81,6 @@ export interface CurrencyFormatContextValue {
     display?: string | null,
     exchangeRate?: number | null,
   ) => void;
-  /**
-   * Fetch the live rate for `currency` (the proposal's local/display
-   * currency) from the currencyExchangeRates endpoint and apply it. Unlike
-   * `setFxRate`, this always applies — it is not gated by
-   * FX_CONVERSION_EDITABLE, which only guards manual user input.
-   */
-  refreshFxRate: (currency: string, yearPeriod?: string) => Promise<void>;
 
   // ---- derived formatters (bound to current settings, memoized) ----
   settings: MoneySettings;
@@ -125,8 +111,6 @@ export function CurrencyFormatProvider({ children }: { children: ReactNode }) {
   const [numberFormat, setNumberFormatState] = useState<NumberFormatId>(() =>
     loadNumberFormat(),
   );
-  const [fxLoading, setFxLoading] = useState(false);
-  const [fxError, setFxError] = useState<string | null>(null);
 
   const setScale = useCallback((s: ScaleId) => {
     setScaleState(s);
@@ -147,30 +131,11 @@ export function CurrencyFormatProvider({ children }: { children: ReactNode }) {
   // rendered confident, wrong figures. `fxRateNumber` parses "" to 0, and
   // `computeDisplayMultiplier` treats any non-positive rate as x1.
   const [fxRate, setFxRateState] = useState<string>("");
-  // Tracks whether a REAL rate (stored or live) has replaced the empty seed.
-  const [fxRateKnown, setFxRateKnownState] = useState(false);
-  // Mirrored in a ref because the fetch effect below reads it without listing
-  // it as a dependency — adding it there would re-run the fetch the moment the
-  // rate arrives, firing a second request for the answer we just got.
-  const fxRateKnownRef = useRef(false);
-  const setFxRateKnown = useCallback((known: boolean) => {
-    fxRateKnownRef.current = known;
-    setFxRateKnownState(known);
-  }, []);
+  // Tracks whether the proposal's rate has replaced the empty seed.
+  const [fxRateKnown, setFxRateKnown] = useState(false);
   const setFxRate = (v: string) => {
     if (FX_CONVERSION_EDITABLE) setFxRateState(v);
   };
-
-  const refreshFxRate = useCallback(
-    async (currency: string, yearPeriod?: string) => {
-      const rate = await fetchCurrencyExchangeRate(currency, yearPeriod);
-      if (rate !== null && Number.isFinite(rate) && rate > 0) {
-        setFxRateState(String(rate));
-        setFxRateKnown(true);
-      }
-    },
-    [setFxRateKnown],
-  );
 
   // Available currencies + FX visibility, derived from the proposal currency
   // and current display selection.
@@ -185,20 +150,13 @@ export function CurrencyFormatProvider({ children }: { children: ReactNode }) {
   // when it is needed to read the numbers.
   const showFx = useMemo(() => showFxFor(localCurrency), [localCurrency]);
 
-  /**
-   * Fetch the live rate whenever the local currency changes. Skipped entirely
-   * for USD-only proposals (there is nothing to convert), matching the
-   * reference. A failure leaves the pinned fallback in place and surfaces
-   * `fxError` so the strip can say so rather than silently showing a guess.
-   */
   const setProposalCurrencies = useCallback(
     (
       local?: string | null,
       display?: string | null,
       exchangeRate?: number | null,
     ) => {
-      // Seed from the proposal's stored rate first; the live fetch below
-      // supersedes it if it succeeds.
+      // The proposal's rate, from the Buy Plan GET's `fx_rate`.
       if (
         exchangeRate != null &&
         Number.isFinite(exchangeRate) &&
@@ -227,43 +185,11 @@ export function CurrencyFormatProvider({ children }: { children: ReactNode }) {
       const wanted = displayCode || anchor;
       setCurrencyState(options.includes(wanted) ? wanted : options[0]);
     },
-    [setFxRateKnown],
+    [],
   );
 
-  useEffect(() => {
-    if (!showFx) {
-      setFxLoading(false);
-      setFxError(null);
-      return;
-    }
-    let cancelled = false;
-    setFxLoading(true);
-    setFxError(null);
-    fetchCurrencyExchangeRate(localCurrency ?? "")
-      .then((rate) => {
-        if (cancelled) return;
-        if (rate !== null && Number.isFinite(rate) && rate > 0) {
-          setFxRateState(String(rate));
-          setFxRateKnown(true);
-        } else {
-          // The proposal's own stored rate already seeded `fxRate`, so a failed
-          // live lookup is only an error when we have nothing better.
-          if (!fxRateKnownRef.current) setFxError("Rate unavailable");
-        }
-      })
-      .catch((e: unknown) => {
-        if (!cancelled)
-          setFxError(
-            e instanceof Error ? e.message : "Failed to load exchange rate.",
-          );
-      })
-      .finally(() => {
-        if (!cancelled) setFxLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [localCurrency, showFx, setFxRateKnown]);
+  const fxLoading = false;
+  const fxError = showFx && !fxRateKnown ? "Rate unavailable" : null;
 
   const fxRateNumber = useMemo(() => {
     const n = Number(fxRate);
@@ -303,7 +229,6 @@ export function CurrencyFormatProvider({ children }: { children: ReactNode }) {
       setScale,
       setNumberFormat,
       setFxRate,
-      refreshFxRate,
       settings,
       formatBaseToDisplayed: (v) => formatBaseToDisplayedPure(v, settings),
       formatBaseToEditable: (v) => formatBaseToEditablePure(v, settings),
@@ -325,7 +250,6 @@ export function CurrencyFormatProvider({ children }: { children: ReactNode }) {
       setScale,
       setNumberFormat,
       settings,
-      refreshFxRate,
     ],
   );
 

@@ -1,15 +1,6 @@
 import type { BuyPlanHeaderInfo } from "@/types";
 
-const formatDate = (iso: string | null): string | null => {
-  if (!iso) return null;
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? iso
-    : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-};
-
 export default function BuyPlanHeader({ header }: { header: BuyPlanHeaderInfo }) {
-  const goLive = formatDate(header.plannedGoLive);
   return (
     <div className="bp-header-card">
       <div className="bp-header-top">
@@ -22,19 +13,21 @@ export default function BuyPlanHeader({ header }: { header: BuyPlanHeaderInfo })
         </div>
       </div>
       <div className="bp-meta-row">
-        {header.status && (
+        {header.targetYearEnd && (
           <span>
-            <strong>Status:</strong> {header.status}
+            <strong>Y/E:</strong> {header.targetYearEnd}
           </span>
         )}
-        {goLive && (
+        {header.localCurrency && (
           <span>
-            <strong>Planned Go-Live:</strong> {goLive}
+            <strong>Local Currency:</strong> {header.localCurrency}
           </span>
         )}
-        <span>
-          <strong>Local Currency:</strong> {header.localCurrency}
-        </span>
+        {header.fxRate !== null && header.localCurrency && header.localCurrency !== "USD" && (
+          <span>
+            <strong>FBR Rate:</strong> {header.fxRate} {header.localCurrency}/USD
+          </span>
+        )}
       </div>
     </div>
   );

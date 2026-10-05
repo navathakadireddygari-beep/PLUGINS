@@ -1,5 +1,5 @@
 /**
- * Minimal JSON client for the GIS proposalAuthoring REST module.
+ * Minimal JSON client for the GIS REST module.
  *
  * Every call carries the bearer token + role/user_email headers, retries once
  * with a freshly minted token on 401, and unwraps the `{ apiStatus, apiMessage,
@@ -15,7 +15,13 @@ type Method = "GET" | "POST" | "PUT";
 export async function requestJson<T = unknown>(
   method: Method,
   path: string,
-  options: { params?: Record<string, string | number>; body?: unknown; signal?: AbortSignal } = {}
+  options: {
+    params?: Record<string, string | number>;
+    /** Extra request headers, e.g. the Buy Plan GET's `proposal_id`. */
+    headers?: Record<string, string | number>;
+    body?: unknown;
+    signal?: AbortSignal;
+  } = {}
 ): Promise<T> {
   const { api_endpoint } = getAppConfig();
   if (!api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__.");
@@ -35,6 +41,7 @@ export async function requestJson<T = unknown>(
         Accept: "application/json",
         ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...authHeaders(token),
+        ...Object.fromEntries(Object.entries(options.headers ?? {}).map(([k, v]) => [k, String(v)])),
       },
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     });

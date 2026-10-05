@@ -1,21 +1,38 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchBuyPlan, saveBuyPlan, type BuyPlanEdits } from "@/api/buy-plan-api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createBuyPlanAdjustment, fetchBuyPlan, fiscalYearOf } from "@/api/buy-plan-api";
 import { getAppConfig } from "@/config/app-config";
-import type { BuyPlanDataset } from "@/types";
+import type { BuyPlanDataset, NewBuyPlanRow } from "@/types";
+
+/** FY buckets of a new row that carry an amount worth posting. */
+const postableYears = (row: NewBuyPlanRow): string[] =>
+  Object.entries(row.amounts)
+    .filter(([, amount]) => amount !== null && amount !== 0)
+    .map(([fy]) => fy);
+
+let nextRowId = 0;
 
 /**
- * Loads the proposal's Buy Plan, tracks the user's unsaved Buy Plan edits, and
- * saves them. After a successful save the evaluation is re-fetched so the
- * server-calculated lines (subtotals, EBIT, margins) reflect the new figures.
+ * Loads the proposal's Buy Plan (read-only: Forecast, Buy Plan and Variance all
+ * come from the server) and tracks the rows the user adds. Saving POSTs each
+ * new row as one adjustment per fiscal year, then re-fetches so the server's
+ * figures include them.
  */
 export function useBuyPlan() {
-  const proposalId = getAppConfig().proposal_id;
+  const { proposal_id: proposalId, user_id: userId } = getAppConfig();
   const [dataset, setDataset] = useState<BuyPlanDataset | null>(null);
-  const [edits, setEdits] = useState<BuyPlanEdits>({});
+  const [newRows, setNewRows] = useState<NewBuyPlanRow[]>([]);
+  // Mirrors `newRows` so `save` posts what is on screen, not a stale closure.
+  const newRowsRef = useRef<NewBuyPlanRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+
+  const updateRows = useCallback((fn: (rows: NewBuyPlanRow[]) => NewBuyPlanRow[]) => {
+    newRowsRef.current = fn(newRowsRef.current);
+    setNewRows(newRowsRef.current);
+    setSavedAt(null);
+  }, []);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -27,7 +44,6 @@ export function useBuyPlan() {
       setError(null);
       try {
         setDataset(await fetchBuyPlan(proposalId, signal));
-        setEdits({});
       } catch (e) {
         if (signal?.aborted) return;
         setError(e instanceof Error ? e.message : "Failed to load the Buy Plan.");
@@ -44,49 +60,113 @@ export function useBuyPlan() {
     return () => controller.abort();
   }, [load]);
 
-  const setBuyPlan = useCallback((lineKey: string, bucket: string, amount: number | null) => {
-    setEdits((prev) => ({ ...prev, [lineKey]: { ...prev[lineKey], [bucket]: amount } }));
-    setSavedAt(null);
-  }, []);
+  const addRow = useCallback(
+    (sectionCode: string) =>
+      updateRows((rows) => [
+        ...rows,
+        { key: `new-${++nextRowId}`, sectionCode, description: "", amounts: {} },
+      ]),
+    [updateRows]
+  );
 
-  /** The loaded dataset with unsaved Buy Plan edits applied, for rendering. */
-  const view = useMemo<BuyPlanDataset | null>(() => {
-    if (!dataset) return null;
-    return {
-      ...dataset,
-      groups: dataset.groups.map((group) => ({
-        ...group,
-        rows: group.rows.map((row) => {
-          const rowEdits = edits[row.key];
-          if (!rowEdits) return row;
-          const values = { ...row.values };
-          Object.entries(rowEdits).forEach(([bucket, amount]) => {
-            values[bucket] = { forecast: values[bucket]?.forecast ?? null, buyPlan: amount };
-          });
-          return { ...row, values };
-        }),
-      })),
-    };
-  }, [dataset, edits]);
+  const setRowDescription = useCallback(
+    (key: string, description: string) =>
+      updateRows((rows) => rows.map((r) => (r.key === key ? { ...r, description } : r))),
+    [updateRows]
+  );
 
-  const dirty = Object.keys(edits).length > 0;
+  /** `amount` is in USD; null clears the cell. */
+  const setRowAmount = useCallback(
+    (key: string, fy: string, amount: number | null) =>
+      updateRows((rows) =>
+        rows.map((r) => (r.key === key ? { ...r, amounts: { ...r.amounts, [fy]: amount } } : r))
+      ),
+    [updateRows]
+  );
+
+  const removeRow = useCallback(
+    (key: string) => updateRows((rows) => rows.filter((r) => r.key !== key)),
+    [updateRows]
+  );
+
+  const discard = useCallback(() => updateRows(() => []), [updateRows]);
+
+  const dirty = newRows.length > 0;
 
   const save = useCallback(async () => {
-    if (!dataset || !dirty) return;
+    if (!dataset || !proposalId) return;
+    // Rows with no amounts carry nothing to save — drop them quietly.
+    const rows = newRowsRef.current.filter((r) => postableYears(r).length > 0);
+    if (rows.length === 0) {
+      updateRows(() => []);
+      return;
+    }
+    const sectionIdOf = (code: string) =>
+      dataset.sections.find((s) => s.code === code)?.sectionId ?? null;
+
+    const problem =
+      rows.find((r) => !r.description.trim()) !== undefined
+        ? "Enter a description for every new row before saving."
+        : rows.find((r) => sectionIdOf(r.sectionCode) === null) !== undefined
+          ? "The Buy Plan response has no fin_eval_section_id for this section — cannot save the adjustment."
+          : !userId
+            ? "No user_id configured — set it in window.__APP_CONFIG__ (sent as created_by)."
+            : null;
+    if (problem) {
+      setError(problem);
+      return;
+    }
+
     setSaving(true);
     setError(null);
+    updateRows(() => rows);
+    let posted = 0;
+    let failure: string | null = null;
     try {
-      await saveBuyPlan(dataset.raw, edits, proposalId ?? dataset.header.proposalId);
-      await load();
-      setSavedAt(new Date());
+      for (const row of rows) {
+        for (const fy of postableYears(row)) {
+          await createBuyPlanAdjustment({
+            proposal_id: proposalId,
+            fin_eval_section_id: sectionIdOf(row.sectionCode)!,
+            description: row.description.trim(),
+            amount: row.amounts[fy]!,
+            fiscal_year: fiscalYearOf(fy),
+            created_by: userId!,
+          });
+          // Drop each posted year at once, so a failure further on never
+          // re-posts it when the user saves again.
+          updateRows((current) =>
+            current
+              .map((r) => (r.key === row.key ? { ...r, amounts: { ...r.amounts, [fy]: null } } : r))
+              .filter((r) => postableYears(r).length > 0)
+          );
+          posted++;
+        }
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save the Buy Plan.");
-    } finally {
-      setSaving(false);
+      failure = e instanceof Error ? e.message : "Failed to save the Buy Plan adjustment.";
     }
-  }, [dataset, dirty, edits, load, proposalId]);
+    // Re-fetch so the server's Buy Plan figures include what was posted.
+    // (`load` clears `error`, so the save outcome is reported after it.)
+    if (posted > 0) await load();
+    setSaving(false);
+    if (failure) setError(failure);
+    else setSavedAt(new Date());
+  }, [dataset, proposalId, userId, updateRows, load]);
 
-  const discard = useCallback(() => setEdits({}), []);
-
-  return { dataset: view, loading, saving, error, dirty, savedAt, setBuyPlan, save, discard, reload: load };
+  return {
+    dataset,
+    newRows,
+    loading,
+    saving,
+    error,
+    dirty,
+    savedAt,
+    addRow,
+    setRowDescription,
+    setRowAmount,
+    removeRow,
+    save,
+    discard,
+  };
 }
