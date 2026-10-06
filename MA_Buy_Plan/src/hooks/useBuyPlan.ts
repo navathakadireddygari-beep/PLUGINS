@@ -107,11 +107,9 @@ export function useBuyPlan() {
     const problem =
       rows.find((r) => !r.description.trim()) !== undefined
         ? "Enter a description for every new row before saving."
-        : rows.find((r) => sectionIdOf(r.sectionCode) === null) !== undefined
-          ? "The Buy Plan response has no fin_eval_section_id for this section — cannot save the adjustment."
-          : !userId
-            ? "No user_id configured — set it in window.__APP_CONFIG__ (sent as created_by)."
-            : null;
+        : !userId
+          ? "No user_id configured — set it in window.__APP_CONFIG__ (sent as created_by)."
+          : null;
     if (problem) {
       setError(problem);
       return;
@@ -127,7 +125,8 @@ export function useBuyPlan() {
         for (const fy of postableYears(row)) {
           await createBuyPlanAdjustment({
             proposal_id: proposalId,
-            fin_eval_section_id: sectionIdOf(row.sectionCode)!,
+            fin_eval_section_id: sectionIdOf(row.sectionCode),
+            section_code: row.sectionCode,
             description: row.description.trim(),
             amount: row.amounts[fy]!,
             fiscal_year: fiscalYearOf(fy),

@@ -64,7 +64,10 @@ export interface BuyPlanResponse {
 /** Body of POST /GIS/MA/buyPlan/adjustment. */
 export interface BuyPlanAdjustmentPayload {
   proposal_id: number;
-  fin_eval_section_id: number;
+  /** The GET currently never returns this — null until the backend adds it. */
+  fin_eval_section_id: number | null;
+  /** `section_code`, e.g. "REVENUE" — sent so the section is identifiable without an id. */
+  section_code: string;
   description: string;
   amount: number;
   /** Four-digit year, e.g. 2026 for `fy26`. */

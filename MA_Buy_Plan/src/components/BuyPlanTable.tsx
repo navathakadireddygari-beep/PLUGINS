@@ -304,7 +304,6 @@ export default function BuyPlanTable({
           <tbody>
             {sections.map((section) => {
               const added = rowsOf(section.code);
-              const canAdd = section.sectionId !== null;
               return (
                 <Fragment key={section.code}>
                   <tr>
@@ -320,13 +319,7 @@ export default function BuyPlanTable({
                   {editable && (
                     <tr className="bp-row">
                       <td colSpan={colCount} className="bp-add-row-cell">
-                        <button
-                          type="button"
-                          className="bp-add-row"
-                          disabled={!canAdd}
-                          title={canAdd ? undefined : "This section has no fin_eval_section_id — adjustments cannot be saved."}
-                          onClick={() => onAddRow(section.code)}
-                        >
+                        <button type="button" className="bp-add-row" onClick={() => onAddRow(section.code)}>
                           + Add Row
                         </button>
                       </td>
