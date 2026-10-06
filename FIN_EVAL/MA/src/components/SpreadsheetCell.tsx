@@ -56,7 +56,7 @@ const isNegativeDisplay = (value: string | undefined): boolean => {
  * or "-0" is not.
  */
 const isNegativeDraft = (draft: string): boolean => {
-  const t = draft.trim();
+  const t = String(draft ?? "").trim();
   return (t.startsWith("-") || t.startsWith("(")) && /[1-9]/.test(t);
 };
 

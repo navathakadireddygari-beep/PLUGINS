@@ -103,6 +103,8 @@ type Row = {
   isMandatory?: boolean;
   /** Non-custom template rows should not show delete icon. */
   isCustom?: boolean;
+  /** Server-computed CAGR (`cagr_percent`); falls back to the client calc when absent. */
+  cagrPercent?: number | null;
 };
 
 // The year columns come from the response's own `fiscalYears` (see `fyKeys`),
@@ -184,6 +186,7 @@ const rowFromApi = (
     sectionId: line.sectionId,
     sectionIsCustom: line.sectionIsCustom,
     allowsNewLines: line.allowsNewLines,
+    cagrPercent: line.cagrPercent,
   };
 };
 
@@ -602,6 +605,7 @@ const Table: React.FC = () => {
       [corRows, fcfRows, ptrRows],
       keyInputs,
       visibleCols,
+      actualsCount,
     );
     // The NPV Calculation block (S9) is derived from the same pass — its PV
     // components discount the very cash-flow vectors the grids above produce —
@@ -613,7 +617,7 @@ const Table: React.FC = () => {
       grids[2],
       applyMaNpvBlock<Row>(npvRows, npvBlock),
     ];
-  }, [corRows, fcfRows, ptrRows, npvRows, keyInputs, visibleCols]);
+  }, [corRows, fcfRows, ptrRows, npvRows, keyInputs, visibleCols, actualsCount]);
 
   /* ─────────────────────────── Year stepper ────────────────────────────
    * "+" ADDS a projection year, the way the reference does
@@ -1300,6 +1304,11 @@ const Table: React.FC = () => {
   const cagrText = (row: Row, cols: number[]): string => {
     if (isNoTotalRow(identityOf(row)) || isPercentRow(identityOf(row))) {
       return "—";
+    }
+    // The server's own `cagr_percent` wins when present; rows it never covers
+    // (e.g. ones added on screen this session) fall back to the client calc.
+    if (row.cagrPercent !== undefined && row.cagrPercent !== null) {
+      return formatPercent(row.cagrPercent, numberFormat);
     }
     const series = cols.map((i) => {
       const v = row.values[i];

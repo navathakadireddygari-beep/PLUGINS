@@ -99,6 +99,16 @@ const REVENUE_TOTAL = "REVENUETOTAL";
 const COSTS_TOTAL = "COSTSTOTAL";
 
 /**
+ * The cash-flow bridge is forward-looking deal economics, not a historical
+ * record — the server leaves every calculated line in this section `null` for
+ * Actuals years (confirmed on a live payload: CF_EBIT, OPERATING_CF etc. are
+ * null for fy24-fy26 even though Revenue/Costs totals exist there). The engine
+ * still derives EBIT from those totals for every column, so without this guard
+ * it quietly fills Actuals cells the server deliberately left empty.
+ */
+const COMBINED_FREE_CASH_FLOWS = "COMBINEDFREECASHFLOWS";
+
+/**
  * Calculated lines that simply ECHO one of the user-entered inputs into another
  * section, rather than deriving anything. The free cash flow bridge carries D&A
  * (as AMORT_DEPREC, `is_calculated: "Y"`) so the bridge reads end to end, but
@@ -208,10 +218,13 @@ export const applyMaOutputs = (
   inputs: MaYearInputs[],
   years: MaYearOutputs[],
   cols: number,
+  actualsCount = 0,
 ): RecalcRow[] =>
   rows.map((row) => {
     if (!row.isCalculated) return row;
     const token = tok(row.lineType);
+    // Actuals columns of the FCF bridge keep whatever the server sent (null).
+    const skipActuals = tok(row.sectionType) === COMBINED_FREE_CASH_FLOWS;
 
     // Section subtotals are sums rather than engine outputs.
     if (token === REVENUE_TOTAL || token === COSTS_TOTAL) {
@@ -228,7 +241,10 @@ export const applyMaOutputs = (
     const echo = ECHO_OF[token];
     if (echo) {
       const values = [...row.values];
-      for (let i = 0; i < cols; i += 1) values[i] = str(inputs[i]?.[echo] ?? null);
+      for (let i = 0; i < cols; i += 1) {
+        if (skipActuals && i < actualsCount) continue;
+        values[i] = str(inputs[i]?.[echo] ?? null);
+      }
       return { ...row, values };
     }
 
@@ -237,6 +253,7 @@ export const applyMaOutputs = (
 
     const values = [...row.values];
     for (let i = 0; i < cols; i += 1) {
+      if (skipActuals && i < actualsCount) continue;
       values[i] = str(years[i]?.[field] ?? null);
     }
     return { ...row, values };
@@ -344,6 +361,7 @@ export const recalcMaGrids = <T extends RecalcRow>(
   grids: T[][],
   keyInputs: Array<{ code: string; value: string }>,
   cols: number,
+  actualsCount = 0,
 ): {
   grids: T[][];
   inputs: MaYearInputs[];
@@ -355,7 +373,8 @@ export const recalcMaGrids = <T extends RecalcRow>(
   const result = calculateMa(inputs, ratesFromKeyInputs(keyInputs));
   return {
     grids: grids.map(
-      (rows) => applyMaOutputs(rows, inputs, result.years, cols) as T[],
+      (rows) =>
+        applyMaOutputs(rows, inputs, result.years, cols, actualsCount) as T[],
     ),
     inputs,
     years: result.years,

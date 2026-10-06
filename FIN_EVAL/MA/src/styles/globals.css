@@ -20,7 +20,6 @@
  */
 @import "tailwindcss" important prefix(mna);
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 

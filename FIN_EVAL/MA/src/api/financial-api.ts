@@ -167,6 +167,8 @@ export interface FinEvalGridRow {
   readOnly: boolean;
   /** Base-unit strings keyed by fiscal-year bucket, e.g. `{ fy26: "121000" }`. */
   yearValues: Record<string, string>;
+  /** Server-computed CAGR, as a plain percentage; null when the server sends none. */
+  cagrPercent: number | null;
   /** Section the line came from, for grouping/tooltips. */
   sectionName: string;
   sectionType: string;
@@ -376,6 +378,7 @@ const mapLine = (
     // `buildFinancialEvaluationPayload` writes `line_type ?? line_item_code`.
     lineType: line.line_type ?? line.line_item_code ?? null,
     lineIdentifier: line.line_identifier ?? null,
+    cagrPercent: line.cagr_percent ?? null,
     // Editable ONLY when the backend says the line is not calculated. A
     // calculated line is owned by the server — its value is recomputed on
     // save, so letting it be typed into just discards the input. `is_calculated`
