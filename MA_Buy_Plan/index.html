@@ -7,18 +7,21 @@
     <script>
       // Read by src/config/app-config.ts. `proposal_id` is the proposal whose
       // Buy Plan is loaded/saved (can also be passed as ?proposal_id=);
-      // `api_endpoint` + app_user/app_roles feed every request.
+      // `api_endpoint` + app_user/app_roles feed every request — same config
+      // shape APEX injects for FIN_EVAL/MA (same page code, different bundle).
       // Inside APEX, also set ajaxId/flowId/stepId/instance so the auth
       // callback can mint a token; outside APEX, the OAuth path is used
       // instead (see src/api/auth-api.ts) and needs no host-supplied secret.
       window.__APP_CONFIG__ = {
         proposal_id: 890,
-        // Numeric GIS user id, sent as `created_by` on Buy Plan adjustments.
+        // Explicit override for local testing only — APEX doesn't send this;
+        // created_by normally falls back to the numeric app_user below.
         user_id: 12345,
         api_endpoint: "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
         // api_endpoint: "https://gisdev.uk.experian.com/api",
         app_user: "6734665394513",
         app_roles: "APP_FIN_GIS_SPC_AUTHOR_SPC_ALL,APP_FIN_GIS_RLS_NA_AUTOMOTIVE_SPC_ALL",
+        app_language: "en",
         // ajaxId: "ajaxId",
         // flowId: "flowId",
         // stepId: "stepId",

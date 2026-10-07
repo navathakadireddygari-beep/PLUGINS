@@ -146,15 +146,18 @@ function init(
   };
 
   /*
-   * Session id — sent as `user_email` (header + save body) in place of
-   * app_user. Logged once per mount so the value APEX handed over can be
-   * checked in the console.
+   * app_user/app_roles come from the exact same APEX config object M&A
+   * receives — logged once per mount so the value APEX handed over can be
+   * checked in the console (and compared against created_by, derived from
+   * app_user in src/config/app-config.ts).
    */
   console.log(
-    "[InvestmentReport] session_id:",
-    getAppConfig().session_id || "(none — falling back to app_user)",
+    "[InvestmentReport] app_user:",
+    getAppConfig().app_user || "(none)",
     "| user_email sent as:",
-    getApiUserEmail()
+    getApiUserEmail(),
+    "| user_id (created_by):",
+    getAppConfig().user_id
   );
 
 
