@@ -10,12 +10,13 @@
  *   POST {base}/GIS/proposalAuthoring/finEvalStagingMigrate/{file_id}
  *        → migrates staging → main proposal (Save Model button)
  *
- * Wire casing: the other import plugins talk to the staging endpoints in
- * camelCase (`finEvalLineStgId`, `errorMessage`, …). The M&A staging payload
- * is snake_case (`fin_eval_line_stg_id`, `error_message`, …) — the same casing
- * as the M&A FinEval payload — so this module reads and writes snake_case.
- * Incoming keys are normalised to snake_case first, so a camelCase response
- * still maps rather than silently rendering an empty grid.
+ * Wire casing: like every other import plugin, the staging endpoints speak
+ * camelCase for the structure (`finEvalLineStgId`, `yearValues`,
+ * `mAKeyInputs`, …) while the blobs inside it stay snake_case (`fy27.
+ * spc_projected_amount`, `inputs[].input_code`, …). Sample GET:
+ * BUY_PLAN_APIS.txt (repo root). Incoming keys are normalised to snake_case so
+ * the M&A FinEval code can read them; the PUT body is converted back to the
+ * GET's camelCase shape. The migrate POST has no body.
  *
  * The staged header is mapped onto `FinancialEvaluationResponse`, the shape
  * the M&A FinEval screen already renders, with each `*_stg_id` placed in the
@@ -83,8 +84,19 @@ export interface StagingEnvelope {
 
 /* ─────────────────────────── Key casing ─────────────────────────── */
 
+/**
+ * camelCase → snake_case, one underscore per capital so the M&A blobs map:
+ * `mAKeyInputs` → `m_a_key_inputs`, `finEvalLineStgId` →
+ * `fin_eval_line_stg_id`. Keys not starting lowercase are left alone.
+ */
 const toSnake = (key: string): string =>
-  key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+  /^[a-z]/.test(key)
+    ? key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)
+    : key;
+
+/** snake_case → camelCase; the inverse of `toSnake`. */
+const toCamel = (key: string): string =>
+  key.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
 
 /** Deep-convert object keys to snake_case. Values are left untouched. */
 const snakeKeys = (value: unknown): unknown => {
@@ -92,6 +104,32 @@ const snakeKeys = (value: unknown): unknown => {
   if (value && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value as Loose).map(([k, v]) => [toSnake(k), snakeKeys(v)]),
+    );
+  }
+  return value;
+};
+
+/**
+ * Values whose own keys the staging GET sends in snake_case (the per-year
+ * buckets, the M&A key inputs / NPV blobs, the hurdle checks). Only the key
+ * naming them is camelised on the way out; their contents go back as-is.
+ */
+const OPAQUE_KEYS = new Set([
+  "year_values",
+  "m_a_key_inputs",
+  "m_a_npv_calculation",
+  "performance_metrics",
+]);
+
+/** Deep-convert structural keys to camelCase, leaving OPAQUE_KEYS' contents. */
+const camelKeys = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(camelKeys);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Loose).map(([k, v]) => [
+        toCamel(k),
+        OPAQUE_KEYS.has(k) ? v : camelKeys(v),
+      ]),
     );
   }
   return value;
@@ -336,7 +374,19 @@ export const fetchFinEvaluationStaging = async (
 /* ─────────────────────────── PUT (Validate) ─────────────────────── */
 
 /** Fields the backend owns on staging rows — never sent back. */
-const SERVER_ONLY = ["validation_status", "error_code", "error_message"];
+const SERVER_ONLY = ["validation_status", "error_code", "error_message", "val"];
+
+/**
+ * M&A FinEval fields `mapStagingEnvelope` fills in for the grid that the
+ * staging record does not have — dropped so the PUT mirrors the GET.
+ */
+const MAPPER_ONLY = [
+  "proposal_id",
+  "proposal_title",
+  "template_section_id",
+  "template_fin_eval_line_id",
+  "line_item_code",
+];
 
 const omit = (obj: Loose, keys: string[]): Loose =>
   Object.fromEntries(Object.entries(obj).filter(([k]) => !keys.includes(k)));
@@ -353,24 +403,25 @@ const withStagingId = (
 
 const stagingLine = (line: Loose): Loose =>
   withStagingId(
-    withStagingId(omit(line, SERVER_ONLY), ID_KEYS.line),
+    withStagingId(omit(line, [...SERVER_ONLY, ...MAPPER_ONLY]), ID_KEYS.line),
     ID_KEYS.section,
   );
 
 const stagingSection = (section: Loose): Loose => ({
   ...withStagingId(
-    withStagingId(omit(section, SERVER_ONLY), ID_KEYS.section),
+    withStagingId(omit(section, [...SERVER_ONLY, ...MAPPER_ONLY]), ID_KEYS.section),
     ID_KEYS.parent,
   ),
   lines: ((section.lines as Loose[] | null) ?? []).map(stagingLine),
 });
 
 /**
- * The M&A save payload → the finEvaluationStaging PUT body, in snake_case:
+ * The M&A save payload → the finEvaluationStaging PUT body, in the same
+ * camelCase shape the GET returns:
  *
- *   { header: { fin_eval_header_stg_id, …header fields, m_a_key_inputs,
- *               m_a_npv_calculation, sections: [ { fin_eval_section_stg_id,
- *               …, lines: [ { fin_eval_line_stg_id, …, year_values } ] } ] } }
+ *   { header: { finEvalHeaderStgId, …header fields, mAKeyInputs,
+ *               mANpvCalculation, sections: [ { finEvalSectionStgId,
+ *               …, lines: [ { finEvalLineStgId, …, yearValues } ] } ] } }
  *
  * `user_email` travels as a request header, as on every other import plugin.
  */
@@ -379,10 +430,13 @@ export const buildFinEvaluationStagingPayload = (
 ): { header: Loose } => {
   const { sections, ...header } = payload as unknown as Loose;
   return {
-    header: {
-      ...withStagingId(omit(header, [...SERVER_ONLY, "user_email"]), ID_KEYS.header),
+    header: camelKeys({
+      ...withStagingId(
+        omit(header, [...SERVER_ONLY, ...MAPPER_ONLY, "user_email"]),
+        ID_KEYS.header,
+      ),
       sections: ((sections as Loose[] | null) ?? []).map(stagingSection),
-    },
+    }) as Loose,
   };
 };
 
