@@ -1,10 +1,30 @@
+
+
 import path from "path"
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin, type ViteDevServer, type Connect } from 'vite'
+import type { ServerResponse } from 'http'
 import react from '@vitejs/plugin-react'
+
+function rootIndexRedirect(): Plugin {
+  return {
+    name: "root-index-redirect",
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use((req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
+        if (req.url === "/") {
+          res.statusCode = 302;
+          res.setHeader("Location", "/index.html");
+          res.end();
+          return;
+        }
+        next();
+      });
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
-  plugins: [react()],
+  plugins: [rootIndexRedirect(), react()],
 
   resolve: {
     alias: {
@@ -21,17 +41,6 @@ export default defineConfig(({ command }) => ({
   define: command === "build" ? {
     "import.meta.hot": "undefined",
   } : {},
-
-  server: {
-    proxy: {
-      "/api": {
-        target:       "https://gisuat.uk.experian.com",
-        changeOrigin: true,   // rewrites the Host header to match target
-        secure:       false,  // skips SSL validation for self-signed cert on :8443
-        rewrite:      (p) => p.replace(/^\/api/, "/ords/xxexp_gis_v1"),
-      },
-    },
-  },
 
   build: {
     rollupOptions: {

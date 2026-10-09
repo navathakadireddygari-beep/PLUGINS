@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Download, Upload, Save } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Save, CheckCircle2 } from "lucide-react";
 import { getAppConfig } from "../config/app-config";
-import { subscribeAllActions, publishToBridge } from "../lib";
-import type {} from "../types/fin-eval-bridge";
 import {
-  getFinancialData,
-  saveFinancialData,
+  getFinEvaluationStaging,
+  validateFinEvaluationStaging,
+  migrateFinEvalStaging,
   clearCachedToken,
   isServerDrivenSection,
   getAccountCodes,
@@ -16,184 +15,52 @@ import {
   type PivotTableData,
   type ValueRow,
   type YearValues,
+  type ValidationIssue,
 } from "../api/financial-api";
 import { deleteLine, deleteSection } from "../api/delete-api";
-import { getCurrencyExchangeRate } from "../api/exchange-rate-api";
+import { getExchangeRate } from "../api/currency-api";
+import { NUMBER_FORMATS, getNumFmt, formatNumber, plainNumber, parseFormatted, type NumFmtKey } from "../lib/number-format";
+import { subscribeAllActions, publishAction } from "../lib";
 import KpiPanel from "./KpiPanel";
 import Toast, { type ToastState } from "./Toast";
-import {
-  SCALES,
-  NUMBER_FORMATS,
-  DATE_FORMATS,
-  applyScale,
-  unapplyScale,
-  formatNumber,
-  decimalsForScale,
-  type Scale,
-  type NumberFormatKey,
-  type DateFormatKey,
-} from "../lib/format";
 
 const BRAND        = "#A5005A";
 const DARK_HEADER  = "#2d3748";
+const WIDGET_MAX_WIDTH = "none";
+
+// Temporarily disabled — flip to true to bring the ACCOUNT column back.
+const SHOW_ACCOUNT_COLUMN = false;
 
 const CURRENCY_LABELS: Record<string, string> = {
   CAD: "$ CAD", USD: "$ USD", EUR: "€ EUR",
   GBP: "£ GBP", AUD: "A$ AUD", JPY: "¥ JPY",
   SGD: "$ SGD", INR: "₹ INR", CNY: "¥ CNY",
 };
-const currencyLabel = (code: string): string => CURRENCY_LABELS[code.toUpperCase()] ?? code;
+const currencyLabel = (code: string): string => {
+  const upper = code.toUpperCase();
+  // if (upper === "GBP") return "GB GBP";
+  if (upper === "USD") return "$ USD";
+  return CURRENCY_LABELS[upper] ?? code;
+};
 
-const FIN_CELL_CLASS = "fin-cell-input";
+const SCALES: { label: string; value: number }[] = [
+  { label: "K", value: 1_000         },
+  { label: "M", value: 1_000_000     },
+  { label: "B", value: 1_000_000_000 },
+];
+
+// Date display formats for the Target Go Live column.
+type DateFmt = "dd-mm-yyyy" | "dd-mon-yyyy" | "yyyy-mm-dd" | "mm/dd/yyyy";
+const DATE_FORMATS: { value: DateFmt; label: string }[] = [
+  { value: "dd-mm-yyyy",  label: "dd-mm-yyyy" },
+  { value: "dd-mon-yyyy", label: "dd-mon-yyyy" },
+  { value: "yyyy-mm-dd",  label: "yyyy-mm-dd" },
+  { value: "mm/dd/yyyy",  label: "mm/dd/yyyy (US)" },
+];
+const MONTHS_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const generateId  = (): string => `id-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
-/* ─────────────────────────── Searchable Account Code Select ─────── */
-function AccountCodeSelect({
-  value,
-  options,
-  onFocus,
-  onChange,
-}: {
-  value:    string;
-  options:  AccountCode[];
-  onFocus:  () => void;
-  onChange: (val: string) => void;
-}): React.ReactElement {
-  const [open,   setOpen]   = useState(false);
-  const [search, setSearch] = useState("");
-  const [menuPos, setMenuPos] = useState<{ left: number; width: number; top: number } | null>(null);
-  const wrapRef  = useRef<HTMLDivElement>(null);
-  const menuRef  = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const filtered = options.filter((ac) => {
-    const q = search.toLowerCase();
-    return (
-      ac.account_code.toLowerCase().includes(q) ||
-      ac.account_name.toLowerCase().includes(q)
-    );
-  });
-
-  // Position the options panel with fixed coordinates (computed from the
-  // trigger's viewport rect) and render it in a portal on <body>. This lets
-  // it escape any ancestor `overflow`/table clipping and sit above whatever
-  // content happens to follow in the DOM (e.g. the next section's table),
-  // while always opening below the trigger like a native select.
-  const updatePosition = useCallback(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setMenuPos({ left: rect.left, width: rect.width, top: rect.bottom + 2 });
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    updatePosition();
-    const handler = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (wrapRef.current?.contains(t)) return;
-      if (menuRef.current?.contains(t)) return;
-      setOpen(false);
-      setSearch("");
-    };
-    document.addEventListener("mousedown", handler);
-    window.addEventListener("scroll", updatePosition, true);
-    window.addEventListener("resize", updatePosition);
-    return () => {
-      document.removeEventListener("mousedown", handler);
-      window.removeEventListener("scroll", updatePosition, true);
-      window.removeEventListener("resize", updatePosition);
-    };
-  }, [open, updatePosition]);
-
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 0);
-  }, [open]);
-
-  const label = value || "Select *";
-  const hasValue = !!value;
-
-  return (
-    <div ref={wrapRef} style={{ position: "relative", width: "100%" }}>
-      {/* Trigger button — matches existing select style exactly */}
-      <div
-        onClick={(e) => { e.stopPropagation(); onFocus(); setOpen((o) => !o); }}
-        style={{
-          width: "100%", border: "1px solid #d1d5db", borderRadius: 4,
-          padding: "2px 24px 2px 6px", fontSize: 12,
-          color: hasValue ? "#1f2937" : "#6b7280",
-          background: "#fff", height: 28, cursor: "pointer",
-          display: "flex", alignItems: "center",
-          overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
-          boxSizing: "border-box", userSelect: "none", position: "relative",
-        }}
-      >
-        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
-        <span style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#6b7280", fontSize: 10 }}>▼</span>
-      </div>
-
-      {open && menuPos && createPortal(
-        <div
-          ref={menuRef}
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            position: "fixed", top: menuPos.top, left: menuPos.left,
-            width: Math.max(menuPos.width, 240), zIndex: 10000,
-            background: "#fff", border: "1px solid #d1d5db", borderRadius: 4,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-          }}
-        >
-          {/* Search input */}
-          <div style={{ padding: "6px 8px", borderBottom: "1px solid #f0f0f0" }}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search account..."
-              style={{
-                width: "100%", fontSize: 12, padding: "4px 8px",
-                border: "1px solid #d1d5db", borderRadius: 4,
-                outline: "none", boxSizing: "border-box", color: "#1f2937",
-              }}
-            />
-          </div>
-
-          {/* Options list */}
-          <div style={{ maxHeight: 200, overflowY: "auto" }}>
-            {filtered.length === 0 ? (
-              <div style={{ padding: "8px 10px", fontSize: 12, color: "#9ca3af" }}>
-                No results
-              </div>
-            ) : (
-              filtered.map((ac) => {
-                const optVal = `${ac.account_code} – ${ac.account_name}`;
-                const selected = value === optVal;
-                return (
-                  <div
-                    key={ac.account_code}
-                    onMouseDown={() => { onChange(optVal); setOpen(false); setSearch(""); }}
-                    style={{
-                      padding: "6px 10px", fontSize: 12, cursor: "pointer",
-                      background: selected ? "#ede9fe" : "#fff",
-                      color: selected ? "#5b21b6" : "#1f2937",
-                    }}
-                    onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "#f3f4f6"; }}
-                    onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "#fff"; }}
-                  >
-                    {ac.account_code} – {ac.account_name}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-}
 
 /* API types, transformApiData, and buildPutPayload live in src/api/financial-api.ts */
 
@@ -209,80 +76,35 @@ const parseExcelValue = (raw: string): number => {
   return parseFloat(t.replace(/,/g, "")) || 0;
 };
 
-const parseCellInput = (raw: string): number => {
-  const t = raw.trim().replace(/,/g, "");
-  if (!t || t === "-") return 0;
-  return parseFloat(t) || 0;
-};
-
-// Percentage cells (e.g. Tax Rate %) accept only 0–100 with up to 2 decimals.
-// Returns false for anything that should be rejected as the user types:
-// letters, negatives, > 100, or more than 2 decimal places.
-const isValidPercentInput = (s: string): boolean => {
-  if (s === "") return true;                     // allow clearing the field
-  if (!/^\d{0,3}(\.\d{0,2})?$/.test(s)) return false;
-  const n = Number(s);                           // "12." → 12, ".5" → 0.5
-  return Number.isFinite(n) && n >= 0 && n <= 100;
-};
-
-// Safety net for paste / any value that slips past keystroke checks:
-// force into [0, 100] at 2 decimal places.
-const clampPercent = (n: number): number =>
-  Math.min(100, Math.max(0, Math.round(n * 100) / 100));
-
 const isNumericCell = (s: string): boolean => {
   const t = s.trim();
   if (!t || t === "-") return true;
   return /^-?\(?\d[\d,._]*\)?%?$/.test(t);
 };
 
-// Regular (non-percent) numeric cells: digits, one leading "-", one "." — no letters.
-const isValidNumericInput = (s: string): boolean =>
-  s === "" || s === "-" || /^-?\d*\.?\d*$/.test(s);
-
 type ParsedRow = { name: string; values: number[] };
 
 const tok = (s: string | undefined | null): string =>
   (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-// Depreciation / Amortization / EBIT / Intangibles / Net Assets are backend-calculated
-// (not a sum of the other lines in their section) — recomputeGroup must leave
-// them untouched.
-const FIXED_CALC_IDS = new Set(["DEPRECIATION", "AMORTIZATION", "EBIT", "INTANGIBLES", "NETASSETS"]);
-const isFixedCalcRow = (v: ValueRow): boolean =>
-  FIXED_CALC_IDS.has(tok(v.lineIdentifier)) ||
-  FIXED_CALC_IDS.has(tok(v.lineType)) ||
-  FIXED_CALC_IDS.has(tok(v.name));
-
-// Depreciation / Amortization still count towards the section's total row,
-// even though their own values are backend-owned.
-const DEP_AMORT_IDS = new Set(["DEPRECIATION", "AMORTIZATION"]);
-const isDepAmortRow = (v: ValueRow): boolean =>
-  DEP_AMORT_IDS.has(tok(v.lineIdentifier)) ||
-  DEP_AMORT_IDS.has(tok(v.lineType)) ||
-  DEP_AMORT_IDS.has(tok(v.name));
 
 /* Front-end subtotal / total recompute.
    For each section: calculated lines (isCalculated === "Y") get their year
    values set to the per-year sum of editable (isCalculated !== "Y") lines.
    Every line's rowTotal is set to the sum of its own year values.
    Server-driven sections (e.g. Cash Flow) are left untouched — their
-   row values are owned by the backend and must not be overwritten by a
-   local sum on cell edits. */
+   row values come entirely from the backend (GET) response and must
+   not be overwritten by a local sum on cell edits. */
 const recomputeGroup = (g: Group, years: number[]): Group => {
   if (isServerDrivenSection(g)) {
     return g;
   }
   const editable    = g.values.filter((v) => v.isCalculated !== "Y");
   const nonOngoing  = editable.filter((v) => v.lineType !== "ONGOING_CAPEX");
-  const depAmort    = g.values.filter((v) => v.isCalculated === "Y" && isDepAmortRow(v));
 
   const yearSumsAll:        Record<number, number> = {};
   const yearSumsNonOngoing: Record<number, number> = {};
   years.forEach((y) => {
-    const editableSum = editable.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
-    const depAmortSum = depAmort.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
-    yearSumsAll[y]        = editableSum + depAmortSum;
+    yearSumsAll[y]        = editable.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
     yearSumsNonOngoing[y] = nonOngoing.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
   });
 
@@ -290,8 +112,6 @@ const recomputeGroup = (g: Group, years: number[]): Group => {
     ...g,
     values: g.values.map((v) => {
       if (v.isCalculated === "Y") {
-        // Depreciation / Amortization keep whatever value the backend sent.
-        if (isFixedCalcRow(v)) return v;
         // INITIAL_CAPEX = Total - Ongoing  (exclude ONGOING_CAPEX lines)
         // All other calculated rows (TOTAL_CAPEX etc.) = sum of all editable
         const sums = v.lineType === "INITIAL_CAPEX" ? yearSumsNonOngoing : yearSumsAll;
@@ -306,14 +126,6 @@ const recomputeGroup = (g: Group, years: number[]): Group => {
   };
 };
 
-// Custom sections' calculated total row comes back from the API with
-// year_values: null (the backend never computes it) — every freshly-fetched
-// table must run through this before it reaches state, or that row stays "—".
-const recomputeAllGroups = (table: PivotTableData): PivotTableData => ({
-  ...table,
-  groups: table.groups.map((g) => recomputeGroup(g, table.years)),
-});
-
 const parseExcelPaste = (text: string): ParsedRow[] => {
   const lines = text.split(/\r?\n/).map((l: string) => l.trimEnd()).filter((l: string) => l.trim());
   if (!lines.length) return [];
@@ -324,7 +136,7 @@ const parseExcelPaste = (text: string): ParsedRow[] => {
     if (rows.every((r: string[]) => { const v = (r[c] ?? "").trim(); return !v || isNumericCell(v); })) { startCol = c; break; }
   }
   return rows.map((cols: string[]): ParsedRow => ({
-    name:   cols[0]?.trim() || "New Line Item",
+    name:   cols[0]?.trim() || "Enter line item name",
     values: cols.slice(startCol).map((c: string) => parseExcelValue(c)),
   }));
 };
@@ -338,31 +150,43 @@ const TH = (extra: CSSProperties = {}): CSSProperties => ({
 });
 const TD: CSSProperties = { borderBottom: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", height: 40 };
 
-// Statuses beyond which the proposal is locked for editing (DRAFT, REJECTED,
-// NEEDS_REAPPROVAL remain editable; CLOSED is intentionally excluded here).
-const READONLY_STATUSES = new Set(["SUBMITTED", "IN_PROGRESS", "APPROVED"]);
-const isStatusReadonly = (status: string | null | undefined): boolean =>
-  !!status && READONLY_STATUSES.has(status.toUpperCase());
-
 /* ─────────────────────────── Component ──────────────────────────── */
 export default function PivotTableWithAPI(): React.ReactElement {
 
   const [data,        setData]        = useState<PivotTableData | null>(null);
   const [rawHeader,   setRawHeader]   = useState<ApiHeader | null>(null);
-  const isReadonly = getAppConfig().is_readonly || isStatusReadonly(rawHeader?.proposal_status);
   const [loading,     setLoading]     = useState<boolean>(true);
   const [fetchError,  setFetchError]  = useState<string | null>(null);
 
   const [accountCodesBySection, setAccountCodesBySection] = useState<Record<string, AccountCode[]>>({});
-  const [displayScale,  setDisplayScale]  = useState<Scale>("K");
-  const [numberFormat,  setNumberFormat]  = useState<NumberFormatKey>("US");
-  const [dateFormat,    setDateFormat]    = useState<DateFormatKey>("DMY");
+  const [displayScale,  setDisplayScale]  = useState<number>(1000);
+  // Live USD → local-currency rate ("1 USD = X local"), fetched once per
+  // local_currency from the backend. Null until loaded / on fetch failure —
+  // callers fall back to a 1x multiplier rather than guessing a number.
   const [fxRate,        setFxRate]        = useState<number | null>(null);
   const [fxLoading,     setFxLoading]     = useState<boolean>(false);
   const [fxError,       setFxError]       = useState<string | null>(null);
 
+  // Raw text buffer for the percentage cell currently being edited, so a user
+  // can type in-progress values like "12." (which would otherwise be stripped
+  // to a number by updateCellValue on every keystroke). Keyed by `${vId}-${year}`.
+  const [pctEdit, setPctEdit] = useState<{ key: string; text: string } | null>(null);
+
+  // Selected date format for the Target Go Live column (default dd-mm-yyyy).
+  const [dateFormat, setDateFormat] = useState<DateFmt>("dd-mm-yyyy");
+
+  // Selected number format (thousands/decimal separators) — display only; the
+  // stored/API value stays a raw number. Default US/UK (1,234,567.89).
+  const [numberFormat, setNumberFormat] = useState<NumFmtKey>("us");
+  // Raw text buffer for the numeric value cell currently being edited (like
+  // pctEdit) so users can type unambiguously; keyed by `${vId}-${year}`.
+  const [numEdit, setNumEdit] = useState<{ key: string; text: string } | null>(null);
+
   const [savingDraft,  setSavingDraft]  = useState<boolean>(false);
+  const [validating,   setValidating]   = useState<boolean>(false);
   const [saveError,    setSaveError]    = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationIssue[]>([]);
+  const [highlightLineId,  setHighlightLineId]  = useState<string | null>(null);
   const [toast,        setToast]        = useState<ToastState>(null);
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
 
@@ -376,13 +200,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [editingYearError,   setEditingYearError]   = useState<boolean>(false);
   const [editingGroupId,     setEditingGroupId]     = useState<string | null>(null);
   const [editingGroupName,   setEditingGroupName]   = useState<string>("");
-  const [editingCell,        setEditingCell]        = useState<{ gId: string; vId: string; year: number; raw: string } | null>(null);
   const [pasteToast,         setPasteToast]         = useState<{ gId: string; count: number } | null>(null);
   const [confirmDelete,      setConfirmDelete]      = useState<{ gId: string; vId?: string; name: string; kind: "line" | "section" } | null>(null);
   const [deletingRow,        setDeletingRow]        = useState<boolean>(false);
   const [confirmDeleteYear,  setConfirmDeleteYear]  = useState<{ year: number; label: string } | null>(null);
   const [stripTooltip,       setStripTooltip]       = useState<"currency" | "scale" | null>(null);
   const [stripTooltipPos,    setStripTooltipPos]    = useState<DOMRect | null>(null);
+  const [activeLov,          setActiveLov]          = useState<{ gId: string; vId: string; sectionType: string; currentValue?: string } | null>(null);
+  const [lovSearch,          setLovSearch]          = useState<string>("");
   const [headerPinned,     setHeaderPinned]     = useState<boolean>(false);
   const [headerHeight,     setHeaderHeight]     = useState<number>(0);
   const [leftOffset,       setLeftOffset]       = useState<number>(0);
@@ -391,6 +216,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const headerRef    = useRef<HTMLDivElement>(null);
   const sentinelRef  = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  /* ── Access control ───────────────────────────────────────────────
+     Import (staging) flow: same as the other import plugins — only the
+     is_readonly flag from the config global gates editing. The staging GET
+     carries no proposal_status, so there is no status gate here. When
+     read-only, every mutation handler short-circuits (which also freezes the
+     controlled inputs) and the editing controls are not rendered. */
+  const isReadOnly = useState<boolean>(() => getAppConfig().is_readonly)[0];
 
   /* ── Sticky header: walk DOM to find APEX scroll container, listen directly ── */
   useEffect(() => {
@@ -437,8 +270,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
   }, []);
 
   /* ── Column resize state ── */
-  const [colWidths, setColWidths] = useState<{ lineItem: number; account: number }>({ lineItem: 180, account: 240 });
-  const resizeRef = useRef<{ col: "lineItem" | "account"; startX: number; startW: number } | null>(null);
+  const [colWidths, setColWidths] = useState<{ lineItem: number; account: number; targetGoLive: number }>({ lineItem: 180, account: 240, targetGoLive: 150 });
+  const resizeRef = useRef<{ col: "lineItem" | "account" | "targetGoLive"; startX: number; startW: number } | null>(null);
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
@@ -453,7 +286,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return () => { window.removeEventListener("mousemove", onMouseMove); window.removeEventListener("mouseup", onMouseUp); };
   }, []);
 
-  const startResize = (col: "lineItem" | "account", e: React.MouseEvent) => {
+  const startResize = (col: "lineItem" | "account" | "targetGoLive", e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     resizeRef.current = { col, startX: e.clientX, startW: colWidths[col] };
@@ -468,6 +301,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const yearMenuRef     = useRef<HTMLDivElement>(null);
+  const lovRef          = useRef<HTMLDivElement>(null);
   const hoverTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── Account codes — fetch on demand when user opens the dropdown ── */
@@ -486,9 +320,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
     setSaveError(null);
     try {
       const cfg = getAppConfig();
-      const result = await getFinancialData(cfg);
-      setData(recomputeAllGroups(result.table));
+      const result = await getFinEvaluationStaging(cfg);
+      // Default the selected display currency to local_currency when one is
+      // set; only fall back to USD when the proposal has no local_currency.
+      const local = (result.rawHeader.local_currency || "").toUpperCase();
+      result.rawHeader.display_currency = local || "USD";
+      setData(result.table);
       setRawHeader(result.rawHeader);
+      setValidationErrors(result.errors ?? []);
       dbYearsRef.current = new Set(result.table.years);
       return result;
     } catch (e: unknown) {
@@ -502,6 +341,34 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Fetch the live USD → local-currency rate once local_currency is known.
+  // Skipped entirely for USD-only proposals (no conversion needed).
+  const localCurrency = (rawHeader?.local_currency || "").toUpperCase();
+  useEffect(() => {
+    if (!localCurrency || localCurrency === "USD") {
+      setFxRate(null);
+      setFxError(null);
+      setFxLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setFxLoading(true);
+    setFxError(null);
+    const cfg = getAppConfig();
+    getExchangeRate(cfg, localCurrency)
+      .then((rate) => {
+        if (cancelled) return;
+        setFxRate(rate);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setFxError(e instanceof Error ? e.message : "Failed to load exchange rate.");
+        setFxRate(null);
+      })
+      .finally(() => { if (!cancelled) setFxLoading(false); });
+    return () => { cancelled = true; };
+  }, [localCurrency]);
+
   // Pre-load account codes for any section that already has saved account values
   useEffect(() => {
     if (!data) return;
@@ -510,7 +377,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         loadAccountCodesForSection(g.sectionType);
       }
     });
-  }, [data?.groups.length, loadAccountCodesForSection]);
+  }, [data, loadAccountCodesForSection]);
 
   // Surgically refresh a single section by AJAX without a full reload.
   // Finds the matching group in fresh data by sectionId / sectionType / name,
@@ -519,32 +386,22 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const refreshSection = useCallback(async (targetId: string): Promise<void> => {
     try {
       const cfg    = getAppConfig();
-      const result = await getFinancialData(cfg);
-      const recomputed = recomputeAllGroups(result.table);
+      const result = await getFinEvaluationStaging(cfg);
       const numId  = parseInt(targetId, 10);
-      const fresh  = recomputed.groups.find((g) =>
+      const fresh  = result.table.groups.find((g) =>
         (Number.isFinite(numId) && g.sectionId === numId) ||
         tok(g.sectionType) === tok(targetId) ||
         tok(g.name)        === tok(targetId),
       );
       setData((prev) => {
-        if (!prev) return recomputed;
+        if (!prev) return result.table;
         if (!fresh) return prev;
-        // Match on sectionType/name first — sectionId is unreliable here:
-        // unsaved (template) sections all carry sectionId === undefined, so an
-        // id-only comparison either merges unrelated sections together or fails
-        // to recognize a section that just got its first real id from the
-        // backend, leaving a stale duplicate copy behind in state.
-        const matchesFresh = (g: Group): boolean =>
-          (fresh.sectionId != null && g.sectionId === fresh.sectionId) ||
-          (!!g.sectionType && tok(g.sectionType) === tok(fresh.sectionType)) ||
-          tok(g.name) === tok(fresh.name);
-        const exists = prev.groups.some(matchesFresh);
+        const exists = prev.groups.some((g) => g.sectionId === fresh.sectionId);
         return {
           ...prev,
           groups: exists
             ? prev.groups.map((g) =>
-                matchesFresh(g)
+                g.sectionId === fresh.sectionId
                   ? { ...fresh, expanded: g.expanded }
                   : g,
               )
@@ -574,7 +431,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     const handler = (e: Event): void => {
       const detail = (e as CustomEvent<{ sectionId?: string | number | null }>).detail;
       const sid = detail?.sectionId != null ? String(detail.sectionId).trim() : null;
-      console.log("[Table] tool:refresh_financial_evaluation received, sectionId =", sid);
+      //console.log("[Table] tool:refresh_financial_evaluation received, sectionId =", sid);
       if (sid && sid !== "null") {
         void refreshSection(sid);
       } else {
@@ -618,10 +475,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
           const allLinks = Array.from(document.querySelectorAll<HTMLElement>("a, button, [role='tab'], [role='menuitem']"));
           const finLink  = allLinks.find((l) =>
             /financial\s*eval/i.test(l.textContent?.trim() ?? "") ||
-            /financial[_\-]?eval/i.test(l.getAttribute("href") ?? ""),
+            /financial[_-]?eval/i.test(l.getAttribute("href") ?? ""),
           );
           if (finLink) {
-            console.log("[Table] clicking Financial Evaluation tab:", finLink);
+            //console.log("[Table] clicking Financial Evaluation tab:", finLink);
             finLink.click();
           }
         }
@@ -641,10 +498,75 @@ export default function PivotTableWithAPI(): React.ReactElement {
     tryScroll();
   }, [data, scrollTarget]);
 
-  /* ── Save Draft ──────────────────────────────────────────────
-     PUT/POST the current state, re-fetch, then run the full-DCF
-     engine so KPI, subtotals and cash flow rows are up to date. */
+  /* ── Scroll to a specific line row (from a validation-error click) ── */
+  useEffect(() => {
+    if (!highlightLineId) return;
+    let attempts = 0;
+    const tryScroll = (): void => {
+      const el = document.querySelector<HTMLElement>(`[data-line-id="${highlightLineId}"]`);
+      if (el) {
+        el.style.scrollMarginTop = "120px";
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (attempts < 20) {
+        attempts++;
+        setTimeout(tryScroll, 50);
+      }
+    };
+    tryScroll();
+    const clear = setTimeout(() => setHighlightLineId(null), 3000);
+    return () => clearTimeout(clear);
+  }, [highlightLineId]);
+
+  // Silent re-fetch after Validate / Save Model — adopt the server result as
+  // source of truth, carrying over each section's expanded/collapsed state
+  // and the user's selected display currency so the view doesn't jump.
+  const refetchStaging = useCallback(async (label: string): Promise<void> => {
+    try {
+      const cfg = getAppConfig();
+      const refetched = await getFinEvaluationStaging(cfg);
+      console.log(`[${label}] re-fetch groups:`, refetched.table.groups.length,
+        "lines:", refetched.table.groups.reduce((s, g) => s + g.values.length, 0));
+
+      setData((current) => {
+        if (!current) return refetched.table;
+
+        const expandedBySection = new Map(
+          current.groups.filter((g) => g.sectionId != null).map((g) => [g.sectionId, g.expanded]),
+        );
+        const expandedByName = new Map(
+          current.groups.map((g) => [g.name.trim().toLowerCase(), g.expanded]),
+        );
+
+        return {
+          ...refetched.table,
+          groups: refetched.table.groups.map((g) => ({
+            ...g,
+            expanded:
+              (g.sectionId != null && expandedBySection.has(g.sectionId)
+                ? expandedBySection.get(g.sectionId)
+                : expandedByName.get(g.name.trim().toLowerCase())) ?? g.expanded,
+          })),
+        };
+      });
+
+      setRawHeader((prev) => ({
+        ...refetched.rawHeader,
+        display_currency: prev?.display_currency
+          || (refetched.rawHeader.local_currency || "").toUpperCase()
+          || "USD",
+      }));
+      setValidationErrors(refetched.errors ?? []);
+    } catch (e) {
+      console.error(`[${label}] re-fetch failed`, e);
+    }
+  }, []);
+
+  /* ── Save Model ──────────────────────────────────────────────
+     POST to the staging-migrate endpoint (moves staging → main for
+     this proposal), then re-fetch so KPI and subtotals reflect the
+     migrated server state. */
   const saveDraft = useCallback(async (): Promise<void> => {
+    if (isReadOnly) return;            // access control — no saves when read-only
     if (!data || !rawHeader) return;
     const cfg = getAppConfig();
     if (!cfg.proposal_id) {
@@ -660,58 +582,31 @@ export default function PivotTableWithAPI(): React.ReactElement {
       });
       return;
     }
+    if (!cfg.file_id) {
+      setToast({ kind: "error", message: "Cannot save — File ID is required." });
+      return;
+    }
     setSavingDraft(true);
     setSaveError(null);
     try {
-      const { method, response } = await saveFinancialData(cfg, data, rawHeader);
+      const response = await migrateFinEvalStaging(cfg);
+      const method = "POST" as const;
       setToast({
         kind: "success",
-        message: ((response as any).apiMessage || response.api_message || "")
-          || (method === "POST" ? "Financial evaluation created successfully." : "Financial evaluation saved successfully."),
+        message: (response.apiMessage || response.api_message || "")
+          || "Financial evaluation saved successfully.",
       });
       const saveEvent = new CustomEvent("tool:fin_eval_saved", { detail: { proposalId: cfg.proposal_id } });
       console.log("[fin_eval] dispatching tool:fin_eval_saved", saveEvent.detail);
       window.dispatchEvent(saveEvent);
-      publishToBridge({ type: "PLUGIN_MSG", source: "editor", target: "chatbot", action: "fin-eval:saved", payload: { proposalId: cfg.proposal_id, method } });
-      // Silent re-fetch — replace local state with the server result.
-      // After a successful save the backend holds the source of truth and
-      // returns every section and line (calculated/template rows included,
-      // even empty ones), so we adopt it wholesale — exactly what a page
-      // reload does. We only carry over each section's expanded/collapsed
-      // state so the view doesn't jump.
-      try {
-        const refetched = await getFinancialData(cfg);
-        const recomputed = recomputeAllGroups(refetched.table);
-        console.log("[saveDraft] re-fetch groups:", refetched.table.groups.length,
-          "lines:", refetched.table.groups.reduce((s, g) => s + g.values.length, 0));
-
-        setData((current) => {
-          if (!current) return recomputed;
-
-          const expandedBySection = new Map(
-            current.groups.filter((g) => g.sectionId != null).map((g) => [g.sectionId, g.expanded]),
-          );
-          const expandedByName = new Map(
-            current.groups.map((g) => [g.name.trim().toLowerCase(), g.expanded]),
-          );
-
-          return {
-            ...recomputed,
-            groups: recomputed.groups.map((g) => ({
-              ...g,
-              expanded:
-                (g.sectionId != null && expandedBySection.has(g.sectionId)
-                  ? expandedBySection.get(g.sectionId)
-                  : expandedByName.get(g.name.trim().toLowerCase())) ?? g.expanded,
-            })),
-          };
-        });
-
-        // Always update the header so KPIs, exchange rate, etc. reflect server state.
-        setRawHeader(refetched.rawHeader);
-      } catch (e) {
-        console.error("[saveDraft] re-fetch failed", e);
-      }
+      // AppBridge outbound — notify the chatbot the save completed.
+      publishAction({
+        source: "editor",
+        target: "chatbot",
+        action: "fin-eval:saved",
+        payload: { proposalId: cfg.proposal_id, method },
+      });
+      await refetchStaging("saveDraft");
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown save error";
@@ -720,42 +615,90 @@ export default function PivotTableWithAPI(): React.ReactElement {
     } finally {
       setSavingDraft(false);
     }
-  }, [data, rawHeader, loadData]);
+  }, [data, rawHeader, isReadOnly, refetchStaging]);
 
-  // AppBridge event listeners.
-  // "fin-eval" — commands from sibling plugins using our typed action names.
-  // "editor"   — legacy target used by the chatbot (tool:refresh_financial_evaluation).
-  // Existing window custom-event listeners are untouched.
+  /* ── Validate ─────────────────────────────────────────────────
+     PUT the current state to finEvaluationStaging so the backend re-runs
+     validation, then re-fetch so refreshed validation state and any
+     newly-created staging ids come back into local state. */
+  const validate = useCallback(async (): Promise<void> => {
+    if (isReadOnly) return;
+    if (!data || !rawHeader) return;
+    const cfg = getAppConfig();
+    if (!cfg.proposal_id) {
+      setToast({
+        kind: "error",
+        message: "Cannot validate — Proposal ID is required. Please create a Proposal first.",
+      });
+      return;
+    }
+    if (!cfg.file_id) {
+      setToast({ kind: "error", message: "Cannot validate — File ID is required." });
+      return;
+    }
+    setValidating(true);
+    setSaveError(null);
+    try {
+      const response = await validateFinEvaluationStaging(cfg, data, rawHeader);
+      const method = "PUT" as const;
+      setToast({
+        kind: "success",
+        message: (response.apiMessage || response.api_message || "")
+          || "Validation completed successfully.",
+      });
+      const saveEvent = new CustomEvent("tool:fin_eval_saved", { detail: { proposalId: cfg.proposal_id } });
+      console.log("[fin_eval] dispatching tool:fin_eval_saved (validate)", saveEvent.detail);
+      window.dispatchEvent(saveEvent);
+      publishAction({
+        source: "editor",
+        target: "chatbot",
+        action: "fin-eval:saved",
+        payload: { proposalId: cfg.proposal_id, method },
+      });
+      await refetchStaging("validate");
+    } catch (e: unknown) {
+      clearCachedToken();
+      const msg = e instanceof Error ? e.message : "Unknown validation error";
+      setSaveError(msg);
+      setToast({ kind: "error", message: msg });
+    } finally {
+      setValidating(false);
+    }
+  }, [data, rawHeader, isReadOnly, refetchStaging]);
+
+  /* ── AppBridge inbound commands ───────────────────────────────────
+     Subscribe under our own typed id ("fin-eval") and the legacy id the
+     chatbot targets ("editor"). One handler switches on the action. This
+     runs alongside — and independently of — the window CustomEvent
+     wiring above. Degrades to a silent no-op when window.AppBridge is
+     absent (standalone / dev). */
   useEffect(() => {
-    const unsubFinEval = subscribeAllActions("fin-eval", (env) => {
-      const action  = env.action as string;
-      const payload = env.payload as Record<string, unknown> | null | undefined;
-      console.log("[fin-eval] bridge action received:", action, payload);
-
-      if (action === "fin-eval:refresh") {
-        const sid = payload?.sectionId != null ? String(payload.sectionId).trim() : null;
-        if (sid && sid !== "null") void refreshSection(sid);
-        else void loadData();
-      } else if (action === "fin-eval:save") {
-        void saveDraft();
-      } else if (action === "fin-eval:scroll-to-section") {
-        const sectionType = payload?.sectionType as string | undefined;
-        if (sectionType) void refreshSection(sectionType);
+    const handle = (env: { action: string | symbol | number; payload: unknown }): void => {
+      const action  = String(env.action);
+      const payload = (env.payload ?? {}) as { sectionId?: string | number | null; sectionType?: string };
+      switch (action) {
+        case "fin-eval:refresh":
+        case "tool:refresh_financial_evaluation": {
+          const sid = payload.sectionId != null ? String(payload.sectionId).trim() : null;
+          //console.log("[Table] AppBridge refresh, sectionId =", sid);
+          if (sid && sid !== "null") void refreshSection(sid);
+          else void loadData();
+          break;
+        }
+        case "fin-eval:save":
+          //console.log("[Table] AppBridge save");
+          void saveDraft();
+          break;
+        case "fin-eval:scroll-to-section":
+          //console.log("[Table] AppBridge scroll-to-section, sectionType =", payload.sectionType);
+          if (payload.sectionType) setScrollTarget(payload.sectionType);
+          break;
+        default:
+          break;
       }
-    });
-
-    const unsubEditor = subscribeAllActions("editor", (env) => {
-      const action  = env.action as string;
-      const payload = env.payload as Record<string, unknown> | null | undefined;
-      console.log("[fin-eval/editor] bridge action received:", action, payload);
-
-      if (action === "tool:refresh_financial_evaluation") {
-        const sid = payload?.sectionId != null ? String(payload.sectionId).trim() : null;
-        if (sid && sid !== "null") void refreshSection(sid);
-        else void loadData();
-      }
-    });
-
+    };
+    const unsubFinEval = subscribeAllActions("fin-eval", handle);
+    const unsubEditor  = subscribeAllActions("editor", handle);
     return () => { unsubFinEval(); unsubEditor(); };
   }, [loadData, refreshSection, saveDraft]);
 
@@ -767,33 +710,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // Only one toast-style notification should be visible at a time.
   useEffect(() => { if (toast) setPasteToast(null); }, [toast]);
   useEffect(() => { if (pasteToast) setToast(null); }, [pasteToast]);
-
-  // Live FX rate lookup — fetches the current USD conversion rate whenever the
-  // proposal's local currency changes (skipped for USD, which needs no rate).
-  useEffect(() => {
-    const local = (rawHeader?.local_currency || "").toUpperCase();
-    if (!local || local === "USD") { setFxRate(null); setFxLoading(false); setFxError(null); return; }
-    let cancelled = false;
-    setFxLoading(true); setFxError(null);
-    (async () => {
-      try {
-        const cfg = getAppConfig();
-        const result = await getCurrencyExchangeRate(cfg, local);
-        const rate = result?.usd_fbr ?? null;
-        if (cancelled) return;
-        setFxRate(rate);
-        // A missing/zero rate is a failed lookup, not a real 0 — say so rather
-        // than rendering a guessed number (M&A -> FxCard).
-        setFxError(rate != null && rate > 0 ? null : "rate unavailable");
-      } catch (e) {
-        console.error("[fin_eval] failed to fetch currency exchange rate:", e);
-        if (!cancelled) { setFxRate(null); setFxError("rate unavailable"); }
-      } finally {
-        if (!cancelled) setFxLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [rawHeader?.local_currency]);
 
   useEffect(() => {
     const h = (e: MouseEvent): void => {
@@ -816,74 +732,105 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return () => document.removeEventListener("mousedown", h);
   }, [openYearMenuIdx]);
 
-  /* ── FX multiplier for display currency conversion ────────────── */
-  // All values are stored in USD in the database.
-  // exchange_rate is stored as "1 CAD = X USD" (e.g. 0.735).
-  // USD display → no conversion (×1).
-  // CAD display → USD × (1/rate) = CAD (e.g. 3000 USD × 1/0.735 = 4082 CAD).
-  // Save path divides by fxMultiplier to convert back to USD for storage.
+  useEffect(() => {
+    const h = (e: MouseEvent): void => { if (lovRef.current && !lovRef.current.contains(e.target as Node)) { setActiveLov(null); setLovSearch(""); } };
+    if (activeLov) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [activeLov]);
+
+  /* DB values are always in USD. fxMultiplier converts USD → display currency for
+     rendering, and divides user input back to USD before storing in state.
+     fxRate (usd_fbr) is "1 USD = X local", so the local-currency multiplier is
+     the rate itself:
+       - USD display → ×1 (no conversion)
+       - local display (e.g. CAD) → ×fxRate
+     If the rate hasn't loaded (or the fetch failed), fall back to ×1 rather
+     than guessing a number. */
   const fxMultiplier: number = (() => {
     if (!rawHeader) return 1;
-    const display = (rawHeader.display_currency || rawHeader.local_currency || "USD").toUpperCase();
-    const rate    = rawHeader.exchange_rate || 0.7350;
-    return display === "CAD" ? (1 / rate) : 1;
+    const display = (rawHeader.display_currency || rawHeader.local_currency || "").toUpperCase();
+    if (display === "USD") return 1;
+    return fxRate && fxRate > 0 ? fxRate : 1;
   })();
 
-  // Checks lineIdentifier, lineType, AND display name — one of them will match
-  // even when line_identifier comes back null from the API.
-  const matchesAny = (v: ValueRow, ids: Set<string>): boolean =>
-    ids.has(tok(v.lineIdentifier)) ||
-    ids.has(tok(v.lineType))       ||
-    ids.has(tok(v.name));
+  // API values are already stored in thousands (K), so at K we show them as-is
+  //   (÷1); only M and B divide further. divisor = scale / 1,000:
+  //     K (1,000)         → ÷1          (no change — data is already in K)
+  //     M (1,000,000)     → ÷1,000
+  //     B (1,000,000,000) → ÷1,000,000
+  //   Both the grid and the KPI cards use this factor so they move together;
+  //   the cards additionally append the K/M/B letter (KpiPanel.scaleUnit).
+  const scaleDivisor = (scale: number): number => scale / 1_000;
 
-  // Percentage-based rows where a cross-year total is meaningless — show "—"
-  const NO_TOTAL_IDS = new Set([
-    "TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT",
-    "POSTTAXRETURN", "POSTTAXRETURNPCT", "POSTTAXRETURNPERCENT",
-  ]);
-  const isNoTotalRow = (v: ValueRow): boolean => matchesAny(v, NO_TOTAL_IDS);
+  // Decimal places shown at each scale: K → 0, M → 1, B → 2.
+  const scaleDecimals = (scale: number): number => scale === 1_000_000_000 ? 2 : scale === 1_000_000 ? 1 : 0;
 
-  // Tax Rate % — no currency conversion, no scale conversion, no total
-  const TAX_RATE_DISPLAY_IDS = new Set(["TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT"]);
-  const isTaxRateRow = (v: ValueRow): boolean => matchesAny(v, TAX_RATE_DISPLAY_IDS);
+  // Active number-format spec (thousands/decimal separators) — display only.
+  const numFmt = getNumFmt(numberFormat);
 
-  // Any percentage row — used to enforce 0–100 / 2-decimal input rules.
-  // Covers Tax Rate %, EBIT Margin %, Post Tax Return %, Gross Margin %, etc.,
-  // plus any custom row whose display name carries a "%".
-  const PERCENT_DISPLAY_IDS = new Set([
-    "TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT",
-    "EBITMARGIN", "EBITMARGINPCT", "EBITMARGINPERCENT",
-    "POSTTAXRETURN", "POSTTAXRETURNPCT", "POSTTAXRETURNPERCENT",
-    "GROSSMARGIN", "GROSSMARGINPCT", "GROSSMARGINPERCENT",
-  ]);
-  const isPercentRow = (v: ValueRow): boolean =>
-    matchesAny(v, PERCENT_DISPLAY_IDS) || /%/.test(v.name ?? "");
-
-  // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like Tax Rate %.
-  const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
-
-  // Raw formatter: no fx, no scale — used for pure percentage rows like Tax Rate %
-  const rawFmt = (n: number): string => {
+  const displayFmt = (n: number, bypassScale = false): string => {
     if (!n) return "—";
-    const abs = Math.abs(n);
-    const formatted = formatNumber(abs, numberFormat);
-    return n < 0 ? `(${formatted})` : formatted;
+    const v = bypassScale ? n : (n * fxMultiplier) / scaleDivisor(displayScale);
+    const formatted = formatNumber(Math.abs(v), numFmt, bypassScale ? 0 : scaleDecimals(displayScale));
+    return v < 0 ? `(${formatted})` : formatted;
   };
 
-  const displayFmt = (n: number): string => {
+  /* Percentage rows (e.g. "Margin %") are currency-agnostic — they must not be
+     multiplied by the exchange rate or divided by the scale factor. */
+  const isPercentRow = (value: ValueRow): boolean => {
+    const name = (value.name || "").trim();
+    const ident = `${value.lineIdentifier || ""} ${value.lineType || ""}`.toUpperCase();
+    return name.endsWith("%") || /PCT|PERCENT|MARGIN_?%/.test(ident);
+  };
+
+  // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like percent rows.
+  const isNonFinancialRow = (value: ValueRow): boolean =>
+    (value.lineIdentifier || "").toUpperCase() === "NON_FINANCIAL";
+
+  const displayPercent = (n: number): string => {
     if (!n) return "—";
-    const v = applyScale(n * fxMultiplier, displayScale);
-    const abs = Math.abs(v);
-    const decimals = decimalsForScale(displayScale);
-    const formatted = formatNumber(abs, numberFormat, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-    return v < 0 ? `(${formatted})` : formatted;
+    const formatted = formatNumber(Math.abs(n), numFmt, 0);
+    return n < 0 ? `(${formatted}%)` : `${formatted}%`;
+  };
+
+  // Row-aware formatter: percent and NON_FINANCIAL rows bypass currency/scale conversion.
+  // `forceNonFinancial` lets a calculated section-TOTAL row inherit its section's bypass
+  // even when the total's own lineIdentifier doesn't carry NON_FINANCIAL itself.
+  const displayRow = (value: ValueRow, n: number, forceNonFinancial = false): string =>
+    isPercentRow(value) ? displayPercent(n) : (isNonFinancialRow(value) || forceNonFinancial) ? displayFmt(n, true) : displayFmt(n);
+
+  const targetGoLive = (): string => {
+    const raw = rawHeader?.date_placed_in_service;
+    if (!raw) return "";
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return raw;
+    return d.toLocaleDateString("en-GB");
+  };
+
+  // Format a line's target_go_live_date for read-only display in the selected
+  // dateFormat. The API returns a timestamp ("2026-07-15T00:00:00"); we parse
+  // the date part as a string (no Date object) to avoid any timezone shift.
+  const fmtGoLiveDate = (raw?: string): string => {
+    if (!raw) return "";
+    const datePart = raw.split("T")[0];                       // "2026-07-15"
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(datePart);
+    if (!m) return datePart;                                  // unknown shape → show as-is
+    const [, yyyy, mm, dd] = m;
+    const mon = MONTHS_ABBR[parseInt(mm, 10) - 1] ?? mm;
+    switch (dateFormat) {
+      case "dd-mon-yyyy": return `${dd}-${mon}-${yyyy}`;
+      case "yyyy-mm-dd":  return `${yyyy}-${mm}-${dd}`;
+      case "mm/dd/yyyy":  return `${mm}/${dd}/${yyyy}`;
+      case "dd-mm-yyyy":
+      default:            return `${dd}-${mm}-${yyyy}`;
+    }
   };
 
   /* ── Loading / error gates ──────────────────────────────────── */
   if (loading) return (
     <div style={{ padding: 60, textAlign: "center", color: "#6b7280", fontSize: 13 }}>
       <div style={{ display: "inline-block", animation: "spin 1s linear infinite", marginBottom: 10 }}><RefreshCw size={20} /></div>
-      <div>Loading financial data…</div>
+      <div>Loading Sales Contracts data…</div>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -900,43 +847,33 @@ export default function PivotTableWithAPI(): React.ReactElement {
   /* ── Calculations (from line-level data populated by API) ─────── */
   const numYears   = data.years.length;
 
-  /* ── Arrow-key cell navigation ───────────────────────────────
-     Every navigable cell (line name, year value, row total — editable or
-     read-only/calculated) shares the FIN_CELL_CLASS. A flat, row-major
-     DOM query plus a fixed row length (name + years + total) lets Left/
-     Right fall through to normal caret movement until the caret hits the
-     text edge, and Up/Down jump by exactly one row. */
-  const navRowLength = numYears + 2;
-  const handleCellArrowNav = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-    const { key } = e;
-    if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "ArrowUp" && key !== "ArrowDown") return;
-
-    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>(`.${FIN_CELL_CLASS}`));
-    const i = inputs.indexOf(e.currentTarget);
-    if (i === -1) return;
-
-    if (key === "ArrowUp" || key === "ArrowDown") {
-      const target = inputs[key === "ArrowUp" ? i - navRowLength : i + navRowLength];
-      if (target) { e.preventDefault(); target.focus(); }
+  /* ── Validation errors → real navigation targets ───────────────
+     Each ValidationIssue already carries whichever target the backend's
+     own errorMessage matched to (section id / line id) — see
+     attachValidationTargets in financial-api.ts. */
+  const goToError = (idx: number): void => {
+    const err = validationErrors[idx];
+    if (!err) return;
+    if (err.sectionId != null) {
+      setScrollTarget(String(err.sectionId));
       return;
     }
-
-    const el    = e.currentTarget;
-    const start = el.selectionStart ?? 0;
-    const end   = el.selectionEnd ?? el.value.length;
-    const atStart = start === 0 && end === 0;
-    const atEnd   = start === el.value.length && end === el.value.length;
-
-    if (key === "ArrowLeft" && atStart && inputs[i - 1]) { e.preventDefault(); inputs[i - 1].focus(); }
-    else if (key === "ArrowRight" && atEnd && inputs[i + 1]) { e.preventDefault(); inputs[i + 1].focus(); }
+    if (err.lineId) {
+      const owningGroup = data.groups.find((g) => g.values.some((v) => v.id === err.lineId));
+      if (owningGroup) {
+        setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === owningGroup.id ? { ...g, expanded: true } : g) }) : p);
+      }
+      setHighlightLineId(err.lineId);
+    }
   };
 
   /* ── Year management ────────────────────────────────────────── */
-  const increaseYears   = (): void => setData((p) => { if (!p) return p; const y = Math.max(...p.years) + 1; return { ...p, years: [...p.years, y], columnLabels: { ...p.columnLabels, [y]: `FY${String(y).slice(2)}` }, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => ({ ...v, yearValues: { ...v.yearValues, [y]: 0 } })) })) }; });
-  const decreaseYears   = (): void => { if (data.years.length <= 1) return; setData((p) => { if (!p) return p; const y = p.years[p.years.length - 1]; const lbl = { ...p.columnLabels }; delete lbl[y]; return { ...p, years: p.years.slice(0, -1), columnLabels: lbl, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => { const nv = { ...v.yearValues }; delete nv[y]; return { ...v, yearValues: nv }; }) })) }; }); };
-  const insertYearAfter = (idx: number): void => { setData((p) => { if (!p) return p; const y = Math.max(...p.years) + 1; return { ...p, years: [...p.years.slice(0, idx + 1), y, ...p.years.slice(idx + 1)], columnLabels: { ...p.columnLabels, [y]: `FY${String(y).slice(2)}` }, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => ({ ...v, yearValues: { ...v.yearValues, [y]: 0 } })) })) }; }); setHoveredColIdx(null); };
-  const removeYear = (year: number): void => { if (data.years.length <= 1) return; setData((p) => { if (!p) return p; const lbl = { ...p.columnLabels }; delete lbl[year]; return { ...p, years: p.years.filter((y) => y !== year), columnLabels: lbl, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => { const nv = { ...v.yearValues }; delete nv[year]; return { ...v, yearValues: nv }; }) })) }; }); setConfirmDeleteYear(null); setOpenYearMenuIdx(null); };
+  const increaseYears   = (): void => { if (isReadOnly) return; setData((p) => { if (!p) return p; const y = Math.max(...p.years) + 1; return { ...p, years: [...p.years, y], columnLabels: { ...p.columnLabels, [y]: `FY${String(y).slice(2)}` }, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => ({ ...v, yearValues: { ...v.yearValues, [y]: 0 } })) })) }; }); };
+  const decreaseYears   = (): void => { if (isReadOnly) return; if (data.years.length <= 1) return; setData((p) => { if (!p) return p; const y = p.years[p.years.length - 1]; const lbl = { ...p.columnLabels }; delete lbl[y]; return { ...p, years: p.years.slice(0, -1), columnLabels: lbl, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => { const nv = { ...v.yearValues }; delete nv[y]; return { ...v, yearValues: nv }; }) })) }; }); };
+  const insertYearAfter = (idx: number): void => { if (isReadOnly) return; setData((p) => { if (!p) return p; const y = Math.max(...p.years) + 1; return { ...p, years: [...p.years.slice(0, idx + 1), y, ...p.years.slice(idx + 1)], columnLabels: { ...p.columnLabels, [y]: `FY${String(y).slice(2)}` }, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => ({ ...v, yearValues: { ...v.yearValues, [y]: 0 } })) })) }; }); setHoveredColIdx(null); };
+  const removeYear = (year: number): void => { if (isReadOnly) return; if (data.years.length <= 1) return; setData((p) => { if (!p) return p; const lbl = { ...p.columnLabels }; delete lbl[year]; return { ...p, years: p.years.filter((y) => y !== year), columnLabels: lbl, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => { const nv = { ...v.yearValues }; delete nv[year]; return { ...v, yearValues: nv }; }) })) }; }); setConfirmDeleteYear(null); setOpenYearMenuIdx(null); };
   const updateColumnLabel = (year: number, lbl: string): void => {
+    if (isReadOnly) return;
     const trimmed = lbl.trim();
     const existing = Object.entries(data?.columnLabels ?? {}).find(
       ([k, v]) => Number(k) !== year && v === trimmed
@@ -951,45 +888,23 @@ export default function PivotTableWithAPI(): React.ReactElement {
     setEditingYearIdx(null);
     setEditingYearLabel("");
   };
-  const moveYearLeft  = (i: number): void => { if (i <= 0) return; setData((p) => { if (!p) return p; const y = [...p.years]; [y[i-1], y[i]] = [y[i], y[i-1]]; return { ...p, years: y }; }); setOpenYearMenuIdx(null); };
-  const moveYearRight = (i: number): void => { if (i >= data.years.length - 1) return; setData((p) => { if (!p) return p; const y = [...p.years]; [y[i], y[i+1]] = [y[i+1], y[i]]; return { ...p, years: y }; }); setOpenYearMenuIdx(null); };
+  const moveYearLeft  = (i: number): void => { if (isReadOnly) return; if (i <= 0) return; setData((p) => { if (!p) return p; const y = [...p.years]; [y[i-1], y[i]] = [y[i], y[i-1]]; return { ...p, years: y }; }); setOpenYearMenuIdx(null); };
+  const moveYearRight = (i: number): void => { if (isReadOnly) return; if (i >= data.years.length - 1) return; setData((p) => { if (!p) return p; const y = [...p.years]; [y[i], y[i+1]] = [y[i+1], y[i]]; return { ...p, years: y }; }); setOpenYearMenuIdx(null); };
 
   /* ── Group / row CRUD ───────────────────────────────────────── */
   const blankRow    = (p: PivotTableData): ValueRow => ({ id: generateId(), name: "", yearValues: p.years.reduce((a: YearValues, y) => ({ ...a, [y]: 0 }), {}), lineType: "CUSTOM", lineIdentifier: "FINANCIAL", isCalculated: "N", isCustom: "Y", status: "ACTIVE", languageCode: "EN" });
-  // New sections / lines are persisted on Save (PUT) — the backend's
-  // update_fin_eval_prc inserts rows with null fin_eval_section_id /
-  // fin_eval_line_id and updates rows with real ids, so a separate
-  // POST-on-add is unnecessary and caused a race that left stale
-  // "New Line Item" rows in the DB.
-  const addGroup = (): void => {
-    const newId = generateId();
-    setData((p) => {
-      if (!p) return p;
-      // Templates number sections in steps of 10, so continue past the highest
-      // one rather than counting groups — otherwise the new section sorts first.
-      const maxOrder = p.groups.reduce((m, g) => Math.max(m, g.displayOrder ?? 0), 0);
-      return {
-        ...p,
-        groups: [...p.groups, {
-          id: newId, name: "", expanded: true,
-          sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
-          displayOrder: maxOrder + 10,
-          values: [blankRow(p)],
-        }],
-      };
-    });
-    // Focuses the new section's name input, which auto-scrolls it into view.
-    setEditingGroupId(newId);
-    setEditingGroupName("");
-  };
+  // New lines are persisted to staging on Validate (PUT) — rows with a null
+  // finEvalLineStgId are inserted and rows with real ids are updated, so no
+  // separate POST-on-add is needed.
   const toggleGroup = (id: string): void => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === id ? { ...g, expanded: !g.expanded } : g) }) : p);
   const toggleAll   = (): void => { const n = !allExpanded; setAllExpanded(n); setData((p) => p ? ({ ...p, groups: p.groups.map((g) => ({ ...g, expanded: n })) }) : p); };
-  const addValueRow = (gId: string): void => setData((p) => p ? ({
+  const addValueRow = (gId: string): void => { if (isReadOnly) return; setData((p) => p ? ({
     ...p,
     groups: p.groups.map((g) => g.id === gId ? recomputeGroup({ ...g, values: [...g.values, blankRow(p)] }, p.years) : g),
-  }) : p);
-  const removeValueRow = (gId: string, vId: string): void => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? recomputeGroup({ ...g, values: g.values.filter((v) => v.id !== vId) }, p.years) : g) }) : p);
+  }) : p); };
+  const removeValueRow = (gId: string, vId: string): void => { if (isReadOnly) return; setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? recomputeGroup({ ...g, values: g.values.filter((v) => v.id !== vId) }, p.years) : g) }) : p); };
   const updateCellValue = (gId: string, vId: string, year: number, raw: string): void => {
+    if (isReadOnly) return;
     const n = parseFloat(raw.replace(/,/g, "")) || 0;
     setData((p) => p ? ({
       ...p,
@@ -1003,11 +918,99 @@ export default function PivotTableWithAPI(): React.ReactElement {
       }),
     }) : p);
   };
-  const updateValueName = (gId: string, vId: string, name: string): void => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? { ...g, values: g.values.map((v) => v.id === vId ? { ...v, name } : v) } : g) }) : p);
-  const updateGroupName = (gId: string, name: string): void => { setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? { ...g, name } : g) }) : p); setEditingGroupId(null); setEditingGroupName(""); };
+
+  /* ── Numeric value cells: display in the selected number format, but keep the
+     stored value a raw number (so the API is unaffected). While a cell is
+     focused we show an ungrouped buffer (numEdit) so typing is unambiguous. ── */
+  const numCellText = (cellKey: string, storedVal: number, bypassScale = false): string => {
+    if (numEdit && numEdit.key === cellKey) return numEdit.text;
+    if (storedVal === 0) return "";
+    if (bypassScale) return formatNumber(storedVal, numFmt, 0);
+    return formatNumber((storedVal * fxMultiplier) / scaleDivisor(displayScale), numFmt, scaleDecimals(displayScale));
+  };
+  const numCellFocus = (cellKey: string, storedVal: number, bypassScale = false): void => {
+    if (isReadOnly) return;
+    const dv = bypassScale ? storedVal : (storedVal === 0 ? 0 : (storedVal * fxMultiplier) / scaleDivisor(displayScale));
+    setNumEdit({ key: cellKey, text: storedVal === 0 ? "" : plainNumber(dv, numFmt, bypassScale ? 0 : scaleDecimals(displayScale)) });
+  };
+  const numCellChange = (gId: string, vId: string, year: number, cellKey: string, raw: string, bypassScale = false): void => {
+    if (isReadOnly) return;
+    if (raw !== "" && /[^\d\s.,'-]/.test(raw)) return;   // digits + separators only
+    setNumEdit({ key: cellKey, text: raw });
+    const num = parseFormatted(raw, numFmt);
+    updateCellValue(gId, vId, year, bypassScale ? String(num) : String((num * scaleDivisor(displayScale)) / fxMultiplier));
+  };
+  const numCellBlur = (): void => setNumEdit(null);
+  // Percentage cells: numeric only, range 0–100, max 2 decimal places. Unlike
+  // currency cells they bypass currency/scale conversion (a rate is literal).
+  // Invalid keystrokes are rejected (the controlled value reverts).
+  const PCT_PATTERN = /^\d{0,3}(\.\d{0,2})?$/;
+  const renderPercentInput = (
+    gId: string, value: ValueRow, year: number, inputStyle: React.CSSProperties,
+  ): React.ReactElement => {
+    const val     = value.yearValues[year] ?? 0;
+    const cellKey = `${value.id}-${year}`;
+    const editing = pctEdit?.key === cellKey;
+    return (
+      <input
+        className="spc-nav-cell"
+        type="text"
+        inputMode="decimal"
+        value={editing ? pctEdit!.text : (val === 0 ? "" : String(val))}
+        placeholder="—"
+        readOnly={isReadOnly}
+        onFocus={() => setPctEdit({ key: cellKey, text: val === 0 ? "" : String(val) })}
+        onBlur={() => setPctEdit(null)}
+        onChange={(e) => {
+          if (isReadOnly) return;
+          const raw = e.target.value;
+          if (raw !== "" && !PCT_PATTERN.test(raw)) return;   // reject non-numeric / >2 decimals
+          if (raw !== "" && parseFloat(raw) > 100) return;    // reject out of 0–100 range
+          setPctEdit({ key: cellKey, text: raw });
+          updateCellValue(gId, value.id, year, raw === "" ? "0" : raw);
+        }}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleCellNav}
+        style={inputStyle}
+      />
+    );
+  };
+
+  // Excel-style arrow-key navigation between value cells. Every numeric input is
+  // tagged with class "spc-nav-cell"; on an arrow key we focus the nearest cell
+  // in that direction (chosen spatially, so it works across any table layout).
+  const handleCellNav = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    const dir: Record<string, [number, number]> = {
+      ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
+    };
+    const d = dir[e.key];
+    if (!d) return;
+    const cur   = e.currentTarget;
+    const cells = Array.from(document.querySelectorAll<HTMLInputElement>("input.spc-nav-cell"));
+    const r0 = cur.getBoundingClientRect();
+    const cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
+    let best: HTMLInputElement | null = null, bestScore = Infinity;
+    for (const c of cells) {
+      if (c === cur) continue;
+      const r = c.getBoundingClientRect();
+      const dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy;
+      if (d[0] === -1 && dx >= -1) continue;   // must lie in the arrow direction
+      if (d[0] === 1  && dx <= 1)  continue;
+      if (d[1] === -1 && dy >= -1) continue;
+      if (d[1] === 1  && dy <= 1)  continue;
+      const primary = d[0] !== 0 ? Math.abs(dx) : Math.abs(dy);
+      const cross   = d[0] !== 0 ? Math.abs(dy) : Math.abs(dx);
+      const score   = primary + cross * 3;     // penalize cross-axis drift
+      if (score < bestScore) { bestScore = score; best = c; }
+    }
+    if (best) { e.preventDefault(); best.focus(); best.select(); }
+  };
+  const updateValueName = (gId: string, vId: string, name: string): void => { if (isReadOnly) return; setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? { ...g, values: g.values.map((v) => v.id === vId ? { ...v, name } : v) } : g) }) : p); };
+  const updateGroupName = (gId: string, name: string): void => { if (isReadOnly) return; setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? { ...g, name } : g) }) : p); setEditingGroupId(null); setEditingGroupName(""); };
 
   /* ── Paste handlers ─────────────────────────────────────────── */
   const handleNamePaste = (e: React.ClipboardEvent<HTMLInputElement>, gId: string, vId: string): void => {
+    if (isReadOnly) return;
     const text: string = e.clipboardData.getData("text/plain");
     if (!text.includes("\n") && !text.includes("\r") && !text.includes("\t")) return;
     e.preventDefault();
@@ -1020,7 +1023,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         const idx     = g.values.findIndex((v) => v.id === vId);
         const newRows: ValueRow[] = parsed.map((r): ValueRow => { const yv: YearValues = {}; p.years.forEach((y, i) => { yv[y] = r.values[i] ?? 0; }); return { id: generateId(), name: r.name, yearValues: yv, lineType: "CUSTOM", lineIdentifier: "FINANCIAL", isCalculated: "N", isCustom: "Y", status: "ACTIVE", languageCode: "EN" }; });
         const ex      = g.values[idx];
-        const isBlank = (!ex?.name || ex.name === "New Line Item") && Object.values(ex.yearValues).every((v) => v === 0);
+        const isBlank = (!ex?.name || ex?.name === "New Line Item") && Object.values(ex.yearValues).every((v) => v === 0);
         const withRows: Group = { ...g, values: isBlank ? [...g.values.slice(0, idx), ...newRows, ...g.values.slice(idx + 1)] : [...g.values.slice(0, idx + 1), ...newRows, ...g.values.slice(idx + 1)] };
         return recomputeGroup(withRows, p.years);
       }) };
@@ -1029,6 +1032,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   };
 
   const handleValueCellPaste = (e: React.ClipboardEvent<HTMLInputElement>, gId: string, vId: string, startYearIdx: number): void => {
+    if (isReadOnly) return;
     const text: string = e.clipboardData.getData("text/plain");
     if (!text.includes("\n") && !text.includes("\r") && !text.includes("\t")) return;
     e.preventDefault();
@@ -1039,7 +1043,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     for (let c = 0; c < maxC; c++) { if (rawRows.every((r) => { const v = (r[c] ?? "").trim(); return !v || isNumericCell(v); })) { vs = c; break; } }
     const parsedRows: number[][] = rawRows.map((cols) => cols.slice(vs).map((c) => parseExcelValue(c)));
     if (!parsedRows.length) return;
-    setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; const vIsPct = isPercentRow(v); parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = vIsPct ? clampPercent(val) : val; }); return { ...v, yearValues: nv }; }) }; return recomputeGroup(withValues, p.years); }) }; });
+    setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = val; }); return { ...v, yearValues: nv }; }) }; return recomputeGroup(withValues, p.years); }) }; });
     const grp = data.groups.find((g) => g.id === gId);
     const si  = grp ? grp.values.findIndex((v) => v.id === vId) : 0;
     setPasteToast({ gId, count: grp ? Math.min(parsedRows.length, grp.values.length - si) : parsedRows.length });
@@ -1047,7 +1051,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ────────────────────────────── JSX ────────────────────────── */
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} style={{ width: "100%", maxWidth: WIDGET_MAX_WIDTH, margin: "0 auto", background: "#fff", fontFamily: '"Oracle Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       {/* Sentinel — IntersectionObserver watches this to detect when header should pin */}
       <div ref={sentinelRef} style={{ height: 1, marginBottom: -1 }} />
@@ -1095,14 +1099,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       const group = dataRef.current?.groups.find((g) => g.id === gId);
                       if (group?.sectionId != null) {
                         const resp = await deleteSection(cfg, group.sectionId);
-                        apiMessage = (resp as any).apiMessage || resp.api_message;
+                        apiMessage = resp.apiMessage || resp.api_message;
                       }
                       setData((p) => p ? { ...p, groups: p.groups.filter((g) => g.id !== gId) } : p);
                     } else {
                       const row = dataRef.current?.groups.find((g) => g.id === gId)?.values.find((v) => v.id === vId);
                       if (row?.lineId != null) {
                         const resp = await deleteLine(cfg, row.lineId);
-                        apiMessage = (resp as any).apiMessage || resp.api_message;
+                        apiMessage = resp.apiMessage || resp.api_message;
                       }
                       if (vId) removeValueRow(gId, vId);
                     }
@@ -1112,7 +1116,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       message: apiMessage || (kind === "section" ? "Section deleted successfully." : "Line deleted successfully."),
                     });
                     const deleteEvent = new CustomEvent("tool:fin_eval_deleted", { detail: { proposalId: cfg.proposal_id } });
-                    console.log("[fin_eval] dispatching tool:fin_eval_deleted", deleteEvent.detail);
+                    //console.log("[fin_eval] dispatching tool:fin_eval_deleted", deleteEvent.detail);
                     window.dispatchEvent(deleteEvent);
                   } catch (e) {
                     clearCachedToken();
@@ -1169,6 +1173,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         </div>
       )}
 
+
       {/* Paste toast */}
       {pasteToast && (
         <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 200, padding: "10px 16px", background: "#059669", color: "#fff", borderRadius: 8, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,.15)" }}>
@@ -1189,59 +1194,49 @@ export default function PivotTableWithAPI(): React.ReactElement {
       {headerPinned && <div style={{ height: headerHeight }} />}
       <div ref={headerRef} style={{ position: headerPinned ? "fixed" : "sticky", top: 0, left: headerPinned ? leftOffset : undefined, width: headerPinned ? containerWidth : undefined, zIndex: 200, background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
         {/* Action bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "10px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button
-              id="fin-eval-back-btn"
-              type="button"
-              onClick={() => { /* TODO: navigate back */ }}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 4, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: "pointer" }}
-            >
-              <ChevronLeft size={14} />
-              Back
-            </button>
-            {!isReadonly && (
-            <button
-              id="fin-eval-export-btn"
-              type="button"
-              onClick={() => { /* TODO: export template */ }}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: "pointer" }}
-            >
-              <Download size={14} />
-              Export Template
-            </button>
-            )}
-            {!isReadonly && (
-            <button
-              id="fin-eval-import-btn"
-              type="button"
-              onClick={() => { /* TODO: import excel */ }}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: "pointer" }}
-            >
-              <Upload size={14} />
-              Import Excel
-            </button>
-            )}
-            {!isReadonly && (
-            <button
-              id="fin-eval-save-model-btn"
-              type="button"
-              onClick={saveDraft}
-              disabled={savingDraft || loading}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 700, background: "#fff", color: "#000", cursor: savingDraft || loading ? "not-allowed" : "pointer", opacity: savingDraft || loading ? 0.7 : 1 }}
-            >
-              <Save size={14} style={savingDraft ? { animation: "spin 1s linear infinite" } : {}} />
-              {savingDraft ? "Saving…" : "Save Model"}
-            </button>
-            )}
+        <div className="action-bar">
+          <div className="action-bar-group">
+            {/* Edit-only controls — hidden for read-only users */}
+            {!isReadOnly && (() => {
+              const busy = validating || savingDraft || loading;
+              const hasErrors = validationErrors.length > 0;
+              const saveModelDisabled = savingDraft || loading || hasErrors;
+              return (
+                <>
+                  <button
+                    id="fin-eval-validate-btn"
+                    type="button"
+                    className="action-btn"
+                    onClick={validate}
+                    disabled={busy}
+                    style={{ cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.7 : 1 }}
+                  >
+                    <CheckCircle2 size={14} className={validating ? "save-icon-spinning" : undefined} />
+                    {validating ? "Validating…" : "Validate"}
+                  </button>
+                  <button
+                    id="fin-eval-save-model-btn"
+                    type="button"
+                    className="save-model-btn"
+                    onClick={saveDraft}
+                    disabled={saveModelDisabled}
+                    title={hasErrors ? "Resolve all validation errors before saving the model." : undefined}
+                    style={{ cursor: saveModelDisabled ? "not-allowed" : "pointer", opacity: saveModelDisabled ? 0.4 : 1 }}
+                  >
+                    <Save size={14} className={savingDraft ? "save-icon-spinning" : undefined} />
+                    {savingDraft ? "Saving…" : "Save Model"}
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
 
         {/* Currency/scale strip */}
         {rawHeader && (() => {
-          const local     = (rawHeader.local_currency   || "USD").toUpperCase();
+          const local     = (rawHeader.local_currency   || "").toUpperCase();
           const display   = (rawHeader.display_currency || local).toUpperCase();
-          const currencies = local === "USD" ? ["USD"] : [local, "USD"];
+          const currencies = local && local !== "USD" ? [local, "USD"] : ["USD"];
 
           const handleCurrencyChange = (cur: string) => {
             setRawHeader((p) => p ? { ...p, display_currency: cur } : p);
@@ -1249,18 +1244,18 @@ export default function PivotTableWithAPI(): React.ReactElement {
             const evt = new CustomEvent("tool:fin_eval_currency_changed", {
               detail: { currency: cur, proposalId: cfg.proposal_id },
             });
-            console.log("[fin_eval] dispatching tool:fin_eval_currency_changed", evt.detail);
+            //console.log("[fin_eval] dispatching tool:fin_eval_currency_changed", evt.detail);
             window.dispatchEvent(evt);
           };
 
-          const handleScaleChange = (scale: Scale) => {
+          const handleScaleChange = (scale: number) => {
             setDisplayScale(scale);
             const cfg = getAppConfig();
-            const lbl = SCALES.find((s) => s.value === scale)?.label ?? scale;
+            const denomination = scale === 1_000_000_000 ? "B" : scale === 1_000_000 ? "M" : "K";
             const evt = new CustomEvent("tool:fin_eval_scale_changed", {
-              detail: { scale, denomination: scale, label: lbl, proposalId: cfg.proposal_id },
+              detail: { scale, denomination, label: denomination, proposalId: cfg.proposal_id },
             });
-            console.log("[fin_eval] dispatching tool:fin_eval_scale_changed", evt.detail);
+            //console.log("[fin_eval] dispatching tool:fin_eval_scale_changed", evt.detail);
             window.dispatchEvent(evt);
           };
 
@@ -1280,87 +1275,89 @@ export default function PivotTableWithAPI(): React.ReactElement {
             </div>
           );
 
-          // The FX pair is always local <-> USD, never local <-> the current
-          // toggle selection: the rate describes the proposal's pair, which does
-          // not change when the user flips the display toggle.
-          const fxKnown = fxRate != null && Number.isFinite(fxRate) && fxRate > 0;
-          const fxValue = (n: number) => (
-            fxLoading ? (
-              <span className="fx-error-text" style={{ color: "#9ca3af" }}>Loading…</span>
-            ) : fxError || !fxKnown ? (
-              <span className="fx-error-text">{fxError || "rate unavailable"}</span>
-            ) : (
-              <strong>{n.toFixed(2)}</strong>
-            )
-          );
-
           return (
             <div className="currency-strip">
               <div className="currency-strip-row">
-                {/* Currency label + toggle + info */}
-                <span className="strip-label">CURRENCY</span>
-                <div className="toggle-group">
-                  {currencies.map((cur) => (
-                    <button key={cur} type="button" className={`toggle-btn${display === cur ? " active" : ""}`} onClick={() => handleCurrencyChange(cur)}>
-                      {currencyLabel(cur)}
-                    </button>
-                  ))}
-                </div>
-                {infoIcon("currency", `Local Currency is ${local} — all values are displayed in ${display}. Change Local Currency in Proposal Section to enable a USD/local toggle.`)}
+              {/* Currency label + toggle + info */}
+              <span className="strip-label">CURRENCY</span>
+              <div className="toggle-group">
+                {currencies.map((cur) => (
+                  <button key={cur} type="button" className={`toggle-btn${display === cur ? " active" : ""}`} onClick={() => handleCurrencyChange(cur)}>
+                    {currencyLabel(cur)}
+                  </button>
+                ))}
+              </div>
+              {infoIcon("currency", `Local Currency is ${local} — all values are displayed in ${display}. Change Local Currency in Proposal Section to enable a USD/local toggle.`)}
 
-                <div className="strip-divider" />
+              <div className="strip-divider" />
 
-                {/* Scale label + toggle + info */}
-                <span className="strip-label">SCALE</span>
-                <div className="toggle-group">
-                  {SCALES.map((s) => (
-                    <button key={s.value} type="button" className={`toggle-btn${displayScale === s.value ? " active" : ""}`} onClick={() => handleScaleChange(s.value)}>
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-                {infoIcon("scale", "Switch the denomination for all financial values. Values arrive in thousands: K = thousands (as-is), M = millions (÷1,000), B = billions (÷1,000,000).")}
+              {/* Scale label + toggle + info */}
+              <span className="strip-label">SCALE</span>
+              <div className="toggle-group">
+                {SCALES.map((s) => (
+                  <button key={s.value} type="button" className={`toggle-btn${displayScale === s.value ? " active" : ""}`} onClick={() => handleScaleChange(s.value)}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              {infoIcon("scale", "Switch the denomination for all financial values. Values arrive in thousands: K = thousands (as-is), M = millions (÷1,000), B = billions (÷1,000,000).")}
 
-                <div className="strip-divider" />
+              <div className="strip-divider" />
 
-                {/* Number format label + dropdown */}
-                <span className="strip-label">NUMBER FORMAT</span>
-                <select
-                  className="strip-select"
-                  value={numberFormat}
-                  onChange={(e) => setNumberFormat(e.target.value as NumberFormatKey)}
-                >
-                  {NUMBER_FORMATS.map((nf) => (
-                    <option key={nf.value} value={nf.value}>{nf.label}</option>
-                  ))}
-                </select>
+              {/* Number format label + dropdown */}
+              <span className="strip-label">NUMBER FORMAT</span>
+              <select
+                className="strip-select"
+                value={numberFormat}
+                onChange={(e) => setNumberFormat(e.target.value as NumFmtKey)}
+              >
+                {NUMBER_FORMATS.map((f) => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </select>
 
-                {/* Date format label + dropdown */}
-                <span className="strip-label">DATE FORMAT</span>
-                <select
-                  className="strip-select"
-                  value={dateFormat}
-                  onChange={(e) => setDateFormat(e.target.value as DateFormatKey)}
-                >
-                  {DATE_FORMATS.map((df) => (
-                    <option key={df.value} value={df.value}>{df.label}</option>
-                  ))}
-                </select>
+              {/* Date format label + dropdown */}
+              <span className="strip-label">DATE FORMAT</span>
+              <select
+                className="strip-select"
+                value={dateFormat}
+                onChange={(e) => setDateFormat(e.target.value as DateFmt)}
+              >
+                {DATE_FORMATS.map((f) => (
+                  <option key={f.value} value={f.value}>{f.label}</option>
+                ))}
+              </select>
 
-                {/* FX rate — only relevant when local currency differs from USD */}
-                {local !== "USD" && (
-                  <div className="fx-wrap">
-                    <span className="fx-badge">FX</span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                      <span className="fx-rate-text">
-                        1 {local} = {fxValue(fxKnown ? 1 / (fxRate as number) : 0)} USD
-                      </span>
-                      <span className="fx-rate-text">
-                        1 USD = {fxValue(fxKnown ? (fxRate as number) : 0)} {local}
-                      </span>
-                    </div>
+              {local && local !== "USD" && (
+                <div className="fx-wrap">
+                  <span className="fx-badge">FX</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <span className="fx-rate-text">
+                      1 {local} ={" "}
+                      {fxLoading ? (
+                        <span className="fx-error-text" style={{ color: "#9ca3af" }}>Loading…</span>
+                      ) : fxError || fxRate == null ? (
+                        <span className="fx-error-text">{fxError || "rate unavailable"}</span>
+                      ) : (
+                        <strong>{(1 / fxRate).toFixed(2)}</strong>
+                      )}
+                      {" "}USD
+                    </span>
+                    <span className="fx-rate-text">
+                      1 USD ={" "}
+                      {fxLoading ? (
+                        <span className="fx-error-text" style={{ color: "#9ca3af" }}>Loading…</span>
+                      ) : fxError || fxRate == null ? (
+                        <span className="fx-error-text">{fxError || "rate unavailable"}</span>
+                      ) : (
+                        <strong>{fxRate.toFixed(2)}</strong>
+                      )}
+                      {" "}{local}
+                    </span>
                   </div>
-                )}
+                </div>
+              )}
+
               </div>
             </div>
           );
@@ -1368,66 +1365,199 @@ export default function PivotTableWithAPI(): React.ReactElement {
       </div>
 
 
-      {/* ── KPI panel (NPV / IRR / Payback / Metrics / Financial Parameters) ── */}
+      {/* ── Validation errors (from the staging GET response) ──────────
+          One entry per "|"-separated error. Scrollable list with a
+          min-height; clicking a row jumps to the section/line the
+          backend's own errorMessage actually matched to, if any. */}
+      {validationErrors.length > 0 && (
+        <div style={{ marginTop: 12, marginBottom: 16, border: "1px solid #fecaca", background: "#fef2f2", borderRadius: 8, overflow: "hidden" }}>
+          <div style={{ padding: "8px 14px", background: "#fee2e2", color: "#b91c1c", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+            <X size={14} />
+            {validationErrors.length} validation {validationErrors.length === 1 ? "error" : "errors"}
+          </div>
+          <div style={{ minHeight: 88, maxHeight: 200, overflowY: "auto" }}>
+            {validationErrors.map((err, i) => {
+              const hasTarget = !!(err.sectionId != null || err.lineId);
+              return (
+                <div
+                  key={i}
+                  onClick={() => goToError(i)}
+                  title={hasTarget ? "Go to field" : undefined}
+                  style={{ display: "flex", gap: 8, padding: "8px 14px", fontSize: 12, color: "#991b1b", borderTop: i === 0 ? "none" : "1px solid #fecaca", cursor: hasTarget ? "pointer" : "default" }}
+                  onMouseEnter={(e) => { if (hasTarget) e.currentTarget.style.background = "#fee2e2"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  <span style={{ fontWeight: 700, minWidth: 18, flexShrink: 0 }}>{i + 1}.</span>
+                  <span style={{ flex: 1 }}>{err.message}</span>
+                  {hasTarget && <ChevronRight size={14} style={{ flexShrink: 0, color: "#dc2626" }} />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {rawHeader && (
         <KpiPanel
           rawHeader={rawHeader}
           onChange={(patch) => setRawHeader((p) => p ? { ...p, ...patch } : p)}
           displayScale={displayScale}
-          numberFormat={numberFormat}
-          dateFormat={dateFormat}
-          isReadonly={isReadonly}
+          fxMultiplier={fxMultiplier}
+          numFmt={numFmt}
         />
       )}
 
-      {/* ── Table toolbar ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", borderTop: "1px solid #e5e7eb", paddingTop: 12, marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button type="button" onClick={decreaseYears} disabled={numYears <= 1 || isReadonly} style={{ width: 20, height: 20, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: numYears <= 1 || isReadonly ? "not-allowed" : "pointer", color: "#374151", opacity: numYears <= 1 || isReadonly ? 0.3 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>−</button>
+      <div style={{ margin: "0", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "8px 20px", borderBottom: "1px solid #e5e7eb", minHeight: 40 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button type="button" onClick={decreaseYears} disabled={isReadOnly || numYears <= 1} title={isReadOnly ? "You have read-only access to this record" : undefined} style={{ width: 20, height: 20, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: isReadOnly || numYears <= 1 ? "not-allowed" : "pointer", color: "#374151", opacity: isReadOnly || numYears <= 1 ? 0.3 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>-</button>
           <span style={{ fontSize: 11, color: "#374151" }}>{numYears} Years</span>
-          <button type="button" onClick={increaseYears} disabled={isReadonly} style={{ width: 20, height: 20, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: isReadonly ? "not-allowed" : "pointer", color: "#374151", opacity: isReadonly ? 0.3 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>+</button>
-          {!isReadonly && <button type="button" onClick={addGroup} style={{ padding: "3px 8px", border: "1px solid #000", borderRadius: 4, fontSize: 11, background: "#fff", cursor: "pointer", color: "#000", fontWeight: 600 }}>+ Add Section</button>}
+          <button type="button" onClick={increaseYears} disabled={isReadOnly} title={isReadOnly ? "You have read-only access to this record" : undefined} style={{ width: 20, height: 20, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: isReadOnly ? "not-allowed" : "pointer", color: "#374151", opacity: isReadOnly ? 0.3 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>+</button>
           <button type="button" onClick={toggleAll} style={{ padding: "3px 8px", fontSize: 10, background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>{allExpanded ? "Collapse All" : "Expand All"}</button>
         </div>
       </div>
 
-      {/* ── Pivot tables — sections render in display_order; consecutive sections of the same category share a table ── */}
-      {(() => {
-        const categoryOf = (g: Group): string =>
-          g.sectionType === "OPEX" || g.sectionType === "CAPITAL_INVESTMENT" ? g.sectionType : "OTHER";
+      {/* ── Main pivot table ── */}
+      <div style={{ marginBottom: 16, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <table style={{ display: "none", width: "100%", minWidth: 1100, borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <colgroup>
+              <col style={{ width: 40 }} />
+              <col style={{ width: colWidths.lineItem }} />
+              <col style={{ width: 360 }} />
+              {data.years.map((y) => <col key={y} style={{ minWidth: 120 }} />)}
+              <col style={{ width: 140 }} />
+            </colgroup>
+            <thead>
+              <tr style={{ background: "#e5e7eb", height: 42 }}>
+                <th style={TH({ width: 40, background: "#e5e7eb" })} />
+                <th style={TH({ textAlign: "left", background: "#e5e7eb", paddingLeft: 14 })}>LINE ITEM</th>
+                <th style={TH({ textAlign: "left", background: "#e5e7eb", paddingLeft: 14 })}>TARGET GO-LIVE DATE</th>
+                {data.years.map((year: number) => (
+                  <th key={year} style={TH({ textAlign: "right", background: "#e5e7eb", paddingRight: 14 })}>
+                    {data.columnLabels[year] || `FY${String(year).slice(2)}`}
+                  </th>
+                ))}
+                <th style={TH({ textAlign: "right", background: "#e5e7eb", paddingRight: 14 })}>TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.groups.map((group: Group) => {
+                const editable = group.values.filter((v) => v.isCalculated !== "Y");
+                const calc = group.values.find((v) => v.isCalculated === "Y");
+                const sectionValues = data.years.reduce<Record<number, number>>((acc, year) => {
+                  acc[year] = calc ? (calc.yearValues[year] || 0) : editable.reduce((s, v) => s + (v.yearValues[year] || 0), 0);
+                  return acc;
+                }, {});
+                const sectionTotal = calc?.rowTotal ?? data.years.reduce((s, y) => s + (sectionValues[y] || 0), 0);
 
-        // display_order is the single source of truth for section order; only
-        // adjacent same-category sections are merged into one table so they
-        // keep sharing a horizontal scrollbar.
-        const tableBlocks: { groups: Group[] }[] = [];
-        [...data.groups]
-          .sort((a, b) => (a.displayOrder ?? Number.MAX_SAFE_INTEGER) - (b.displayOrder ?? Number.MAX_SAFE_INTEGER))
-          .forEach((g) => {
-            const last = tableBlocks[tableBlocks.length - 1];
-            if (last && categoryOf(last.groups[0]) === categoryOf(g)) last.groups.push(g);
-            else tableBlocks.push({ groups: [g] });
-          });
+                return (
+                  <React.Fragment key={group.id}>
+                    <tr data-section-id={group.sectionId} data-section-type={group.sectionType || group.id} style={{ background: "#182a49" }}>
+                      <td style={{ ...TD, height: 40, borderBottom: "1px solid #293a59", borderRight: "none" }} />
+                      <td colSpan={2} style={{ ...TD, padding: "8px 14px", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", borderRight: "1px solid #31415e" }}>
+                        {group.name}
+                      </td>
+                      {data.years.map((year) => (
+                        <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", borderRight: "1px solid #31415e" }}>
+                          {displayFmt(sectionValues[year] || 0)}
+                        </td>
+                      ))}
+                      <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
+                        {displayFmt(sectionTotal)}
+                      </td>
+                    </tr>
 
-        // Each table block gets its own scroll container, so scrolling one block
-        // never drags another sideways. Sections inside a block share the table
-        // — and therefore the scroll — by design.
-        const renderGroupTable = (groups: Group[]) => (
-          <div className="table-scroll">
-              <table style={{ width: "100%", minWidth: 700, borderCollapse: "collapse", tableLayout: "fixed" }}>
-                <colgroup>
-                  <col style={{ width: 36 }} />
-                  <col style={{ width: colWidths.lineItem }} />
-                  <col style={{ width: colWidths.account }} />
-                  {data.years.map((y) => <col key={y} style={{ minWidth: 120 }} />)}
-                  <col style={{ width: 140 }} />
-                </colgroup>
-                <tbody>
-                  {groups.map((group: Group) => (
+                    {editable.map((value) => {
+                      const acKey = `${group.id}|${value.id}`;
+                      const isAC = activeAutocomplete === acKey;
+                      return (
+                        <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#fef08a" : "#fffbea", transition: "background 0.4s", boxShadow: value.id === highlightLineId ? "inset 0 0 0 2px #f59e0b" : undefined }}>
+                          <td style={{ ...TD, padding: "4px 0", textAlign: "center", verticalAlign: "middle" }}>
+                            {value.isMandatory !== "Y" && value.isCustom !== "N" && !isReadOnly && (
+                              <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, vId: value.id, name: value.name, kind: "line" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={12} /></button>
+                            )}
+                          </td>
+                          <td style={{ ...TD, padding: "4px 14px", position: "relative", overflow: "hidden" }} title={value.name}>
+                            <input type="text"
+                              value={isAC ? autocompleteSearch : value.name}
+                              readOnly={isReadOnly || (value.isCustom === "N" && !value.nameWasMissing)}
+                              onChange={(e) => { if (value.isCustom === "N" && !value.nameWasMissing) return; updateValueName(group.id, value.id, e.target.value); if (isAC) setAutocompleteSearch(e.target.value); }}
+                              onFocus={(e) => { e.stopPropagation(); if (value.isCustom === "N" && !value.nameWasMissing) return; setActiveAutocomplete(acKey); setAutocompleteSearch(value.name); }}
+                              onPaste={(e) => { if (value.isCustom === "N" && !value.nameWasMissing) { e.preventDefault(); return; } handleNamePaste(e, group.id, value.id); }}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, color: "#111827", outline: "none", textOverflow: "ellipsis", height: 30 }}
+                            />
+                          </td>
+                          <td style={{ ...TD, padding: "4px 14px", color: "#475569", fontSize: 12 }}>{value.accountId || targetGoLive()}</td>
+                          {data.years.map((year: number, yi: number) => {
+                            const val = value.yearValues[year] ?? 0;
+                            return (
+                              <td key={year} style={{ ...TD, padding: "4px 14px" }}>
+                                {isPercentRow(value)
+                                  ? renderPercentInput(group.id, value, year, { width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 12, color: "#111827", outline: "none", height: 30 })
+                                  : (
+                                <input type="text"
+                                  className="spc-nav-cell"
+                                  value={numCellText(`${value.id}-${year}`, val)}
+                                  placeholder="-"
+                                  onFocus={() => numCellFocus(`${value.id}-${year}`, val)}
+                                  onChange={(e) => numCellChange(group.id, value.id, year, `${value.id}-${year}`, e.target.value)}
+                                  onBlur={numCellBlur}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={handleCellNav}
+                                  onPaste={(e) => handleValueCellPaste(e, group.id, value.id, yi)}
+                                  style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 12, color: val < 0 ? "#DC2626" : "#111827", outline: "none", height: 30 }}
+                                />
+                                  )}
+                              </td>
+                            );
+                          })}
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return (
+                            <td style={{ ...TD, padding: "4px 14px" }}>
+                              <input type="text"
+                                className="spc-nav-cell"
+                                readOnly
+                                value={displayFmt(t)}
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={handleCellNav}
+                                style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 12, fontWeight: 800, color: t < 0 ? "#DC2626" : "#111827", outline: "none", height: 30 }}
+                              />
+                            </td>
+                          ); })()}
+                        </tr>
+                      );
+                    })}
+
+                    {group.isNewLineRequired !== "N" && !isReadOnly && (
+                      <tr key={`${group.id}-add`}>
+                        <td colSpan={3 + numYears + 1} style={{ padding: "7px 12px", borderBottom: "1px solid #e5e7eb" }}>
+                          <button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 12, background: "none", border: "none", cursor: "pointer", color: "#000", fontWeight: 700, padding: 0 }}>
+                            + Add {group.name} Line
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+          <table style={{ width: "100%", minWidth: 700, borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <colgroup>
+              <col style={{ width: 36 }} />
+              <col style={{ width: colWidths.lineItem }} />
+              {SHOW_ACCOUNT_COLUMN && <col style={{ width: colWidths.account }} />}
+              <col style={{ width: colWidths.targetGoLive }} />
+              {data.years.map((y) => <col key={y} style={{ minWidth: 120 }} />)}
+              <col style={{ width: 140 }} />
+            </colgroup>
+            <tbody>
+              {data.groups.map((group: Group) => (
                 <React.Fragment key={group.id}>
                   {/* Section header */}
                   <tr data-section-id={group.sectionId} data-section-type={group.sectionType || group.id} style={{ background: DARK_HEADER, cursor: "pointer" }} onClick={() => toggleGroup(group.id)}>
                     {group.expanded ? (
-                      <td colSpan={3 + numYears + 1} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                      <td colSpan={(SHOW_ACCOUNT_COLUMN ? 4 : 3) + numYears + 1} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <ChevronUp size={16} style={{ flexShrink: 0 }} />
                           {editingGroupId === group.id && group.isCustom === "Y" ? (
@@ -1441,11 +1571,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             />
                           ) : (
                             <span
-                              style={{ flex: 1, cursor: group.isCustom === "Y" ? "pointer" : "default", opacity: group.name ? 1 : 0.45, fontStyle: group.name ? "normal" : "italic" }}
-                              onClick={(e) => { if (group.isCustom !== "Y") return; e.stopPropagation(); setEditingGroupId(group.id); setEditingGroupName(group.name); }}
+                              style={{ flex: 1, cursor: group.isCustom === "Y" && !isReadOnly ? "pointer" : "default", color: group.name ? "#fff" : "rgba(255,255,255,0.45)", fontStyle: group.name ? "normal" : "italic" }}
+                              onClick={(e) => { if (group.isCustom !== "Y" || isReadOnly) return; e.stopPropagation(); setEditingGroupId(group.id); setEditingGroupName(group.name); }}
                             >{group.name || "Enter section name"}</span>
                           )}
-                          {!isReadonly && group.isCustom === "Y" && group.isMandatory !== "Y" && (
+                          {group.isCustom === "Y" && group.isMandatory !== "Y" && !isReadOnly && (
                             <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, name: group.name, kind: "section" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", display: "flex", padding: 2 }} title="Delete section">
                               <Trash2 size={14} />
                             </button>
@@ -1453,11 +1583,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         </div>
                       </td>
                     ) : (
-                      <td colSpan={3 + numYears + 1} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                      <td colSpan={(SHOW_ACCOUNT_COLUMN ? 4 : 3) + numYears + 1} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <ChevronDown size={16} style={{ flexShrink: 0 }} />
-                          <span style={{ flex: 1 }}>{group.name}</span>
-                          {!isReadonly && group.isCustom === "Y" && group.isMandatory !== "Y" && (
+                          <span style={{ flex: 1, color: group.name ? "#fff" : "rgba(255,255,255,0.45)", fontStyle: group.name ? "normal" : "italic" }}>{group.name || "Enter section name"}</span>
+                          {group.isCustom === "Y" && group.isMandatory !== "Y" && !isReadOnly && (
                             <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, name: group.name, kind: "section" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", display: "flex", padding: 2 }} title="Delete section">
                               <Trash2 size={14} />
                             </button>
@@ -1471,22 +1601,26 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {group.expanded && (
                     <tr style={{ background: "#e5e7eb", height: 35 }}>
                       <th style={TH({ width: 28, background: "#e5e7eb" })} />
-                      <th colSpan={group.isAccountRequired !== "Y" ? 2 : 1} style={TH({ textAlign: "left", width: colWidths.lineItem, position: "relative", background: "#e5e7eb" })}>
+                      <th style={TH({ textAlign: "left", width: colWidths.lineItem, position: "relative", background: "#e5e7eb" })}>
                         LINE ITEM
                         <div onMouseDown={(e) => startResize("lineItem", e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", background: "transparent" }} />
                       </th>
-                      {group.isAccountRequired === "Y" && (
+                      {SHOW_ACCOUNT_COLUMN && (
                         <th style={TH({ textAlign: "left", width: colWidths.account, position: "relative", background: "#e5e7eb" })}>
-                          ACCOUNT <span style={{ color: "#ef4444" }}>*</span>
+                          ACCOUNT {group.isAccountRequired === "Y" && <span style={{ color: "#ef4444" }}>*</span>}
                           <div onMouseDown={(e) => startResize("account", e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", background: "transparent" }} />
                         </th>
                       )}
+                      <th style={TH({ textAlign: "left", whiteSpace: "nowrap", background: "#e5e7eb", width: colWidths.targetGoLive, position: "relative" })}>
+                        TARGET GO-LIVE DATE (UAT)
+                        <div onMouseDown={(e) => startResize("targetGoLive", e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", background: "transparent" }} />
+                      </th>
                       {data.years.map((year: number, yi: number) => (
                         <th key={year} style={TH({ textAlign: "right", whiteSpace: "nowrap", position: "relative", background: "#e5e7eb" })}
                           onMouseMove={(e) => { if (hoverTimer.current) clearTimeout(hoverTimer.current); const r = e.currentTarget.getBoundingClientRect(); setHoveredColIdx(e.clientX - r.left > r.width * 0.8 ? yi : null); }}
                           onMouseLeave={() => { if (hoverTimer.current) clearTimeout(hoverTimer.current); hoverTimer.current = setTimeout(() => setHoveredColIdx(null), 150); }}
                         >
-                          {!isReadonly && hoveredColIdx === yi && (
+                          {hoveredColIdx === yi && !isReadOnly && (
                             <div style={{ position: "absolute", right: 0, top: "50%", transform: "translate(50%,-50%)", zIndex: 20 }}
                               onMouseEnter={() => { if (hoverTimer.current) clearTimeout(hoverTimer.current); setHoveredColIdx(yi); }}
                               onMouseLeave={() => { if (hoverTimer.current) clearTimeout(hoverTimer.current); setHoveredColIdx(null); }}
@@ -1502,7 +1636,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               style={{ width: "100%", padding: "2px 4px", fontSize: 10, fontWeight: 700, border: `1px solid ${editingYearError ? "#dc2626" : "#3b82f6"}`, borderRadius: 3, outline: "none", textAlign: "right", background: editingYearError ? "#fef2f2" : "#fff", color: editingYearError ? "#dc2626" : "#111" }}
                             />
                           ) : (
-                            <div style={{ cursor: "pointer" }} onClick={() => setOpenYearMenuIdx(openYearMenuIdx?.gId === group.id && openYearMenuIdx?.yi === yi ? null : { gId: group.id, yi })}>
+                            <div style={{ cursor: isReadOnly ? "default" : "pointer" }} onClick={() => { if (isReadOnly) return; setOpenYearMenuIdx(openYearMenuIdx?.gId === group.id && openYearMenuIdx?.yi === yi ? null : { gId: group.id, yi }); }}>
                               {data.columnLabels[year] || `FY${String(year).slice(2)}`}
                             </div>
                           )}
@@ -1510,14 +1644,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             <div ref={yearMenuRef} style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, width: 144, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,.1)", zIndex: 50 }}>
                               {yi > 0 && <button type="button" onClick={() => moveYearLeft(yi)} style={{ width: "100%", padding: "6px 12px", textAlign: "left", fontSize: 11, color: "#374151", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}><ChevronLeft size={12} /> Move Left</button>}
                               {yi < data.years.length - 1 && <button type="button" onClick={() => moveYearRight(yi)} style={{ width: "100%", padding: "6px 12px", textAlign: "left", fontSize: 11, color: "#374151", background: "none", border: "none", borderBottom: "1px solid #f3f4f6", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}><ChevronRight size={12} /> Move Right</button>}
-                              {!isReadonly && <button type="button" onClick={() => {
+                              <button type="button" onClick={() => {
                                 setOpenYearMenuIdx(null);
                                 if (dbYearsRef.current.has(year)) {
                                   setToast({ kind: "error", message: "This year is saved in the database and cannot be deleted." });
                                 } else {
                                   setConfirmDeleteYear({ year, label: data.columnLabels[year] || `FY${String(year).slice(2)}` });
                                 }
-                              }} style={{ width: "100%", padding: "6px 12px", textAlign: "left", fontSize: 11, color: "black", background: "none", border: "none", borderTop: "1px solid #f3f4f6", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}><Trash2 size={12} /> Delete</button>}
+                              }} style={{ width: "100%", padding: "6px 12px", textAlign: "left", fontSize: 11, color: "black", background: "none", border: "none", borderTop: "1px solid #f3f4f6", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}><Trash2 size={12} /> Delete</button>
                             </div>
                           )}
                         </th>
@@ -1530,116 +1664,149 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {group.expanded && (() => {
                     const editable = group.values.filter((v) => v.isCalculated !== "Y");
                     const calc     = group.values.filter((v) => v.isCalculated === "Y");
-                    // Bypass scale on this section's calculated/total rows only when every
+                    // Bypass scale on this section's own calculated TOTAL row only when every
                     // editable line in it is NON_FINANCIAL (mixed sections still scale).
                     const groupAllNonFinancial = editable.length > 0 && editable.every(isNonFinancialRow);
 
-                    const renderEditable = (value: ValueRow, _idx: number) => {
+                    const renderEditable = (value: ValueRow, idx: number) => {
                       const acKey = `${group.id}|${value.id}`;
                       const isAC  = activeAutocomplete === acKey;
-                      const bg    = "#fff";
-                      const isReturnsCostSavings = value.lineType === "RETURNS_COST_SAVINGS";
-                      // Non-custom lines (is_custom === "N") come from the template and
-                      // must not have their name edited — on top of the read-only rule.
-                      const nameLocked = isReadonly || value.isCustom === "N";
-                      // Template line names render as a bold label (like the calculated
-                      // rows) rather than a greyed-out input box.
-                      const isTemplateName = value.isCustom === "N";
+                      const bg    = idx % 2 === 0 ? "#fff" : "#f9fafb";
                       return (
-                        <tr key={value.id} style={{ background: bg }}>
+                        <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#fef08a" : bg, transition: "background 0.4s", boxShadow: value.id === highlightLineId ? "inset 0 0 0 2px #f59e0b" : undefined }}>
                           <td style={{ ...TD, padding: "4px 0", textAlign: "center", verticalAlign: "middle" }}>
-                            {!isReadonly && value.isMandatory !== "Y" && value.isCustom !== "N" && (
+                            {value.isMandatory !== "Y" && value.isCustom !== "N" && !isReadOnly && (
                               <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, vId: value.id, name: value.name, kind: "line" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={12} /></button>
                             )}
                           </td>
-                          <td colSpan={group.isAccountRequired !== "Y" ? 2 : 1} style={{ ...TD, padding: "4px 12px", position: "relative", overflow: "hidden" }} title={value.name}>
+                          <td style={{ ...TD, padding: "4px 12px", position: "relative", overflow: "hidden" }} title={value.name}>
                             <input type="text"
-                              className={FIN_CELL_CLASS}
                               value={isAC ? autocompleteSearch : value.name}
-                              onChange={(e) => { if (value.isCustom === "N") return; updateValueName(group.id, value.id, e.target.value); if (isAC) setAutocompleteSearch(e.target.value); }}
-                              onFocus={(e) => { if (value.isCustom === "N") { e.stopPropagation(); return; } e.stopPropagation(); setActiveAutocomplete(acKey); setAutocompleteSearch(value.name); }}
-                              onPaste={(e) => { if (value.isCustom === "N") return; handleNamePaste(e, group.id, value.id); }}
+                              readOnly={isReadOnly || (value.isCustom === "N" && !value.nameWasMissing)}
+                              onChange={(e) => { if (value.isCustom === "N" && !value.nameWasMissing) return; updateValueName(group.id, value.id, e.target.value); if (isAC) setAutocompleteSearch(e.target.value); }}
+                              onFocus={(e) => { e.stopPropagation(); if (value.isCustom === "N" && !value.nameWasMissing) return; setActiveAutocomplete(acKey); setAutocompleteSearch(value.name); }}
+                              onPaste={(e) => { if (value.isCustom === "N" && !value.nameWasMissing) { e.preventDefault(); return; } handleNamePaste(e, group.id, value.id); }}
                               onClick={(e) => e.stopPropagation()}
-                              onKeyDown={handleCellArrowNav}
                               placeholder="Enter line item name"
-                              readOnly={nameLocked}
-                              style={{ width: "100%", border: "none", background: isTemplateName ? "transparent" : (nameLocked ? "#f3f4f6" : "transparent"), fontSize: 12, fontWeight: isTemplateName ? 700 : 400, color: isTemplateName ? "#111827" : "#1f2937", outline: "none", textOverflow: "ellipsis", height: 28, cursor: nameLocked ? "default" : "text" }}
+                              style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, color: "#1f2937", outline: "none", textOverflow: "ellipsis", height: 28 }}
                             />
                           </td>
-                          {group.isAccountRequired === "Y" && (
-                          <td style={{ ...TD, padding: "4px 12px", overflow: "visible" }}>
-                            {isReadonly
-                              ? <div style={{ fontSize: 12, color: "#6b7280", padding: "4px 6px", background: "#f3f4f6", borderRadius: 4, height: 28, display: "flex", alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value.accountId || "—"}</div>
-                              : isReturnsCostSavings
-                                ? <input
-                                    type="text"
-                                    value={value.accountId ?? ""}
-                                    onChange={(e) => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === group.id ? { ...g, values: g.values.map((v) => v.id === value.id ? { ...v, accountId: e.target.value || undefined } : v) } : g) }) : p)}
-                                    placeholder="Enter account"
-                                    style={{ width: "100%", height: 28, padding: "2px 6px", border: "1px solid #d1d5db", borderRadius: 4, fontSize: 12, color: "#1f2937", outline: "none", boxSizing: "border-box" }}
-                                  />
-                              : <AccountCodeSelect
-                                  value={value.accountId ?? ""}
-                                  options={accountCodesBySection[group.sectionType ?? ""] ?? []}
-                                  onFocus={() => loadAccountCodesForSection(group.sectionType ?? "")}
-                                  onChange={(val) => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === group.id ? { ...g, values: g.values.map((v) => v.id === value.id ? { ...v, accountId: val || undefined } : v) } : g) }) : p)}
-                                />
-                            }
-                          </td>
+                          {SHOW_ACCOUNT_COLUMN && (group.isAccountRequired === "Y" ? (() => {
+                            const isOpen = activeLov?.gId === group.id && activeLov?.vId === value.id;
+                            const codes  = accountCodesBySection[group.sectionType ?? ""] ?? [];
+                            const filtered = lovSearch.trim()
+                              ? codes.filter((ac) => ac.account_code.toLowerCase().includes(lovSearch.toLowerCase()) || ac.account_name.toLowerCase().includes(lovSearch.toLowerCase()))
+                              : codes;
+                            return (
+                            <td style={{ ...TD, padding: "4px 8px", overflow: "visible", position: "relative" }}>
+                              <button
+                                type="button"
+                                disabled={isReadOnly}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isReadOnly) return;
+                                  loadAccountCodesForSection(group.sectionType ?? "");
+                                  if (isOpen) { setActiveLov(null); setLovSearch(""); }
+                                  else { setActiveLov({ gId: group.id, vId: value.id, sectionType: group.sectionType ?? "", currentValue: value.accountId }); setLovSearch(""); }
+                                }}
+                                style={{ width: "100%", height: 28, border: `1px solid ${isOpen ? BRAND : "#d1d5db"}`, borderRadius: 4, padding: "2px 8px", fontSize: 12, color: value.accountId ? "#1f2937" : "#9ca3af", background: "#fff", cursor: isReadOnly ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4, overflow: "hidden" }}
+                              >
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{value.accountId ?? "Select…"}</span>
+                                <span style={{ flexShrink: 0, color: "#9ca3af", fontSize: 10 }}>{isOpen ? "▲" : "▼"}</span>
+                              </button>
+                              {isOpen && (
+                                <div ref={lovRef} onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: "100%", left: 0, zIndex: 300, background: "#fff", border: "1px solid #d1d5db", borderRadius: 6, boxShadow: "0 4px 16px rgba(0,0,0,.12)", minWidth: 320, maxHeight: 260, display: "flex", flexDirection: "column", marginTop: 2 }}>
+                                  <div style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>
+                                    <input
+                                      autoFocus
+                                      type="text"
+                                      placeholder="Search…"
+                                      value={lovSearch}
+                                      onChange={(e) => setLovSearch(e.target.value)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{ width: "100%", padding: "4px 8px", border: "1px solid #d1d5db", borderRadius: 4, fontSize: 12, outline: "none", color: "#1f2937", boxSizing: "border-box" }}
+                                    />
+                                  </div>
+                                  <div style={{ overflowY: "auto", flex: 1 }}>
+                                    {filtered.length === 0 ? (
+                                      <div style={{ padding: "16px 12px", textAlign: "center", color: "#9ca3af", fontSize: 12 }}>No records found</div>
+                                    ) : (
+                                      filtered.map((ac) => {
+                                        const val = `${ac.account_code} – ${ac.account_name}`;
+                                        const isSel = value.accountId === val;
+                                        return (
+                                          <div
+                                            key={ac.account_code}
+                                            onClick={() => {
+                                              setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === group.id ? { ...g, values: g.values.map((v) => v.id === value.id ? { ...v, accountId: val } : v) } : g) }) : p);
+                                              setActiveLov(null); setLovSearch("");
+                                            }}
+                                            style={{ padding: "6px 12px", fontSize: 12, cursor: "pointer", background: isSel ? "#fdf2f8" : "transparent", color: "#1f2937", fontWeight: isSel ? 700 : 400, borderBottom: "1px solid #f3f4f6", display: "flex", gap: 8 }}
+                                            onMouseEnter={(e) => { if (!isSel) (e.currentTarget as HTMLDivElement).style.background = "#f9fafb"; }}
+                                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isSel ? "#fdf2f8" : "transparent"; }}
+                                          >
+                                            <span style={{ color: "#6b7280", minWidth: 80 }}>{ac.account_code}</span>
+                                            <span>{ac.account_name}</span>
+                                          </div>
+                                        );
+                                      })
+                                    )}
+                                  </div>
+                                  {value.accountId && (
+                                    <div style={{ padding: "6px 8px", borderTop: "1px solid #e5e7eb" }}>
+                                      <button type="button" onClick={() => { setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === group.id ? { ...g, values: g.values.map((v) => v.id === value.id ? { ...v, accountId: undefined } : v) } : g) }) : p); setActiveLov(null); setLovSearch(""); }} style={{ fontSize: 11, color: "#dc2626", background: "none", border: "none", cursor: "pointer", padding: 0 }}>Clear selection</button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                            );
+                          })() : (
+                            <td style={{ ...TD, padding: "4px 12px", color: "#9ca3af", fontSize: 12 }}>—</td>
+                          ))}
+                          {group.isGoLiveReq === "Y" ? (
+                            <td style={{ ...TD, padding: "4px 12px", color: "#475569", fontSize: 12 }}>
+                              {fmtGoLiveDate(value.targetGoLiveDate) || "—"}
+                            </td>
+                          ) : (
+                            <td style={{ ...TD, padding: "4px 12px", color: "#9ca3af", fontSize: 12 }}>—</td>
                           )}
                           {data.years.map((year: number, yi: number) => {
                             const val = value.yearValues[year] ?? 0;
-                            const rawRow = isTaxRateRow(value) || isNonFinancialRow(value);
-                            const pctRow = isPercentRow(value);
-                            const scaleDecimals = decimalsForScale(displayScale);
+                            const nonFinRow = isNonFinancialRow(value);
                             return (
                               <td key={year} style={{ ...TD, padding: "4px 12px" }}>
+                                {isPercentRow(value)
+                                  ? renderPercentInput(group.id, value, year, { width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, color: "#1f2937", outline: "none", height: 28 })
+                                  : (
                                 <input type="text"
-                                  className={FIN_CELL_CLASS}
-                                  inputMode={pctRow ? "decimal" : undefined}
-                                  value={editingCell?.gId === group.id && editingCell?.vId === value.id && editingCell?.year === year
-                                    ? editingCell.raw
-                                    : val === 0 ? "" : rawRow
-                                      ? parseFloat(val.toFixed(3))
-                                      : parseFloat(applyScale(val * fxMultiplier, displayScale).toFixed(scaleDecimals))}
+                                  className="spc-nav-cell"
+                                  value={numCellText(`${value.id}-${year}`, val, nonFinRow)}
                                   placeholder="—"
-                                  onFocus={() => {
-                                    const displayed = val === 0 ? "" : rawRow
-                                      ? String(parseFloat(val.toFixed(3)))
-                                      : String(parseFloat(applyScale(val * fxMultiplier, displayScale).toFixed(scaleDecimals)));
-                                    setEditingCell({ gId: group.id, vId: value.id, year, raw: displayed });
-                                  }}
-                                  onChange={(e) => {
-                                    // Percentage rows: reject the keystroke unless the
-                                    // resulting text is a valid 0–100 value with ≤ 2 decimals.
-                                    if (pctRow && !isValidPercentInput(e.target.value)) return;
-                                    // Regular rows: only digits, one leading "-", one "." — no letters.
-                                    if (!pctRow && !isValidNumericInput(e.target.value)) return;
-                                    setEditingCell((prev) => prev ? { ...prev, raw: e.target.value } : null);
-                                  }}
-                                  onBlur={() => {
-                                    if (editingCell?.gId === group.id && editingCell?.vId === value.id && editingCell?.year === year) {
-                                      const parsed   = parseCellInput(editingCell.raw);
-                                      const inputNum = pctRow ? clampPercent(parsed) : parsed;
-                                      updateCellValue(group.id, value.id, year, rawRow
-                                        ? String(inputNum)
-                                        : String(unapplyScale(inputNum, displayScale) / fxMultiplier));
-                                      setEditingCell(null);
-                                    }
-                                  }}
-                                  readOnly={isReadonly}
+                                  onFocus={() => numCellFocus(`${value.id}-${year}`, val, nonFinRow)}
+                                  onChange={(e) => numCellChange(group.id, value.id, year, `${value.id}-${year}`, e.target.value, nonFinRow)}
+                                  onBlur={numCellBlur}
                                   onClick={(e) => e.stopPropagation()}
-                                  onKeyDown={handleCellArrowNav}
-                                  onPaste={isReadonly ? undefined : (e) => handleValueCellPaste(e, group.id, value.id, yi)}
-                                  style={{ width: "100%", textAlign: "right", border: "none", background: isReadonly ? "#f3f4f6" : "transparent", fontSize: 13, color: val < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28, cursor: isReadonly ? "default" : "text" }}
+                                  onKeyDown={handleCellNav}
+                                  onPaste={(e) => handleValueCellPaste(e, group.id, value.id, yi)}
+                                  style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, color: val < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28 }}
                                 />
+                                  )}
                               </td>
                               );
                             })}
-                          {isNoTotalRow(value)
-                            ? <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value="—" style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>
-                            : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={(isTaxRateRow(value) || isNonFinancialRow(value)) ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>; })()
-                          }
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return (
+                            <td style={{ ...TD, padding: "4px 12px" }}>
+                              <input type="text"
+                                className="spc-nav-cell"
+                                readOnly
+                                value={displayRow(value, t)}
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={handleCellNav}
+                                style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28 }}
+                              />
+                            </td>
+                          ); })()}
                         </tr>
                       );
                     };
@@ -1650,86 +1817,46 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     const calcInitial     = calc.filter((v) => v.lineType === "INITIAL_CAPEX");
                     const calcRest        = calc.filter((v) => v.lineType !== "INITIAL_CAPEX");
 
+                    const fixedColSpan = SHOW_ACCOUNT_COLUMN ? 4 : 3;
                     const renderCalcRow = (value: ValueRow) => (
-                      <tr key={value.id} style={{ background: "#f3f4f6" }}>
-                        <td colSpan={group.isAccountRequired === "Y" ? 2 : 3} style={{ ...TD, padding: "8px 12px" }}>
-                          <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={value.name} style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} />
-                        </td>
-                        {group.isAccountRequired === "Y" && (
-                          <td style={{ ...TD, padding: "8px 12px" }}>
-                            <div style={{ fontSize: 12, color: "#6b7280", padding: "4px 6px", background: "#f3f4f6", borderRadius: 4, height: 28, display: "flex", alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value.accountId || "—"}</div>
-                          </td>
-                        )}
+                      <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#fef08a" : "#f3f4f6", transition: "background 0.4s", boxShadow: value.id === highlightLineId ? "inset 0 0 0 2px #f59e0b" : undefined }}>
+                        <td colSpan={fixedColSpan} style={{ ...TD, padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
                         {data.years.map((year: number) => {
                           const val = value.yearValues[year] ?? 0;
-                          const rawRow = isTaxRateRow(value) || isNonFinancialRow(value) || groupAllNonFinancial;
-                          return (
-                            <td key={year} style={{ ...TD, padding: "8px 12px" }}>
-                              <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(val) : displayFmt(val)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} />
-                            </td>
-                          );
+                          return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{displayRow(value, val, groupAllNonFinancial)}</td>);
                         })}
-                        {isNoTotalRow(value)
-                          ? <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value="—" style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} /></td>
-                          : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isTaxRateRow(value) || isNonFinancialRow(value) || groupAllNonFinancial; return <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
-                        }
+                        {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{displayRow(value, t, groupAllNonFinancial)}</td>; })()}
                       </tr>
                     );
 
                     return (<>
                       {(hasOngoing ? regularEditable : editable).map((v, i) => renderEditable(v, i))}
-                      {!isReadonly && group.isNewLineRequired !== "N" && (
-                        <tr key="add-btn"><td colSpan={3 + numYears + 1} style={{ padding: "6px 10px", borderBottom: "1px solid #e5e7eb" }}><button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 11, background: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", cursor: "pointer", color: "#000", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, height: 15 }}>+ Add {group.name} Line</button></td></tr>
+                      {group.isNewLineRequired !== "N" && !isReadOnly && (
+                        <tr key="add-btn"><td colSpan={(SHOW_ACCOUNT_COLUMN ? 4 : 3) + numYears + 1} style={{ padding: "6px 10px", borderBottom: "1px solid #e5e7eb" }}><button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 11, background: "#fff", border: "none", cursor: "pointer", color: "#000", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, height: 15 }}>+ Add {group.name} Line</button></td></tr>
                       )}
                       {hasOngoing ? (<>
                         {calcInitial.map(renderCalcRow)}
                         {ongoingEditable.map((v, i) => renderEditable(v, regularEditable.length + i))}
                         {calcRest.map(renderCalcRow)}
                       </>) : calc.map((value: ValueRow) => (
-                        <tr key={value.id} style={{ background: "#f3f4f6" }}>
-                          <td colSpan={group.isAccountRequired === "Y" ? 2 : 3} style={{ ...TD, padding: "10px 14px" }}>
-                            <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={value.name} style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} />
-                          </td>
-                          {group.isAccountRequired === "Y" && (
-                            <td style={{ ...TD, padding: "10px 14px" }}>
-                              <div style={{ fontSize: 12, color: "#6b7280", padding: "4px 6px", background: "#f3f4f6", borderRadius: 4, height: 28, display: "flex", alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value.accountId || "—"}</div>
-                            </td>
-                          )}
+                        <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#fef08a" : "#f3f4f6", transition: "background 0.4s", boxShadow: value.id === highlightLineId ? "inset 0 0 0 2px #f59e0b" : undefined }}>
+                          <td colSpan={fixedColSpan} style={{ ...TD, padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
-                            const rawRow = isTaxRateRow(value) || isNonFinancialRow(value) || groupAllNonFinancial;
-                            return (
-                              <td key={year} style={{ ...TD, padding: "10px 14px" }}>
-                                <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(val) : displayFmt(val)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} />
-                              </td>
-                            );
+                            return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{displayRow(value, val, groupAllNonFinancial)}</td>);
                           })}
-                          {isNoTotalRow(value)
-                            ? <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value="—" style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} /></td>
-                            : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isTaxRateRow(value) || isNonFinancialRow(value) || groupAllNonFinancial; return <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
-                          }
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{displayRow(value, t, groupAllNonFinancial)}</td>; })()}
                         </tr>
                       ))}
                     </>);
                   })()}
                 </React.Fragment>
-                  ))}
+              ))}
 
-                </tbody>
-              </table>
-          </div>
-        );
-
-        return (
-          <>
-            {tableBlocks.map((block, i) => (
-              <div key={i}>
-                {renderGroupTable(block.groups)}
-              </div>
-            ))}
-          </>
-        );
-      })()}
+            </tbody>
+          </table>
+      </div>
+      </div>
 
     </div>
   );

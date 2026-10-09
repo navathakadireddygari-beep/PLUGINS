@@ -31,7 +31,7 @@ interface IEntry {
 
 interface IEntryProps
 {
-  onDuplicate: (entry: any) => void;
+  onDuplicate: (entry: IEntry) => void;
 }
 
 interface IDragAndDropKitContainer {

@@ -37,7 +37,7 @@ function groupDigits(digits: string, group: string, indian: boolean): string {
 }
 
 // Full display: grouped integer + decimal separator, trailing zeros trimmed.
-export function formatNumber(value: number, fmt: NumFmtSpec, maxDecimals = 3): string {
+export function formatNumber(value: number, fmt: NumFmtSpec, maxDecimals = 2): string {
   if (!isFinite(value)) return "";
   const neg = value < 0;
   const s   = Math.abs(value).toFixed(maxDecimals);
@@ -50,7 +50,7 @@ export function formatNumber(value: number, fmt: NumFmtSpec, maxDecimals = 3): s
 
 // Plain (ungrouped) editable representation — only the decimal separator, no
 // thousands grouping — so typing is unambiguous while a cell is focused.
-export function plainNumber(value: number, fmt: NumFmtSpec, maxDecimals = 3): string {
+export function plainNumber(value: number, fmt: NumFmtSpec, maxDecimals = 2): string {
   if (!isFinite(value)) return "";
   const neg = value < 0;
   const s   = Math.abs(value).toFixed(maxDecimals);

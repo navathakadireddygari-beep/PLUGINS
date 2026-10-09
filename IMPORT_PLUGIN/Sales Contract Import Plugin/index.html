@@ -3,21 +3,21 @@
   <head>
     <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Investment Report</title>
+    <title>Sales Contracts Investment Report</title>
     <script>
       // ── Widget config (single source of truth) ──────────────────
       // Read by src/config/app-config.ts at runtime.
-      // Case 1 — proposal exists:  set proposal_id, leave spc_type_id null
-      // Case 2 — no proposal yet:  set spc_type_id, leave proposal_id null
+      // proposal_id + file_id are required for the import (staging) flow:
+      //   GET  finEvaluationStaging?file_id=…
+      //   PUT  finEvaluationStaging/{file_id}       (Validate)
+      //   POST finEvalStagingMigrate/{file_id}      (Save Model)
       window.__APP_CONFIG__ = {
-        proposal_id:  1325,                // number | null  e.g. 1234
-        spc_type_id:  102,     
-        template_type_id: 303,           // number | null  e.g. 1062  (101=PRODUCT_DEVELOPMENT template)
-        app_user:     412802345448185,
-        // Use the Vite proxy path "/api" so requests don't hit the remote server
-        // directly from the browser — avoids CORS preflight failures for custom
-        // headers (user_email, role, Authorization). The proxy (vite.config.ts)
-        api_endpoint: "/api",
+        proposal_id:  567,               // number | null  e.g. 1234
+        file_id:      428,
+        spc_type_id:  null,              // number | null
+        app_user:     "satish.mallagundla@test.exp.com",
+        // Direct ORDS endpoint (no Vite proxy) — CORS must be enabled server-side.
+        api_endpoint: "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
         // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
         // ajaxId:   "ajaxId",
         // flowId:   "flowId",

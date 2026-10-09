@@ -65,25 +65,25 @@
 }
 
 /* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX */
-#sales-contracts-investment-report-root *,
+#investment-report-root *,
 #fin-eval-widget-root * {
   box-sizing: border-box;
   border-color: hsl(var(--border));
 }
 
 /* Scope background/foreground to the widget root — prevents overwriting APEX body styles */
-#sales-contracts-investment-report-root,
+#investment-report-root,
 #fin-eval-widget-root {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
 }
 
-#sales-contracts-investment-report-root,
+#investment-report-root,
 #fin-eval-widget-root {
   width: 100%;
 }
 
-#sales-contracts-investment-report-root > #fin-eval-widget-root,
+#investment-report-root > #fin-eval-widget-root,
 #fin-eval-widget-root > div {
   max-width: none !important;
   margin-left: auto !important;
@@ -96,34 +96,27 @@
   max-width: none !important;
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Currency / scale toolbar strip.
-
-   Transcribed from the Sales Contracts widget
-   (Sales Contracts Aug 18 -> src/styles/globals.css), so the two widgets
-   render an identical strip on the same APEX page.
-
-   One deliberate deviation: Sales Contracts pairs `overflow-x: auto` on
-   .currency-strip with `flex-wrap: nowrap` + `width: max-content` on the row,
-   which puts a horizontal scrollbar under the strip inside a narrow APEX
-   container. Here the row wraps instead, so every control stays reachable
-   without one.
-   ────────────────────────────────────────────────────────────────── */
+/* ── Currency/Scale/Number Format/Date Format toolbar strip ───────── */
 .currency-strip {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   margin-bottom: 5px;
 }
+
 .currency-strip-row {
   padding: 6px 10px;
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
-  row-gap: 8px;
+  flex-wrap: nowrap;
+  width: max-content;
+  min-width: 100%;
   box-sizing: border-box;
 }
+
 .strip-label {
   font-size: 10px;
   color: #6b7280;
@@ -131,12 +124,14 @@
   letter-spacing: 0.3px;
   flex-shrink: 0;
 }
+
 .toggle-group {
   display: flex;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   overflow: hidden;
 }
+
 .toggle-btn {
   padding: 3px 8px;
   border: none;
@@ -156,12 +151,14 @@
   background: #1e2433;
   color: #fff;
 }
+
 .strip-divider {
   width: 1px;
   height: 18px;
   background: #e5e7eb;
   flex-shrink: 0;
 }
+
 .strip-select {
   height: 24px;
   border: 1px solid #e5e7eb;
@@ -175,6 +172,7 @@
   outline: none;
   flex-shrink: 0;
 }
+
 .info-icon {
   position: relative;
   width: 15px;
@@ -207,6 +205,7 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   pointer-events: none;
 }
+
 .fx-wrap {
   margin-left: auto;
   display: flex;
@@ -243,36 +242,61 @@
   white-space: nowrap;
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Per-table horizontal scroll container.
-
-   One per table block. The scrollbar itself is hidden in every engine —
-   scrolling still works by wheel, trackpad, touch and keyboard.
-   ────────────────────────────────────────────────────────────────── */
-.table-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;      /* Firefox */
-  -ms-overflow-style: none;   /* legacy Edge / IE */
+/* ── Action bar (Back / Export / Import / Save Model) ─────────────── */
+.action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px 0;
 }
-.table-scroll::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;              /* Chrome / Safari / Edge */
+.action-bar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* Hide every scrollbar inside the widget, in every engine, whatever element
-   draws it — the class above only covers the containers we own, and APEX draws
-   its own bars on wrappers we do not. Scrolling itself is untouched: wheel,
-   trackpad, touch, drag and keyboard all still work. */
-#fin-eval-widget-root,
-#fin-eval-widget-root * {
-  scrollbar-width: none;      /* Firefox */
-  -ms-overflow-style: none;   /* legacy Edge / IE */
+/* Shared button base — Back, Export Template, Import Excel */
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #000000b8;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
 }
-#fin-eval-widget-root::-webkit-scrollbar,
-#fin-eval-widget-root *::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;              /* Chrome / Safari / Edge */
+.action-btn.back-btn {
+  border-radius: 4px;
+}
+
+/* Save Model button (bolder weight, wider padding) */
+.save-model-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 1px solid #000000b8;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+}
+.save-model-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Spinner on the Save icon while saving */
+.save-icon-spinning {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }

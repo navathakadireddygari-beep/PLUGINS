@@ -7,7 +7,7 @@
  * letting `publishAction` / `subscribeAction` type-check our own actions.
  *
  * The module specifier below is relative to THIS file
- * (`src/types/app-bridge-events.d.ts`), so `../lib/app-bridge-events`
+ * (`src/types/fin-eval-bridge.d.ts`), so `../lib/app-bridge-events`
  * resolves to `src/lib/app-bridge-events.ts` — the same module the runtime
  * helpers import, which is what makes the merge take effect.
  */
