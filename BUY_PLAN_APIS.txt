@@ -1,406 +1,1304 @@
-curl --request get \
-  --url https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1/GIS/MA/buyPlan \
-  --header 'authorization: Bearer 7tibcJrpErkSJLKZ1XxbEQ' \
-  --header 'currency: USD' \
-  --header 'proposal_id: 890'
-  
-  
-response:
 {
   "apiStatus": "S",
-  "apiMessage": "Success",
+  "apiMessage": "Staged financial evaluation retrieved successfully.",
   "data": {
-    "proposal_info": {
-      "proposal_code": "NA-MA-2026-890",
-      "proposal_title": "temp testing",
-      "currency_code": "USD",
-      "fx_rate": 1,
-      "target_year_end": "30 Sep 2025",
-      "display_currency": "USD",
-      "proration_months": 6,
-      "first_fy_key": "fy26"
+    "file": {
+      "fileId": 428,
+      "proposalId": 567,
+      "fileName": "Temp_Sales_Contract_122.xlsx",
+      "spcTypeId": 101,
+      "spcTypeTemplateId": 306,
+      "displayCurrency": "USD",
+      "loadStatus": "VALIDATED",
+      "totalSectionCount": 8,
+      "totalLineCount": 15,
+      "errorCode": null,
+      "errorMessage": null,
+      "migratedDate": null
     },
-    "fiscal_years": [
-      "fy24",
-      "fy25",
-      "fy26",
-      "fy27",
-      "fy28",
-      "fy29",
-      "fy30",
-      "fy31",
-      "fy32",
-      "fy33"
-    ],
-    "sections": [
-      {
-        "section_code": "REVENUE",
-        "section_label": "Revenue",
-        "fy_data": {
-          "fy24": {
-            "forecast_usd": 998000,
-            "buyplan_usd": 0,
-            "variance_usd": 998000
-          },
-          "fy25": {
-            "forecast_usd": 989000,
-            "buyplan_usd": 0,
-            "variance_usd": 989000
-          },
-          "fy26": {
-            "forecast_usd": 1295500,
-            "buyplan_usd": 900000,
-            "variance_usd": 395500
-          },
-          "fy27": {
-            "forecast_usd": 715000,
-            "buyplan_usd": 715000,
-            "variance_usd": 0
-          },
-          "fy28": {
-            "forecast_usd": 619000,
-            "buyplan_usd": 0,
-            "variance_usd": 619000
-          },
-          "fy29": {
-            "forecast_usd": 0,
-            "buyplan_usd": 0,
-            "variance_usd": null
-          },
-          "fy30": {
-            "forecast_usd": 0,
-            "buyplan_usd": 0,
-            "variance_usd": null
-          },
-          "fy31": {
-            "forecast_usd": 0,
-            "buyplan_usd": 0,
-            "variance_usd": null
-          },
-          "fy32": {
-            "forecast_usd": 0,
-            "buyplan_usd": 0,
-            "variance_usd": null
-          },
-          "fy33": {
-            "forecast_usd": 0,
-            "buyplan_usd": 0,
-            "variance_usd": null
-          }
-        }
+    "header": {
+      "finEvalHeaderStgId": 504,
+      "localCurrency": null,
+      "displayCurrency": "USD",
+      "exchangeRate": null,
+      "hurdleRatePercent": null,
+      "discountRatePercent": null,
+      "shareRepurchasePercent": null,
+      "amortisationPeriodYears": null,
+      "amortizationPeriod": null,
+      "datePlacedInService": null,
+      "taxRatePercent": null,
+      "displayYears": null,
+      "kpiType": null,
+      "npv": null,
+      "irrPercent": null,
+      "paybackPeriodYears": null,
+      "totalCashInflow": null,
+      "totalCashOutflow": null,
+      "grossProfit": null,
+      "grossMarginPercent": null,
+      "contributionMarginPercent": "100",
+      "totalContractValue": "22375.16339869281",
+      "numberOfYears": null,
+      "annualContractValue": null,
+      "contractDuration": null,
+      "totalLeaseValue": null,
+      "leaseTermsYears": null,
+      "proposedTerm": null,
+      "investment": null,
+      "annualCost": null,
+      "totalCapexInvestment": null,
+      "annualOpex": null,
+      "investmentTerm": null,
+      "npvActuals": null,
+      "irrActualsPercent": null,
+      "paybackActualsYears": null,
+      "npvVariance": null,
+      "irrVariance": null,
+      "paybackVariance": null,
+      "avgWeeklyPeakHeadcount": null,
+      "performanceMetrics": null,
+      "status": "ACTIVE",
+      "languageCode": "EN",
+      "attribute1": "Millions",
+      "attribute2": null,
+      "attribute3": null,
+      "attribute4": null,
+      "attribute5": null,
+      "attribute6": null,
+      "attribute7": null,
+      "attribute8": null,
+      "attribute9": null,
+      "attribute10": null,
+      "validationStatus": "VALID",
+      "errorCode": null,
+      "errorMessage": null,
+      "val": {
+        "proposalId": "VALID",
+        "displayCurrency": "VALID",
+        "hurdleRatePercent": "NA",
+        "discountRatePercent": "NA",
+        "shareRepurchasePercent": "NA",
+        "amortisationPeriodYears": null,
+        "amortizationPeriod": "NA",
+        "datePlacedInService": "NA",
+        "performanceMetrics": "NA",
+        "contractDuration": "NA",
+        "proposedTerm": "NA",
+        "investmentTerm": "NA"
       },
-      {
-        "section_code": "EBIT",
-        "section_label": "EBIT",
-        "fy_data": {
-          "fy24": {
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
+      "sections": [
+        {
+          "finEvalSectionStgId": 2726,
+          "parentFinEvalSectionStgId": null,
+          "sectionName": "Cash inflows",
+          "sectionType": "CASH_INFLOWS",
+          "isCustom": "N",
+          "isMandatory": "Y",
+          "isReadOnly": "N",
+          "isAccountRequired": "N",
+          "isNewLineRequired": "Y",
+          "isGoLiveReq": "Y",
+          "displayOrder": 1,
+          "status": "ACTIVE",
+          "languageCode": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "validationStatus": "VALID",
+          "errorCode": null,
+          "errorMessage": null,
+          "val": {
+            "proposalId": "VALID",
+            "sectionName": "VALID",
+            "parentFinEvalSecStgId": "NA"
           },
-          "fy25": {
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
+          "lines": [
+            {
+              "finEvalLineStgId": 8900,
+              "finEvalSectionStgId": 2726,
+              "lineType": "CASH_INFLOWS",
+              "lineItemName": "efwef",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "N",
+              "isMandatory": "N",
+              "isReadOnly": "N",
+              "isCustom": "Y",
+              "account": ".15163398692810458",
+              "displayOrder": 0.001,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 151.63398692810458,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 15.686274509803921,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 15184.313725490196,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 15351.633986928104,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            },
+            {
+              "finEvalLineStgId": 8901,
+              "finEvalSectionStgId": 2726,
+              "lineType": "CASH_INFLOWS_TOTAL",
+              "lineItemName": "Cash inflows",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "Y",
+              "isMandatory": "Y",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": ".15163398692810458",
+              "displayOrder": 1,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 151.63398692810458,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 15.686274509803921,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 15184.313725490196,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 15351.633986928104501,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            }
+          ]
+        },
+        {
+          "finEvalSectionStgId": 2727,
+          "parentFinEvalSectionStgId": null,
+          "sectionName": "Cash outflows",
+          "sectionType": "CASH_OUTFLOWS",
+          "isCustom": "N",
+          "isMandatory": "Y",
+          "isReadOnly": "N",
+          "isAccountRequired": "N",
+          "isNewLineRequired": "Y",
+          "isGoLiveReq": "N",
+          "displayOrder": 2,
+          "status": "ACTIVE",
+          "languageCode": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "validationStatus": "VALID",
+          "errorCode": null,
+          "errorMessage": null,
+          "val": {
+            "proposalId": "VALID",
+            "sectionName": "VALID",
+            "parentFinEvalSecStgId": "NA"
           },
-          "fy26": {
-            "forecast_usd": null,
-            "buyplan_usd": 575000,
-            "variance_usd": null,
-            "ebit_margin_pct": null
+          "lines": [
+            {
+              "finEvalLineStgId": 8902,
+              "finEvalSectionStgId": 2727,
+              "lineType": "CASH_OUTFLOWS",
+              "lineItemName": "Temp",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "N",
+              "isMandatory": "N",
+              "isReadOnly": "N",
+              "isCustom": "Y",
+              "account": "2.245098039215686",
+              "displayOrder": 0.001,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 2245.098039215686,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 225.49019607843138,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 2470.5882352941176,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            },
+            {
+              "finEvalLineStgId": 8903,
+              "finEvalSectionStgId": 2727,
+              "lineType": "CASH_OUTFLOWS",
+              "lineItemName": "gsfwef",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "N",
+              "isMandatory": "N",
+              "isReadOnly": "N",
+              "isCustom": "Y",
+              "account": "1530.0653594771242",
+              "displayOrder": 0.002,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 1530065.3594771242,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 1524457.5163398692,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 20537908.496732026,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 23592431.37254902,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            },
+            {
+              "finEvalLineStgId": 8904,
+              "finEvalSectionStgId": 2727,
+              "lineType": "CASH_OUTFLOWS_TOTAL",
+              "lineItemName": "Cash outflows",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "Y",
+              "isMandatory": "Y",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": "1532.310457516339886",
+              "displayOrder": 1,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 1532310.457516339886,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 1524683.00653594763138,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 20537908.496732026,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 23594901.96078431351738,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            }
+          ]
+        },
+        {
+          "finEvalSectionStgId": 2728,
+          "parentFinEvalSectionStgId": null,
+          "sectionName": "Net cash flow",
+          "sectionType": "NET_CASH_FLOW",
+          "isCustom": "N",
+          "isMandatory": "Y",
+          "isReadOnly": "N",
+          "isAccountRequired": "N",
+          "isNewLineRequired": "N",
+          "isGoLiveReq": "N",
+          "displayOrder": 3,
+          "status": "ACTIVE",
+          "languageCode": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "validationStatus": "VALID",
+          "errorCode": null,
+          "errorMessage": null,
+          "val": {
+            "proposalId": "VALID",
+            "sectionName": "VALID",
+            "parentFinEvalSecStgId": "NA"
           },
-          "fy27": {
-            "forecast_usd": null,
-            "buyplan_usd": 420000,
-            "variance_usd": null,
-            "ebit_margin_pct": null
+          "lines": [
+            {
+              "finEvalLineStgId": 8905,
+              "finEvalSectionStgId": 2728,
+              "lineType": "NET_CASH_FLOW",
+              "lineItemName": "Net cash flow",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "Y",
+              "isMandatory": "Y",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": "-1532.15882352941178142",
+              "displayOrder": 1,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": -1532158.82352941178142,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": -1524667.320261437827459,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": -20522724.183006535804,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": -23579550.326797385412879,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            }
+          ]
+        },
+        {
+          "finEvalSectionStgId": 2729,
+          "parentFinEvalSectionStgId": null,
+          "sectionName": "Revenue",
+          "sectionType": "REVENUE",
+          "isCustom": "N",
+          "isMandatory": "Y",
+          "isReadOnly": "N",
+          "isAccountRequired": "Y",
+          "isNewLineRequired": "Y",
+          "isGoLiveReq": "N",
+          "displayOrder": 4,
+          "status": "ACTIVE",
+          "languageCode": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "validationStatus": "VALID",
+          "errorCode": null,
+          "errorMessage": null,
+          "val": {
+            "proposalId": "VALID",
+            "sectionName": "VALID",
+            "parentFinEvalSecStgId": "NA"
           },
-          "fy28": {
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
+          "lines": [
+            {
+              "finEvalLineStgId": 8906,
+              "finEvalSectionStgId": 2729,
+              "lineType": "REVENUE",
+              "lineItemName": "temp revenue",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "N",
+              "isMandatory": "N",
+              "isReadOnly": "N",
+              "isCustom": "Y",
+              "account": ".326797385620915",
+              "displayOrder": 0.001,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 326.797385620915,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 326.797385620915,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 21721.56862745098,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 22375.16339869281,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            },
+            {
+              "finEvalLineStgId": 8907,
+              "finEvalSectionStgId": 2729,
+              "lineType": "REVENUE_TOTAL",
+              "lineItemName": "Revenue",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "Y",
+              "isMandatory": "Y",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": ".326797385620915",
+              "displayOrder": 1,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 326.797385620915,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 326.797385620915,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 21721.56862745098,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 22375.16339869281,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            }
+          ]
+        },
+        {
+          "finEvalSectionStgId": 2730,
+          "parentFinEvalSectionStgId": null,
+          "sectionName": "Costs",
+          "sectionType": "COSTS",
+          "isCustom": "N",
+          "isMandatory": "Y",
+          "isReadOnly": "N",
+          "isAccountRequired": "Y",
+          "isNewLineRequired": "Y",
+          "isGoLiveReq": "N",
+          "displayOrder": 5,
+          "status": "ACTIVE",
+          "languageCode": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "validationStatus": "VALID",
+          "errorCode": null,
+          "errorMessage": null,
+          "val": {
+            "proposalId": "VALID",
+            "sectionName": "VALID",
+            "parentFinEvalSecStgId": "NA"
           },
-          "fy29": {
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
+          "lines": [
+            {
+              "finEvalLineStgId": 8908,
+              "finEvalSectionStgId": 2730,
+              "lineType": "COSTS_TOTAL",
+              "lineItemName": "Costs",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "Y",
+              "isMandatory": "Y",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": "0",
+              "displayOrder": 1,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 0,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 0,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 0,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 0,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            }
+          ]
+        },
+        {
+          "finEvalSectionStgId": 2731,
+          "parentFinEvalSectionStgId": null,
+          "sectionName": "Contribution margin",
+          "sectionType": "CONTRIBUTION_MARGIN",
+          "isCustom": "N",
+          "isMandatory": "Y",
+          "isReadOnly": "N",
+          "isAccountRequired": "N",
+          "isNewLineRequired": "N",
+          "isGoLiveReq": "N",
+          "displayOrder": 6,
+          "status": "ACTIVE",
+          "languageCode": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "validationStatus": "VALID",
+          "errorCode": null,
+          "errorMessage": null,
+          "val": {
+            "proposalId": "VALID",
+            "sectionName": "VALID",
+            "parentFinEvalSecStgId": "NA"
           },
-          "fy30": {
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
+          "lines": [
+            {
+              "finEvalLineStgId": 8909,
+              "finEvalSectionStgId": 2731,
+              "lineType": "MARGIN",
+              "lineItemName": "Margin",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "Y",
+              "isMandatory": "Y",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": ".326797385620915",
+              "displayOrder": 1,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 326.797385620915,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 326.797385620915,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 21721.56862745098,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 22375.16339869281,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            },
+            {
+              "finEvalLineStgId": 8910,
+              "finEvalSectionStgId": 2731,
+              "lineType": "MARGIN_PERCENT",
+              "lineItemName": "Margin %",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "Y",
+              "isMandatory": "Y",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": "100",
+              "displayOrder": 2,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 100,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 100,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 100,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 100,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            }
+          ]
+        },
+        {
+          "finEvalSectionStgId": 2732,
+          "parentFinEvalSectionStgId": null,
+          "sectionName": "Balance sheet",
+          "sectionType": "BALANCE_SHEET",
+          "isCustom": "N",
+          "isMandatory": "Y",
+          "isReadOnly": "N",
+          "isAccountRequired": "N",
+          "isNewLineRequired": "N",
+          "isGoLiveReq": "N",
+          "displayOrder": 7,
+          "status": "ACTIVE",
+          "languageCode": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "validationStatus": "VALID",
+          "errorCode": null,
+          "errorMessage": null,
+          "val": {
+            "proposalId": "VALID",
+            "sectionName": "VALID",
+            "parentFinEvalSecStgId": "NA"
           },
-          "fy31": {
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
+          "lines": [
+            {
+              "finEvalLineStgId": 8911,
+              "finEvalSectionStgId": 2732,
+              "lineType": "DEFERRED_REVENUE",
+              "lineItemName": "Deferred revenue",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "Y",
+              "isMandatory": "Y",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": ".17516339869281042",
+              "displayOrder": 1,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 175.16339869281042,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 311.111111111111079,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 6537.254901960784,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 7023.529411764705499,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            },
+            {
+              "finEvalLineStgId": 8912,
+              "finEvalSectionStgId": 2732,
+              "lineType": "DEFERRED_COST",
+              "lineItemName": "Deferred costs",
+              "lineIdentifier": "FINANCIAL",
+              "isCalculated": "Y",
+              "isMandatory": "Y",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": "1532.310457516339886",
+              "displayOrder": 2,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": 1532310.457516339886,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": 1524683.00653594763138,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": 20537908.496732026,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": 23594901.96078431351738,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            }
+          ]
+        },
+        {
+          "finEvalSectionStgId": 2733,
+          "parentFinEvalSectionStgId": null,
+          "sectionName": "Additional Metrics",
+          "sectionType": "ADDITIONAL_METRICS",
+          "isCustom": "N",
+          "isMandatory": "Y",
+          "isReadOnly": "N",
+          "isAccountRequired": "N",
+          "isNewLineRequired": "Y",
+          "isGoLiveReq": "N",
+          "displayOrder": 8,
+          "status": "ACTIVE",
+          "languageCode": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "validationStatus": "VALID",
+          "errorCode": null,
+          "errorMessage": null,
+          "val": {
+            "proposalId": "VALID",
+            "sectionName": "VALID",
+            "parentFinEvalSecStgId": "NA"
           },
-          "fy32": {
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          },
-          "fy33": {
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          }
+          "lines": [
+            {
+              "finEvalLineStgId": 8913,
+              "finEvalSectionStgId": 2733,
+              "lineType": "CONTRACTED_VOLUMES",
+              "lineItemName": "Contracted Volumes",
+              "lineIdentifier": "NON_FINANCIAL",
+              "isCalculated": "N",
+              "isMandatory": "N",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": null,
+              "displayOrder": 1,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "actual": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "actual": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "actual": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "actual": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            },
+            {
+              "finEvalLineStgId": 8914,
+              "finEvalSectionStgId": 2733,
+              "lineType": "OTHER_METRIC",
+              "lineItemName": "Other",
+              "lineIdentifier": "NON_FINANCIAL",
+              "isCalculated": "N",
+              "isMandatory": "N",
+              "isReadOnly": "N",
+              "isCustom": "N",
+              "account": null,
+              "displayOrder": 2,
+              "yearValues": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "actual": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "actual": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "actual": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "actual": null
+                }
+              },
+              "targetGoLiveDate": null,
+              "status": "ACTIVE",
+              "languageCode": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "validationStatus": "VALID",
+              "errorCode": null,
+              "errorMessage": null,
+              "val": {
+                "proposalId": "VALID",
+                "finEvalSectionStgId": "VALID",
+                "lineItemName": "VALID",
+                "account": "NA",
+                "yearValues": "VALID",
+                "targetGoLiveDate": "NA"
+              }
+            }
+          ]
         }
-      }
-    ]
-  }
-}
-
-curl --request get \
-  --url https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1/GIS/MA/buyPlan \
-  --header 'authorization: Bearer 7tibcJrpErkSJLKZ1XxbEQ' \
-  --header 'proposal_id: 890'
-  
-response , since we are not passing USD or local currency, it will give local as well as USD
-
-{
-  "apiStatus": "S",
-  "apiMessage": "Success",
-  "data": {
-    "proposal_info": {
-      "proposal_code": "NA-MA-2026-890",
-      "proposal_title": "temp testing",
-      "currency_code": "USD",
-      "fx_rate": 1,
-      "target_year_end": "30 Sep 2025",
-      "display_currency": "BOTH",
-      "proration_months": 6,
-      "first_fy_key": "fy26"
+      ]
     },
-    "fiscal_years": [
-      "fy24",
-      "fy25",
-      "fy26",
-      "fy27",
-      "fy28",
-      "fy29",
-      "fy30",
-      "fy31",
-      "fy32",
-      "fy33"
-    ],
-    "sections": [
-      {
-        "section_code": "REVENUE",
-        "section_label": "Revenue",
-        "fy_data": {
-          "fy24": {
-            "forecast_local": 998000,
-            "buyplan_local": 0,
-            "variance_local": 998000,
-            "forecast_usd": 998000,
-            "buyplan_usd": 0,
-            "variance_usd": 998000
-          },
-          "fy25": {
-            "forecast_local": 989000,
-            "buyplan_local": 0,
-            "variance_local": 989000,
-            "forecast_usd": 989000,
-            "buyplan_usd": 0,
-            "variance_usd": 989000
-          },
-          "fy26": {
-            "forecast_local": 1295500,
-            "buyplan_local": 900000,
-            "variance_local": 395500,
-            "forecast_usd": 1295500,
-            "buyplan_usd": 900000,
-            "variance_usd": 395500
-          },
-          "fy27": {
-            "forecast_local": 715000,
-            "buyplan_local": 715000,
-            "variance_local": 0,
-            "forecast_usd": 715000,
-            "buyplan_usd": 715000,
-            "variance_usd": 0
-          },
-          "fy28": {
-            "forecast_local": 619000,
-            "buyplan_local": 0,
-            "variance_local": 619000,
-            "forecast_usd": 619000,
-            "buyplan_usd": 0,
-            "variance_usd": 619000
-          },
-          "fy29": {
-            "forecast_local": 0,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": 0,
-            "buyplan_usd": 0,
-            "variance_usd": null
-          },
-          "fy30": {
-            "forecast_local": 0,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": 0,
-            "buyplan_usd": 0,
-            "variance_usd": null
-          },
-          "fy31": {
-            "forecast_local": 0,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": 0,
-            "buyplan_usd": 0,
-            "variance_usd": null
-          },
-          "fy32": {
-            "forecast_local": 0,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": 0,
-            "buyplan_usd": 0,
-            "variance_usd": null
-          },
-          "fy33": {
-            "forecast_local": 0,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": 0,
-            "buyplan_usd": 0,
-            "variance_usd": null
-          }
-        }
-      },
-      {
-        "section_code": "EBIT",
-        "section_label": "EBIT",
-        "fy_data": {
-          "fy24": {
-            "forecast_local": null,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          },
-          "fy25": {
-            "forecast_local": null,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          },
-          "fy26": {
-            "forecast_local": null,
-            "buyplan_local": 575000,
-            "variance_local": null,
-            "forecast_usd": null,
-            "buyplan_usd": 575000,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          },
-          "fy27": {
-            "forecast_local": null,
-            "buyplan_local": 420000,
-            "variance_local": null,
-            "forecast_usd": null,
-            "buyplan_usd": 420000,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          },
-          "fy28": {
-            "forecast_local": null,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          },
-          "fy29": {
-            "forecast_local": null,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          },
-          "fy30": {
-            "forecast_local": null,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          },
-          "fy31": {
-            "forecast_local": null,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          },
-          "fy32": {
-            "forecast_local": null,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          },
-          "fy33": {
-            "forecast_local": null,
-            "buyplan_local": 0,
-            "variance_local": null,
-            "forecast_usd": null,
-            "buyplan_usd": 0,
-            "variance_usd": null,
-            "ebit_margin_pct": null
-          }
-        }
-      }
-    ]
-  }
-}
-
-
-
-
-curl --request post \
-  --url https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1/GIS/MA/buyPlan/adjustment \
-  --header 'authorization: Bearer 7tibcJrpErkSJLKZ1XxbEQ' \
-  --header 'content-type: application/json' \
-  --data '{
-  "proposal_id": 890,
-  "fin_eval_section_id": 11932,
-  "description": "adjustment testing FY26",
-  "amount": 50000,
-  "fiscal_year": 2026,
-  "created_by": 12345
-}'
-
-response
-
-{
-  "apiStatus": "S",
-  "apiMessage": "Adjustment created",
-  "data": {
-    "pir_adjustment_id": 5
+    "orphanLines": []
   }
 }
