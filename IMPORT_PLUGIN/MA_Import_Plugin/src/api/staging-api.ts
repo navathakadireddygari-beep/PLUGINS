@@ -457,7 +457,9 @@ export const validateFinEvaluationStaging = async (
   console.log("[staging-api] PUT", path, body);
   let response: unknown;
   try {
+    // `language` as the Sales Contract import plugin sends on this PUT.
     ({ data: response } = await apiClient.put(path, body, {
+      headers: { language: "EN" },
       signal: options.signal,
     }));
   } catch (error) {

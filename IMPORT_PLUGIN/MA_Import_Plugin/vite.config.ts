@@ -3,13 +3,16 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Same as Sales Contract: @vitejs/plugin-react's Fast Refresh preamble
+  // references import.meta.hot, which does not exist in an IIFE bundle.
+  define: command === "build" ? { "import.meta.hot": "undefined" } : {},
   build: {
     // Fixed, unhashed names so the built bundle can be uploaded as a static
     // APEX plugin file (pivot-table.js / pivot-table.css) without having to
@@ -29,4 +32,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

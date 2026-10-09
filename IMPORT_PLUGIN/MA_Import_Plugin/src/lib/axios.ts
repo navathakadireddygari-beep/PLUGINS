@@ -12,8 +12,8 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 import {
-  API_BASE_URL,
   authHeaders,
+  getApiBaseUrl,
   type ApiEnvelope,
 } from "@/config/app-config";
 import { getAccessToken } from "@/api/auth-api";
@@ -34,11 +34,13 @@ interface RetriableConfig extends InternalAxiosRequestConfig {
 }
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "application/json", Accept: "application/json" },
 });
 
 apiClient.interceptors.request.use(async (config) => {
+  // Read per request, as Sales Contract does: APEX may call
+  // InvestmentReportWidget.init() with the config after this bundle loaded.
+  config.baseURL = getApiBaseUrl();
   Object.entries(authHeaders(await getAccessToken())).forEach(([key, value]) =>
     config.headers.set(key, value),
   );

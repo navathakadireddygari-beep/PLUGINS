@@ -191,12 +191,6 @@ export const isHostReadonly = (): boolean => getAppConfig().is_readonly;
 /** Base URL of the REST module, without a trailing slash. */
 export const getApiBaseUrl = (): string => getAppConfig().api_endpoint;
 
-/**
- * Base URL captured at module load, for the axios client's `baseURL`.
- * Prefer `getApiBaseUrl()` anywhere the host config may arrive later.
- */
-export const API_BASE_URL = getApiBaseUrl();
-
 /** Comma-separated APEX roles for the `role` header. */
 export const getApiRole = (): string | undefined =>
   getAppConfig().app_roles || undefined;

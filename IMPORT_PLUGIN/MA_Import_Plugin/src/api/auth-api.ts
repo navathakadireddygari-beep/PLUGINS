@@ -19,8 +19,8 @@
  */
 
 import {
-  API_BASE_URL,
   TOKEN_PATH,
+  getApiBaseUrl,
   getAppConfig,
   getBasicAuth,
   getStaticToken,
@@ -155,7 +155,7 @@ const requestOAuthToken = async (): Promise<AuthTokenResponse> => {
     );
   }
 
-  const res = await fetch(`${API_BASE_URL}${TOKEN_PATH}`, {
+  const res = await fetch(`${getApiBaseUrl()}${TOKEN_PATH}`, {
     method: "POST",
     headers: {
       authorization: `Basic ${basicAuth}`,
