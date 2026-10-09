@@ -42,7 +42,7 @@ export async function getExchangeRate(cfg: AppConfig, currency: string): Promise
   const cached      = rateCache.get(cacheKey);
   if (cached != null) return cached;
 
-  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__");
+  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__SPC_SALES_CONFIG__");
   const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/currencyExchangeRates`;
 

@@ -18,7 +18,7 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
   if (isApex) {
     if (!cfg.ajaxId || !cfg.flowId || !cfg.stepId || !cfg.instance) {
       throw new Error(
-        "Missing APEX context (ajaxId, flowId, stepId, instance) in window.__APP_CONFIG__"
+        "Missing APEX context (ajaxId, flowId, stepId, instance) in window.__SPC_SALES_CONFIG__"
       );
     }
 
@@ -48,7 +48,7 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
   // ── Local dev token — replace with a fresh token when you get 401 ──
   // Generate via: POST {TOKEN_URL} with client_credentials grant
   // Token expires in ~1 hour; update ACCESS_TOKEN below when expired.
-  const ACCESS_TOKEN = "bzeKwOkpju0aiTiN5Qt6zg";
+  const ACCESS_TOKEN = "EUqlPdA6M2TZ6TF0MmEOsw.v1.4qcTMNT6UpCRmZTZ";
   return {
     accessToken: ACCESS_TOKEN,
     token_type: "Bearer",

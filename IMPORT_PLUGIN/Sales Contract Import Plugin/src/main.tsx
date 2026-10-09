@@ -29,17 +29,17 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles/globals.css";
+import type { AppConfig } from "./config/app-config";
 
-type AppConfig = {
-  proposal_id: number | null;
-  spc_type_id: number | null;
-  app_user: string;
-  api_endpoint: string;
-  ajaxId: string;
-  flowId: string;
-  stepId: string;
-  instance: string;
-};
+declare global {
+  interface Window {
+    __SPC_SALES_CONFIG__?: AppConfig;
+    InvestmentReportWidget?: {
+      init: (hostId: string, config: AppConfig) => void;
+      destroy: (hostId: string) => void;
+    };
+  }
+}
 
 let _reactRoot: ReturnType<typeof ReactDOM.createRoot> | null = null;
 
@@ -52,7 +52,7 @@ function init(hostId: string, config: AppConfig): void {
   }
 
   /* Update global config before mounting */
-  (window as any).__APP_CONFIG__ = config;
+  window.__SPC_SALES_CONFIG__ = config;
 
   /* Create a fresh React root and render */
   _reactRoot = ReactDOM.createRoot(container);
@@ -80,18 +80,17 @@ function destroy(hostId: string): void {
 }
 
 /* Expose on window so APEX DA can call init/destroy */
-(window as any).InvestmentReportWidget = { init, destroy };
+window.InvestmentReportWidget = { init, destroy };
 
-
-/* ── Auto-mount on page load if __APP_CONFIG__ already has a valid proposal_id ──
+/* ── Auto-mount on page load if __SPC_SALES_CONFIG__ already has a valid proposal_id ──
    This handles the normal page load case (existing proposal opened directly).   */
-const _initialConfig = (window as any).__APP_CONFIG__;
+const _initialConfig = window.__SPC_SALES_CONFIG__;
 
 const hasId = _initialConfig &&
   (_initialConfig.proposal_id != null || _initialConfig.spc_type_id != null);
 
 if (hasId) {
-  init("investment-report-root", _initialConfig);
+  init("sales-contracts-investment-report-root", _initialConfig);
 } else {
   console.warn("[InvestmentReport Init] No valid proposal_id or spc_type_id on page load.");
 }

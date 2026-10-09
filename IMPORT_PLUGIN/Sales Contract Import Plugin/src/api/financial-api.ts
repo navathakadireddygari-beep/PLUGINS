@@ -10,7 +10,7 @@
  *
  * Every call attaches a Bearer token obtained via `fetchAuthToken` (auth-api.ts).
  * `proposal_id`, `file_id`, `app_user`, `api_endpoint` come from
- * window.__APP_CONFIG__ (set in index.html) and are read via `getAppConfig`.
+ * window.__SPC_SALES_CONFIG__ (set in index.html) and are read via `getAppConfig`.
  */
 import type { AppConfig } from "../config/app-config";
 import { fetchAuthToken, extractToken } from "./auth-api";
@@ -212,8 +212,8 @@ export type StagingApiResponse = {
 /* ─────────────────────────── URL helpers ────────────────────────── */
 // GET  →  {api_endpoint}/GIS/proposalAuthoring/finEvaluationStaging?file_id=X
 export function buildFinEvaluationStagingUrl(cfg: AppConfig): string {
-  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__");
-  if (cfg.file_id == null) throw new Error("Missing file_id in window.__APP_CONFIG__");
+  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__SPC_SALES_CONFIG__");
+  if (cfg.file_id == null) throw new Error("Missing file_id in window.__SPC_SALES_CONFIG__");
   return `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluationStaging?file_id=${cfg.file_id}`;
 }
 
@@ -221,7 +221,7 @@ export function buildFinEvaluationStagingUrl(cfg: AppConfig): string {
 // file_id is mandatory (ORDS binds it from the URI Template). Same handler and
 // URL shape as the Prod Dev import plugin.
 export function buildFinEvaluationStagingPutUrl(cfg: AppConfig): string {
-  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__");
+  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__SPC_SALES_CONFIG__");
   if (cfg.file_id == null) throw new Error("Cannot validate: no file_id available.");
   return `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluationStaging/${cfg.file_id}`;
 }
@@ -701,7 +701,7 @@ export async function validateFinEvaluationStaging(
 export async function migrateFinEvalStaging(
   cfg: AppConfig,
 ): Promise<SaveResponse> {
-  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__");
+  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__SPC_SALES_CONFIG__");
   if (!cfg.file_id) throw new Error("Cannot save: no file_id available.");
 
   const token = await getBearerToken(cfg);

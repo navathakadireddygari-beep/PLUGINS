@@ -1,5 +1,5 @@
 /**
- * App configuration injected via index.html → window.__APP_CONFIG__
+ * App configuration injected via index.html → window.__SPC_SALES_CONFIG__
  *
  * Required (passed from index.html):
  *   - proposal_id   : Financial proposal id
@@ -32,7 +32,7 @@ const LOCAL_DEV_ROLES =
 export function getAppConfig(): AppConfig {
   const cfg =
     (typeof window !== "undefined"
-      ? (window as unknown as { __APP_CONFIG__?: Partial<AppConfig> }).__APP_CONFIG__
+      ? (window as unknown as { __SPC_SALES_CONFIG__?: Partial<AppConfig> }).__SPC_SALES_CONFIG__
       : undefined) || {};
 
   const isLocalhost = typeof window !== "undefined" &&

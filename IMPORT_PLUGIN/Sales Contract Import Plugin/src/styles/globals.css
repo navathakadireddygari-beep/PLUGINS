@@ -65,25 +65,25 @@
 }
 
 /* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX */
-#investment-report-root *,
+#sales-contracts-investment-report-root *,
 #fin-eval-widget-root * {
   box-sizing: border-box;
   border-color: hsl(var(--border));
 }
 
 /* Scope background/foreground to the widget root — prevents overwriting APEX body styles */
-#investment-report-root,
+#sales-contracts-investment-report-root,
 #fin-eval-widget-root {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
 }
 
-#investment-report-root,
+#sales-contracts-investment-report-root,
 #fin-eval-widget-root {
   width: 100%;
 }
 
-#investment-report-root > #fin-eval-widget-root,
+#sales-contracts-investment-report-root > #fin-eval-widget-root,
 #fin-eval-widget-root > div {
   max-width: none !important;
   margin-left: auto !important;

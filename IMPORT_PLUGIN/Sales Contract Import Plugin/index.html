@@ -7,17 +7,19 @@
     <script>
       // ── Widget config (single source of truth) ──────────────────
       // Read by src/config/app-config.ts at runtime.
+      // The host APEX page must set window.__SPC_SALES_CONFIG__ before the
+      // bundle loads (see region_type_plugin_sales_contracts_import_fin.sql).
       // proposal_id + file_id are required for the import (staging) flow:
       //   GET  finEvaluationStaging?file_id=…
       //   PUT  finEvaluationStaging/{file_id}       (Validate)
       //   POST finEvalStagingMigrate/{file_id}      (Save Model)
-      window.__APP_CONFIG__ = {
+      window.__SPC_SALES_CONFIG__ = {
         proposal_id:  567,               // number | null  e.g. 1234
         file_id:      428,
         spc_type_id:  null,              // number | null
-        app_user:     "satish.mallagundla@test.exp.com",
+        app_user:     "412451299708216",
         // Direct ORDS endpoint (no Vite proxy) — CORS must be enabled server-side.
-        api_endpoint: "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
+        api_endpoint: "https://gisuat.uk.experian.com/ords/xxexp_gis_v1",
         // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
         // ajaxId:   "ajaxId",
         // flowId:   "flowId",
@@ -27,7 +29,7 @@
     </script>
   </head>
   <body>
-    <div id="investment-report-root"></div>
+    <div id="sales-contracts-investment-report-root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
