@@ -118,7 +118,7 @@ export async function fetchAuthToken(
   // new one via: POST {base}/oauth/token with the client_credentials grant.
   // Tokens live ~1 hour, so this goes stale quickly and is a stopgap, not a
   // configuration — a 401 here means it needs replacing.
-  const ACCESS_TOKEN = "YFxQXrSc7IELdALb19Wtzw";
+  const ACCESS_TOKEN = "ovDu5JzjEezdbHOolF0cIw";
   return {
     accessToken: ACCESS_TOKEN,
     token_type: "Bearer",

@@ -295,8 +295,13 @@ const toBase = (value: number | null | undefined): string =>
  * and saved untouched goes back out as it came in. Blank/unparseable -> null.
  */
 const fromBase = (value: string | null | undefined): number | null => {
-  if (value === null || value === undefined || value.trim() === "") return null;
-  const parsed = Number(value);
+  if (value === null || value === undefined) return null;
+  // Coerced rather than assumed: a number can reach here at runtime even
+  // though the type says string (e.g. an un-stringified wire value echoed
+  // straight through), and `.trim` is not defined on it.
+  const text = typeof value === "string" ? value : String(value);
+  if (text.trim() === "") return null;
+  const parsed = Number(text);
   if (!Number.isFinite(parsed)) return null;
   const inCurrency = toDisplayCurrency(
     parsed,
@@ -751,8 +756,10 @@ const buildNewSection = (
 
 /** Percentage string -> number (null when blank / unparseable). */
 const percentOrNull = (value: string | undefined): number | null => {
-  if (value === undefined || value.trim() === "") return null;
-  const parsed = Number(value);
+  if (value === undefined || value === null) return null;
+  const text = typeof value === "string" ? value : String(value);
+  if (text.trim() === "") return null;
+  const parsed = Number(text);
   return Number.isFinite(parsed) ? parsed : null;
 };
 

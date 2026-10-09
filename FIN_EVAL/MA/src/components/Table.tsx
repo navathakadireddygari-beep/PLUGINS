@@ -1312,8 +1312,10 @@ const Table: React.FC = () => {
     }
     const series = cols.map((i) => {
       const v = row.values[i];
-      if (v === undefined || v.trim() === "") return null;
-      const parsed = Number(v);
+      if (v === undefined || v === null) return null;
+      const text = typeof v === "string" ? v : String(v);
+      if (text.trim() === "") return null;
+      const parsed = Number(text);
       return Number.isFinite(parsed) ? parsed : null;
     });
     const result = cagrOf(series);

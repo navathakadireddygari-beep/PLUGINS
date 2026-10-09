@@ -30,8 +30,10 @@ export interface RecalcRow {
 
 /** Numeric view of a stored base string ("" / unparseable -> null). */
 const num = (v: string | undefined): number | null => {
-  if (v === undefined || v === null || v.trim() === "") return null;
-  const parsed = Number(v);
+  if (v === undefined || v === null) return null;
+  const text = typeof v === "string" ? v : String(v);
+  if (text.trim() === "") return null;
+  const parsed = Number(text);
   return Number.isFinite(parsed) ? parsed : null;
 };
 
