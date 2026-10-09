@@ -1,5 +1,3 @@
-// ── AppBridge: cross-plugin / APEX messaging contract ─────────────────────
-// Runtime helpers — typed wrappers over `window.AppBridge`.
 export {
   subscribeWhenReady,
   getBridgeSnapshot,
@@ -12,20 +10,5 @@ export {
   getState,
   publishState,
 } from "./app-bridge"
-export type {
-  BridgeMessage,
-  BridgeUnsubscribe,
-  AppBridgeApi,
-} from "./app-bridge"
-
-// Wire-contract types — declared as `interface` so consumers can extend
-// `ActionMap`, `ApexCommandMap`, and `StateMap` via TS declaration merging:
-//   declare module "@/lib/app-bridge-events" {
-//     interface ActionMap { "my-plugin:do-thing": { id: string } }
-//   }
-export type { SubscriberId } from "./app-bridge-events"
-export type {
-  ActionMap,
-  ApexCommandMap,
-  StateMap,
-} from "./app-bridge-events"
+export type { BridgeMessage, BridgeUnsubscribe, AppBridgeApi } from "./app-bridge"
+export type { SubscriberId, ActionMap, ApexCommandMap, StateMap } from "./app-bridge-events"

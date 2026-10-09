@@ -6,32 +6,31 @@
  * PUT  → saves the edited table back (ORDS routes by HTTP method)
  *
  * Both calls attach a Bearer token obtained via `fetchAuthToken` (auth-api.ts).
- * `proposal_id`, `app_user`, `api_endpoint` come from window.__SPC_SALES_CONFIG__
+ * `proposal_id`, `app_user`, `api_endpoint` come from window.__APP_CONFIG__
  * (set in index.html) and are read via `getAppConfig`.
  */
 import type { AppConfig } from "../config/app-config";
-import { fetchAuthToken, extractToken } from "./auth-api";
+import { fetchAuthToken, extractToken, parseFirstJsonObject } from "./auth-api";
 
 /* ─────────────────────────── UI-side types ──────────────────────── */
 export type YearValues = Record<number, number>;
 
 export type ValueRow = {
-  id:                 string;
-  name:               string;
-  yearValues:         YearValues;
-  rowTotal?:          number;
-  accountId?:         string;
-  targetGoLiveDate?:  string;
-  lineType:           string;
-  lineId?:            number;
-  sectionId?:         number;
-  lineIdentifier?:    string;
-  isCalculated?:      string;
-  isMandatory?:       string;
-  isCustom?:          string;
-  displayOrder?:      number;
-  status?:            string;
-  languageCode?:      string;
+  id:               string;
+  name:             string;
+  yearValues:       YearValues;
+  rowTotal?:        number;
+  accountId?:       string;
+  lineType:         string;
+  lineId?:          number;
+  sectionId?:       number;
+  lineIdentifier?:  string;
+  isCalculated?:    string;
+  isMandatory?:     string;
+  isCustom?:        string;
+  displayOrder?:    number;
+  status?:          string;
+  languageCode?:    string;
 };
 
 export type Group = {
@@ -45,7 +44,6 @@ export type Group = {
   isMandatory?:        string;
   isNewLineRequired?:  string;
   isAccountRequired?:  string;
-  isGoLiveReq?:        string;
   displayOrder?:       number;
   status?:             string;
   languageCode?:       string;
@@ -78,7 +76,6 @@ export type ApiLine = {
   is_mandatory?:              string;
   is_custom?:                 string;
   account:                    string | null;
-  target_go_live_date:        string | null;
   display_order:              number;
   year_values:                Record<string, YearEntry>;
   status:                     string;
@@ -90,11 +87,11 @@ export type ApiSection = {
   template_section_id?:  number | null;
   section_name:          string;
   section_type:          string;
+  section_description?:  string | null;
   is_custom:             string;
   is_mandatory?:         string;
   is_new_line_required?: string;
   is_account_required?:  string;
-  is_go_live_req?:       string;
   display_order:         number;
   status:                string;
   language_code:         string;
@@ -113,13 +110,14 @@ export type ApiHeader = {
   fin_eval_header_id:        number;
   proposal_id:               number;
   proposal_title:            string;
+  proposal_status:           string;
   local_currency:            string;
   display_currency:          string;
   exchange_rate:             number;
   hurdle_rate_percent:       number;
   discount_rate_percent:     number;
   share_repurchase_percent:  number;
-  amortisation_period_years: number;
+  amortization_period:       number;
   date_placed_in_service:    string;
   tax_rate_percent:          number;
   display_years:             number;
@@ -131,14 +129,15 @@ export type ApiHeader = {
   total_cash_outflow:        number | null;
   gross_profit:              number | null;
   gross_margin_percent:      number | null;
-  contribution_margin_percent: number | null;
-  total_contract_value:      number | null;
+  total_contract_value_kpi:  number | null;
   number_of_years:           number | null;
-  contract_duration?:        number | null;
   annual_contract_value:     number | null;
   total_lease_value:         number | null;
   lease_terms_years:         number | null;
   investment:                number | null;
+  total_capex_investment:   number | null;
+  annual_opex:               number | null;
+  investment_term_years:    number | null;
   performance_metrics:       { hurdle_checks?: HurdleCheck[] } | null;
   region_id:                 number | null;
   entity_id:                 number | null;
@@ -149,37 +148,26 @@ export type ApiHeader = {
 };
 
 export type ApiResponse = { data: ApiHeader[] };
-type MutationResponse = {
-  api_status?: string;
-  api_message?: string;
-  data?: Array<{
-    fin_eval_section_id?: number | null;
-    fin_eval_line_id?: number | null;
-  }>;
-  fin_eval_section_id?: number | null;
-  fin_eval_line_id?: number | null;
-  [key: string]: unknown;
-};
 
 /* ─────────────────────────── URL helpers ────────────────────────── */
-// GET  →  {api_endpoint}/GIS/proposalAuthoring/financialEvaluation?proposal_id=X[&template_type_id=Y]
-//         {api_endpoint}/GIS/proposalAuthoring/financialEvaluation?spc_type_id=X[&template_type_id=Y]
+// GET  →  {api_endpoint}/GIS/proposalAuthoring/financialEvaluation?proposal_id=X
+//         {api_endpoint}/GIS/proposalAuthoring/financialEvaluation?spc_type_id=X
 // PUT  →  {api_endpoint}/GIS/proposalAuthoring/{proposal_id}/financialEvaluation
 export function buildFinancialUrl(cfg: AppConfig): string {
-  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__SPC_SALES_CONFIG__");
+  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__");
   const base = `${cfg.api_endpoint}/GIS/proposalAuthoring/financialEvaluation`;
   if (cfg.proposal_id != null) {
     return `${base}?proposal_id=${cfg.proposal_id}`;
   }
-  const spc  = cfg.spc_type_id      != null ? `spc_type_id=${cfg.spc_type_id}`           : "";
-  const tmpl = cfg.template_type_id != null ? `template_type_id=${cfg.template_type_id}` : "";
-  const qs   = [spc, tmpl].filter(Boolean).join("&");
-  if (qs) return `${base}?${qs}`;
-  throw new Error("Missing proposal_id or spc_type_id in window.__SPC_SALES_CONFIG__");
+  if (cfg.spc_type_id != null) {
+    const templateParam = cfg.template_type_id != null ? `&template_type_id=${cfg.template_type_id}` : "";
+    return `${base}?spc_type_id=${cfg.spc_type_id}${templateParam}`;
+  }
+  throw new Error("Missing proposal_id or spc_type_id in window.__APP_CONFIG__");
 }
 
 export function buildFinancialPutUrl(cfg: AppConfig, rawHeader: ApiHeader): string {
-  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__SPC_SALES_CONFIG__");
+  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__");
   const proposalId = cfg.proposal_id ?? rawHeader.proposal_id;
   if (!proposalId) throw new Error("Cannot save: no proposal_id available.");
   return `${cfg.api_endpoint}/GIS/proposalAuthoring/${proposalId}/financialEvaluation`;
@@ -201,13 +189,14 @@ export function createEmptyHeader(cfg: AppConfig): ApiHeader {
     fin_eval_header_id:        0,
     proposal_id:               cfg.proposal_id ?? cfg.spc_type_id ?? 0,
     proposal_title:            "Untitled Proposal",
+    proposal_status:           "DRAFT",
     local_currency:            "",
     display_currency:          "",
     exchange_rate:             0,
     hurdle_rate_percent:       0,
     discount_rate_percent:     0,
     share_repurchase_percent:  0,
-    amortisation_period_years: 0,
+    amortization_period:       0,
     date_placed_in_service:    "",
     tax_rate_percent:          0,
     display_years:             6,
@@ -219,13 +208,15 @@ export function createEmptyHeader(cfg: AppConfig): ApiHeader {
     total_cash_outflow:        null,
     gross_profit:              null,
     gross_margin_percent:      null,
-    contribution_margin_percent: null,
-    total_contract_value:      null,
+    total_contract_value_kpi:  null,
     number_of_years:           null,
     annual_contract_value:     null,
     total_lease_value:         null,
     lease_terms_years:         null,
     investment:                null,
+    total_capex_investment:    null,
+    annual_opex:               null,
+    investment_term_years:     null,
     performance_metrics:       null,
     region_id:                 null,
     entity_id:                 null,
@@ -262,6 +253,9 @@ export function transformApiData(
   const columnLabels: Record<number, string> = {};
   years.forEach((y, i) => { columnLabels[y] = yearKeys[i].toUpperCase(); });
 
+  // API always returns values in USD regardless of local_currency.
+  // Store raw USD values in state — Table.tsx fxMultiplier handles display conversion.
+
   const groups: Group[] = [...sections]
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
     .map((section): Group => {
@@ -281,17 +275,14 @@ export function transformApiData(
             name:           line.line_item_name  ?? "Line Item",
             yearValues,
             rowTotal:       totalEntry != null ? Number(totalEntry) : undefined,
-            accountId:          line.account               ?? undefined,
-            targetGoLiveDate:   line.target_go_live_date   ?? undefined,
-            lineType:           line.line_type              ?? "",
+            accountId:      line.account         ?? undefined,
+            lineType:       line.line_type        ?? "",
             lineId:         line.fin_eval_line_id ?? undefined,
             sectionId:      line.fin_eval_section_id ?? undefined,
             lineIdentifier: (line.line_identifier ?? "FINANCIAL").toUpperCase(),
             isCalculated:   line.is_calculated    ?? "N",
             isMandatory:    line.is_mandatory     ?? "N",
-            // Default missing is_custom to "Y" so only lines the backend
-            // explicitly marks "N" become locked (preserves existing behavior).
-            isCustom:       line.is_custom         ?? "Y",
+            isCustom:       line.is_custom        ?? "Y",
             displayOrder:   line.display_order,
             status:         line.status           ?? "ACTIVE",
             languageCode:   line.language_code    ?? "EN",
@@ -311,7 +302,6 @@ export function transformApiData(
         isMandatory:        section.is_mandatory          ?? "N",
         isNewLineRequired:  section.is_new_line_required  ?? "Y",
         isAccountRequired:  section.is_account_required   ?? "N",
-        isGoLiveReq:        section.is_go_live_req        ?? "N",
         displayOrder: section.display_order,
         status:       section.status         ?? "ACTIVE",
         languageCode: section.language_code  ?? "EN",
@@ -325,49 +315,54 @@ export function transformApiData(
   };
 }
 
+/* ─────────────────────────── FX helper ──────────────────────────── */
+// Converts a value from local currency to USD for API storage.
+// Always targets USD regardless of the display currency selected in the UI.
+// exchange_rate is the USD→local rate (e.g. 1 USD = 1.35 CAD → rate=1.35).
+export function computeFxMultiplier(header: ApiHeader): number {
+  const local = (header.local_currency || "USD").toUpperCase();
+  const rate  = header.exchange_rate || 0.7350;
+  if (local === "USD") return 1;       // already USD — no conversion needed
+  if (local === "CAD") return 1 / rate; // CAD → USD: divide by USD→CAD rate
+  return 1 / rate;                      // generic fallback for other currencies
+}
+
+// Tax Rate % is a pure percentage — exempt from all currency and scale conversions.
+const TAX_RATE_IDS = new Set(["TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT"]);
+export function isTaxRateId(id: string | undefined | null): boolean {
+  return TAX_RATE_IDS.has((id || "").toUpperCase().replace(/[^A-Z0-9]/g, ""));
+}
+
 /* ─────────────────────────── PUT payload builder ────────────────── */
 export function buildPutPayload(
   tableData: PivotTableData,
   rawHeader: ApiHeader,
-  cfg: AppConfig
+  appUser: string
 ): object {
-  const appUser = cfg.app_user;
   const toFyKey = (year: number): string =>
     (tableData.columnLabels[year] || `FY${String(year).slice(2)}`).toLowerCase();
 
+  // State values are always in USD — send as-is, no fx conversion needed.
+
   const sections = tableData.groups.map((group, grpIdx) => {
-    const isCustomSection = group.isCustom === "Y";
     const lines = group.values.map((value, lineIdx) => {
       const year_values: Record<string, object> = {};
       tableData.years.forEach((y) => {
-        year_values[toFyKey(y)] = isCustomSection
-          ? { spc_projected_amount: value.yearValues[y] || null, actual: null }
-          : {
-              spc_projected_amount:  value.yearValues[y] || null,
-              ytd_budgeted_forecast: null,
-              ytd_actuals:           null,
-              variance:              null,
-            };
+        const amt = value.yearValues[y] ? value.yearValues[y] : null;
+        year_values[toFyKey(y)] = { spc_projected_amount: amt, actual: null };
       });
       const totalAmt = tableData.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
-      year_values["total"] = isCustomSection
-        ? { spc_projected_amount: totalAmt || null, actual: null }
-        : {
-            spc_projected_amount:  totalAmt || null,
-            ytd_budgeted_forecast: null,
-            ytd_actuals:           null,
-            variance:              null,
-          };
+      year_values["total"] = { spc_projected_amount: totalAmt || null, actual: null };
 
       return {
         fin_eval_line_id:    value.lineId    ?? null,
         fin_eval_section_id: value.sectionId ?? group.sectionId ?? null,
         line_type:           value.lineType  || "CUSTOM",
-        line_item_name:        value.name,
-        line_identifier:       (value.lineIdentifier ?? "FINANCIAL").toUpperCase(),
-        is_calculated:         value.isCalculated      ?? "N",
-        account:               value.accountId         ?? null,
-        target_go_live_date:   value.targetGoLiveDate  ?? null,
+        line_item_name:      value.name,
+        line_identifier:     (value.lineIdentifier ?? "FINANCIAL").toUpperCase(),
+        is_calculated:       value.isCalculated   ?? "N",
+        is_custom:           value.isCustom       ?? "Y",
+        account:             value.accountId      ?? null,
         display_order:       value.displayOrder   ?? lineIdx + 1,
         year_values,
         status:              value.status       ?? "ACTIVE",
@@ -388,19 +383,22 @@ export function buildPutPayload(
   });
 
   return {
-    proposal_id:               cfg.proposal_id,
+    fin_eval_header_id:        rawHeader.fin_eval_header_id || null,
     user_email:                appUser,
     display_currency:          rawHeader.display_currency,
     hurdle_rate_percent:       rawHeader.hurdle_rate_percent,
     discount_rate_percent:     rawHeader.discount_rate_percent,
     share_repurchase_percent:  rawHeader.share_repurchase_percent,
-    amortisation_period_years: rawHeader.amortisation_period_years,
+    amortization_period:       rawHeader.amortization_period,
     date_placed_in_service:    rawHeader.date_placed_in_service,
     performance_metrics:       rawHeader.performance_metrics,
     sections,
   };
 }
 
+/* ─────────────────────────── Error helper ───────────────────────── */
+// Parses the response body (JSON or text) and extracts the most meaningful
+// error message. Handles both camelCase (apiMessage) and snake_case (api_message).
 async function extractApiError(res: Response, fallback: string): Promise<string> {
   const text = await res.text().catch(() => "");
   try {
@@ -415,19 +413,12 @@ async function extractApiError(res: Response, fallback: string): Promise<string>
 // Simple in-module cache — one token per page session is enough for the
 // Financial table widget; refreshing on auth failures is handled by callers.
 let cachedToken: string | null = null;
-let tokenPromise: Promise<string> | null = null;
 
 async function getBearerToken(cfg: AppConfig): Promise<string> {
   if (cachedToken) return cachedToken;
-  // Dedupe concurrent callers (e.g. StrictMode's double-invoked effects)
-  // so only one auth request is ever in flight at a time.
-  if (!tokenPromise) {
-    tokenPromise = fetchAuthToken(cfg).then((resp) => {
-      cachedToken = extractToken(resp);
-      return cachedToken;
-    }).finally(() => { tokenPromise = null; });
-  }
-  return tokenPromise;
+  const resp = await fetchAuthToken(cfg);
+  cachedToken = extractToken(resp);
+  return cachedToken;
 }
 
 /** Reset the cached token (e.g. on 401 response). */
@@ -441,37 +432,41 @@ export type AccountCode = {
   account_name: string;
 };
 
-export async function getAccountCodes(cfg: AppConfig, sectionType: string): Promise<AccountCode[]> {
+// Fetches the account category codes for a section. The selected section's
+// code (its section_type, e.g. "PL_INVESTMENT_OPEX") is passed as the
+// `account_category_type` query parameter.
+//   GET {api_endpoint}/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes
+//        ?account_category_type=<sectionCode>
+// Response: { data: [ { account_code, account_name, ... }, … ] }
+export async function getAccountCodes(cfg: AppConfig, sectionCode: string): Promise<AccountCode[]> {
   const token = await getBearerToken(cfg);
-  const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=${encodeURIComponent(sectionType)}`;
+  const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=${encodeURIComponent(sectionCode)}`;
 
-  //console.log("[account-codes] section_type:", sectionType);
-  //console.log("[account-codes] api:", url);
+  console.log("[account-codes] section code:", sectionCode, "→ GET", url);
 
   const res = await fetch(url, {
-    headers: { Accept: "application/json", Authorization: `Bearer ${token}`, user_email: cfg.app_user, role: cfg.app_roles },
+    headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
   });
 
-  if (!res.ok) {
-    const msg = await extractApiError(res, `Failed to load account codes (${res.status}).`);
-    throw new Error(msg);
-  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
-  const json = await res.json();
-  //console.log("[account-codes] response:", json);
+  const json = parseFirstJsonObject(await res.text(), "account-codes") as Record<string, unknown> & { data?: unknown; items?: unknown; rows?: unknown };
 
   const rows: Record<string, unknown>[] =
     Array.isArray(json)        ? json        :
-    Array.isArray(json.items)  ? json.items  :
     Array.isArray(json.data)   ? json.data   :
+    Array.isArray(json.items)  ? json.items  :
     Array.isArray(json.rows)   ? json.rows   : [];
 
-  return rows
+  const codes = rows
     .map((r) => ({
       account_code: r.account_code != null ? String(r.account_code) : "",
       account_name: r.account_name != null ? String(r.account_name) : "",
     }))
     .filter((ac) => ac.account_code !== "");
+
+  console.log(`[account-codes] ${sectionCode}: ${codes.length} codes`, codes);
+  return codes;
 }
 
 /* ─────────────────────────── Network calls ──────────────────────── */
@@ -480,7 +475,7 @@ export async function getFinancialData(
 ): Promise<{ table: PivotTableData; rawHeader: ApiHeader }> {
   const url = buildFinancialUrl(cfg);
   const token = await getBearerToken(cfg);
-  //console.log("[getFinancialData] GET", url);
+  console.log("[getFinancialData] GET", url);
   const res = await fetch(url, {
     headers: {
       Accept:        "application/json",
@@ -489,40 +484,48 @@ export async function getFinancialData(
       role:          cfg.app_roles,
     },
   });
-  //console.log("[getFinancialData] status:", res.status);
+  console.log("[getFinancialData] status:", res.status);
   if (!res.ok) {
     const msg = await extractApiError(res, `Failed to load financial data (${res.status}).`);
     throw new Error(msg);
   }
 
-  // Accept multiple response shapes:
-  //   { data: [...] }                  — original ORDS array
-  //   { items: [...] }                 — ORDS items array at root
-  //   { data: { items: [...] } }       — nested items array
-  //   { data: { items: { … } } }       — NEW: single-object items (not an array)
-  const raw = await res.json() as Record<string, unknown>;
-  //console.log("[getFinancialData] raw keys:", Object.keys(raw));
+  // Response format: { apiStatus, apiMessage, data: { items: ApiHeader } }
+  const rawText = await res.text();
+  console.log("[getFinancialData] raw body length:", rawText.length, rawText.slice(0, 500));
+  const raw = parseFirstJsonObject(rawText, "getFinancialData");
 
+  // API may return HTTP 200 with apiStatus "E" for business-logic errors
   const rawStatus = (raw.apiStatus || raw.api_status || "") as string;
   if (rawStatus && rawStatus !== "S" && rawStatus !== "SUCCESS") {
     const rawMsg = (raw.apiMessage || raw.api_message || "") as string;
     throw new Error(rawMsg || "Failed to load financial data.");
   }
 
-  const rawData = raw.data as Record<string, unknown> | undefined;
-  const nestedItems = rawData?.items;
-  const dataArray: unknown[] =
-    Array.isArray(raw.data)                                            ? raw.data as unknown[]     :
-    Array.isArray(raw.items)                                           ? raw.items as unknown[]    :
-    Array.isArray(nestedItems)                                         ? nestedItems as unknown[]  :
-    nestedItems != null && typeof nestedItems === "object"             ? [nestedItems]             :
-    [];
+  const data  = raw.data as Record<string, unknown> | unknown[] | null | undefined;
+  const items = (data as Record<string, unknown> | null)?.items;
+
+  // ORDS wraps the header differently per handler: data.items may be the header
+  // object or an array of them, and some handlers return data/items at top level.
+  const candidate =
+    Array.isArray(items)      ? items[0] :
+    items != null             ? items    :
+    Array.isArray(data)       ? data[0]  :
+    Array.isArray(raw.items)  ? (raw.items as unknown[])[0] :
+    data != null && (data as Record<string, unknown>).sections ? data :
+    raw.sections != null      ? raw      : null;
+
+  const dataArray: unknown[] = candidate != null ? [candidate] : [];
 
   const json: ApiResponse = { data: dataArray as ApiHeader[] };
-  //console.log("[getFinancialData] data array length:", dataArray.length, dataArray[0]);
+  console.log("[getFinancialData] data array length:", dataArray.length, dataArray[0]);
+
+  if (!dataArray.length) {
+    console.error("[getFinancialData] no header found in response. Top-level keys:", Object.keys(raw), "data:", data);
+  }
 
   const result = transformApiData(json);
-  //console.log("[getFinancialData] transformApiData result:", result ? `${result.table.groups.length} groups, ${result.table.years.length} years` : "null → using createEmptyTable");
+  console.log("[getFinancialData] transformApiData result:", result ? `${result.table.groups.length} groups, ${result.table.years.length} years` : "null → using createEmptyTable");
 
   if (!result) return { table: createEmptyTable(), rawHeader: createEmptyHeader(cfg) };
   return result;
@@ -541,7 +544,8 @@ async function sendJson(
   payload: object,
 ): Promise<SaveResponse> {
   const token = await getBearerToken(cfg);
-  //console.log(`[financial-api] → ${method}`, url, payload);
+  console.log(`[financial-api] → ${method}`, url);
+  console.log(`[financial-api] → ${method} body:`, JSON.stringify(payload, null, 2));
 
   const res = await fetch(url, {
     method,
@@ -561,8 +565,8 @@ async function sendJson(
 
   //console.log(`[financial-api] ← ${method} response`, res.status, json || text);
 
-  const apiMsg    = (json as any).apiMessage || json.api_message || text || res.statusText;
-  const apiStatus = (json as any).apiStatus  || json.api_status  || "";
+  const apiMsg = (json as any).apiMessage || json.api_message || text || res.statusText;
+  const apiStatus = (json as any).apiStatus || json.api_status || "";
 
   if (!res.ok) {
     throw new Error(apiMsg || `Save failed (${res.status}).`);
@@ -576,10 +580,10 @@ async function sendJson(
 /**
  * Save the proposal.
  *
- * Routing rule:
- *  - First save of a brand-new proposal (GET returned `{data: []}`, so
- *    `rawHeader.fin_eval_header_id` is 0 from createEmptyHeader) → POST
- *  - Every subsequent save                                        → PUT
+ * The front-end ALWAYS uses PUT — the initial POST (creating the header)
+ * is handled inside APEX, so by the time this widget saves, the header
+ * already exists. The full table (all sections + all lines) is sent in
+ * the body via buildPutPayload.
  *
  * Callers should reload data afterwards so newly-created section/line ids
  * come back into local state.
@@ -590,18 +594,16 @@ export async function saveFinancialData(
   rawHeader: ApiHeader
 ): Promise<{ method: "POST" | "PUT"; response: SaveResponse }> {
   const url     = buildFinancialPutUrl(cfg, rawHeader);
-  const payload = buildPutPayload(data, rawHeader, cfg);
-  const method: "POST" | "PUT" = rawHeader.fin_eval_header_id ? "PUT" : "POST";
-  const response = await sendJson(method, cfg, url, payload);
-  return { method, response };
+  const payload = buildPutPayload(data, rawHeader, cfg.app_user);
+  const response = await sendJson("PUT", cfg, url, payload);
+  return { method: "PUT", response };
 }
 
-/* ───────────────────── Server-driven sections ───────────────────── */
+/* ─────────────────────────── Server-driven sections ─────────────── */
 /** section_type OR section_name tokens (uppercase, non-alphanumerics
-    stripped) whose rows are fully driven by the engine response —
-    the front-end must not recompute calculated rows or row totals
-    for these sections. */
-const FULL_DCF_SERVER_DRIVEN_TOKENS: ReadonlySet<string> = new Set([
+    stripped) whose calculated rows are owned by the backend — the
+    front-end must not recompute calculated rows or row totals for them. */
+const SERVER_DRIVEN_TOKENS: ReadonlySet<string> = new Set([
   "CASHFLOW",
   "RETURNANALYSIS",
   "RETURNSANALYSIS",
@@ -611,18 +613,14 @@ const FULL_DCF_SERVER_DRIVEN_TOKENS: ReadonlySet<string> = new Set([
 const sectionToken = (s: string | undefined | null): string =>
   (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-/** True if this group's calculated rows should come only from the
-    backend (GET) response (e.g. the Cash Flow section) and must not
-    be recomputed on the front-end. */
+/** True if this group's calculated rows are owned by the backend
+    (Cash Flow, Return Analysis) and must not be locally recomputed. */
 export function isServerDrivenSection(group: { sectionType?: string; name?: string }): boolean {
   return (
-    FULL_DCF_SERVER_DRIVEN_TOKENS.has(sectionToken(group.sectionType)) ||
-    FULL_DCF_SERVER_DRIVEN_TOKENS.has(sectionToken(group.name))
+    SERVER_DRIVEN_TOKENS.has(sectionToken(group.sectionType)) ||
+    SERVER_DRIVEN_TOKENS.has(sectionToken(group.name))
   );
 }
-
-/** @deprecated — kept for backwards-compat. Prefer {@link isServerDrivenSection}. */
-export const FULL_DCF_SERVER_DRIVEN_SECTIONS: ReadonlySet<string> = FULL_DCF_SERVER_DRIVEN_TOKENS;
 
 /* ─────────────────────────── Insert helpers (POST) ──────────────── */
 // Payload builders for a single section / single line, matching the shape
@@ -649,6 +647,7 @@ function buildLineInsertBody(
   columnLabels: Record<number, string>,
   appUser:   string,
   lineIdx = 1,
+  fx = 1,
 ): object {
   const toFyKey = (year: number): string =>
     (columnLabels[year] || `FY${String(year).slice(2)}`).toLowerCase();
@@ -656,18 +655,14 @@ function buildLineInsertBody(
   const year_values: Record<string, object> = {};
   years.forEach((y) => {
     year_values[toFyKey(y)] = {
-      spc_projected_amount:  value.yearValues[y] || null,
-      ytd_budgeted_forecast: null,
-      ytd_actuals:           null,
-      variance:              null,
+      spc_projected_amount: value.yearValues[y] ? value.yearValues[y] * fx : null,
+      actual:               null,
     };
   });
   const totalAmt = years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
   year_values["total"] = {
-    spc_projected_amount:  totalAmt || null,
-    ytd_budgeted_forecast: null,
-    ytd_actuals:           null,
-    variance:              null,
+    spc_projected_amount: totalAmt ? totalAmt * fx : null,
+    actual:               null,
   };
 
   return {
@@ -676,8 +671,9 @@ function buildLineInsertBody(
     fin_eval_section_id: sectionId       ?? value.sectionId ?? null,
     line_type:           value.lineType  || "CUSTOM",
     line_item_name:      value.name,
-    line_identifier:     (value.lineIdentifier ?? "FINANCIAL").toUpperCase(),
+    line_identifier:     value.lineIdentifier ?? "Financial",
     is_calculated:       value.isCalculated   ?? "N",
+    is_custom:           value.isCustom       ?? "Y",
     account:             value.accountId      ?? null,
     display_order:       value.displayOrder   ?? lineIdx,
     year_values,
@@ -686,7 +682,7 @@ function buildLineInsertBody(
   };
 }
 
-async function postJson(cfg: AppConfig, path: string, body: object): Promise<MutationResponse> {
+async function postJson(cfg: AppConfig, path: string, body: object): Promise<any> {
   const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}${path}`;
 
@@ -698,23 +694,21 @@ async function postJson(cfg: AppConfig, path: string, body: object): Promise<Mut
       "Content-Type": "application/json",
       Accept:         "application/json",
       Authorization:  `Bearer ${token}`,
-      user_email:     cfg.app_user,
-      role:           cfg.app_roles,
     },
     body: JSON.stringify(body),
   });
 
   const text = await res.text().catch(() => "");
-  let json: MutationResponse = {};
+  let json: { apiStatus?: string; api_status?: string; apiMessage?: string; api_message?: string; [k: string]: unknown } = {};
   try { json = text ? JSON.parse(text) : {}; } catch { /* non-JSON */ }
 
   //console.log("[financial-api] ← POST response", res.status, json || text);
 
-  const apiMsg    = (json as any).apiMessage || json.api_message || text || res.statusText;
-  const apiStatus = (json as any).apiStatus  || json.api_status  || "";
+  const apiMsg    = json.apiMessage || json.api_message || text || res.statusText;
+  const apiStatus = json.apiStatus  || json.api_status  || "";
 
   if (!res.ok) {
-    throw new Error(apiMsg || `Insert failed (${res.status}).`);
+    throw new Error(apiMsg || `Request failed (${res.status}).`);
   }
   if (apiStatus && apiStatus !== "S" && apiStatus !== "SUCCESS") {
     throw new Error(apiMsg || "Insert failed on server.");
@@ -727,7 +721,7 @@ export async function insertSection(
   cfg:   AppConfig,
   group: Group,
   displayOrder = 1,
-): Promise<{ sectionId: number | null; raw: MutationResponse }> {
+): Promise<{ sectionId: number | null; raw: any }> {
   const body = buildSectionInsertBody(group, cfg.app_user, displayOrder);
   const json = await postJson(cfg, `/Financial/section/${cfg.proposal_id}`, body);
   const sectionId: number | null =
@@ -745,8 +739,9 @@ export async function insertLine(
   years:        number[],
   columnLabels: Record<number, string>,
   displayOrder = 1,
-): Promise<{ lineId: number | null; raw: MutationResponse }> {
-  const body = buildLineInsertBody(value, sectionId, years, columnLabels, cfg.app_user, displayOrder);
+): Promise<{ lineId: number | null; raw: any }> {
+  // State values are always in USD — send as-is (fx=1, no conversion needed).
+  const body = buildLineInsertBody(value, sectionId, years, columnLabels, cfg.app_user, displayOrder, 1);
   const json = await postJson(cfg, `/Financial/line/${cfg.proposal_id}`, body);
   const lineId: number | null =
     json?.data?.[0]?.fin_eval_line_id ??

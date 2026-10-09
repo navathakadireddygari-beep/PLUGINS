@@ -12,13 +12,45 @@ export type AuthTokenResponse =
   | { token: string; expiresIn: number }
   | { accessToken: string; token_type: string; expiration_time: string; app_user: string };
 
+/** ORDS handlers and wwv_flow.ajax can append debug output or a second JSON
+    document after the payload, so parse only the first balanced {...} block. */
+export function parseFirstJsonObject(text: string, context: string): Record<string, unknown> {
+  const start = text.indexOf("{");
+  if (start === -1) {
+    throw new Error(`${context} response was not JSON: ${text.slice(0, 200)}`);
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === "\\") { if (inString) escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") depth++;
+    else if (ch === "}" && --depth === 0) {
+      const slice = text.slice(start, i + 1);
+      const trailing = text.slice(i + 1).trim();
+      if (trailing) {
+        console.warn(`[${context}] ignoring trailing output after JSON:`, trailing.slice(0, 500));
+      }
+      return JSON.parse(slice) as Record<string, unknown>;
+    }
+  }
+
+  throw new Error(`${context} response contained no complete JSON object: ${text.slice(0, 200)}`);
+}
+
 export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse> {
   const isApex = typeof window !== "undefined" && "$v" in window;
 
   if (isApex) {
     if (!cfg.ajaxId || !cfg.flowId || !cfg.stepId || !cfg.instance) {
       throw new Error(
-        "Missing APEX context (ajaxId, flowId, stepId, instance) in window.__SPC_SALES_CONFIG__"
+        "Missing APEX context (ajaxId, flowId, stepId, instance) in window.__APP_CONFIG__"
       );
     }
 
@@ -37,19 +69,26 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
     if (!resp.ok) {
       throw new Error(`Auth token call failed: ${resp.status} ${resp.statusText}`);
     }
-    const json = JSON.parse(await resp.text());
+    const json = parseFirstJsonObject(await resp.text(), "auth-token");
+    if (!json.accessToken) {
+      throw new Error("Auth token response did not contain an accessToken.");
+    }
     return {
-      accessToken:     json.accessToken,
-      token_type:      json.token_type,
-      expiration_time: json.expiration_time,
-      app_user:        json.app_user,
+      accessToken:     json.accessToken as string,
+      token_type:      json.token_type as string,
+      expiration_time: json.expiration_time as string,
+      app_user:        json.app_user as string,
     };
   }
+  // ── Local dev token — replace with a fresh token when you get 401 ──
+  // Generate via: POST {TOKEN_URL} with client_credentials grant
+  // Token expires in ~1 hour; update ACCESS_TOKEN below when expired.
+  const ACCESS_TOKEN = "xRoAAG1zoDkgLlpWd8bWfQ";
   return {
-    accessToken: "XOrrmAgXDXSQNTgwrMxhxw",
+    accessToken: ACCESS_TOKEN,
     token_type: "Bearer",
     expiration_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    app_user: "john.doe@eappsys.com",
+    app_user: "laxmi.kasam@test.exp.com"
   }
 }
 

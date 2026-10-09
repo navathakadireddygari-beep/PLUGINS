@@ -13,22 +13,14 @@
 import type { AppConfig } from "../config/app-config";
 import { fetchAuthToken, extractToken } from "./auth-api";
 
-async function extractApiError(res: Response, fallback: string): Promise<string> {
-  const text = await res.text().catch(() => "");
-  try {
-    const j = text ? JSON.parse(text) : {};
-    const msg = j.apiMessage || j.api_message || j.message || "";
-    if (msg) return msg;
-  } catch { /* non-JSON body */ }
-  return text || fallback;
-}
-
 let cachedToken: string | null = null;
 
 async function getBearerToken(cfg: AppConfig): Promise<string> {
   if (cachedToken) return cachedToken;
+  // Match the dev-stub pattern used in financial-api.ts while backend auth is off.
   const resp = await fetchAuthToken(cfg);
   cachedToken = extractToken(resp);
+  void fetchAuthToken; void extractToken; void cfg;
   return cachedToken;
 }
 
@@ -36,17 +28,13 @@ export function clearCachedToken(): void {
   cachedToken = null;
 }
 
-type DeleteBody = {
-  user_email: string;
-  section_id: number | null;
-  line_id:    number | null;
-};
+type DeleteBody =
+  | { fin_eval_section_id: number }
+  | { fin_eval_line_id:    number };
 
 type DeleteResponse = {
   api_status?:  string;
   api_message?: string;
-  apiStatus?:   string;
-  apiMessage?:  string;
   [k: string]:  unknown;
 };
 
@@ -62,17 +50,11 @@ async function sendDelete(cfg: AppConfig, body: DeleteBody): Promise<DeleteRespo
       "Content-Type": "application/json",
       Accept:         "application/json",
       Authorization:  `Bearer ${token}`,
-      proposal_id:    String(cfg.proposal_id),
       user_email:     cfg.app_user,
       role:           cfg.app_roles,
     },
     body: JSON.stringify(body),
   });
-
-  if (!res.ok) {
-    const msg = await extractApiError(res, `Delete failed (${res.status}).`);
-    throw new Error(msg);
-  }
 
   const text = await res.text().catch(() => "");
   let json: DeleteResponse = {};
@@ -80,28 +62,24 @@ async function sendDelete(cfg: AppConfig, body: DeleteBody): Promise<DeleteRespo
 
   //console.log("[delete-api] ← response", res.status, json || text);
 
-  const apiMsg    = json.apiMessage || json.api_message || "";
-  const apiStatus = json.apiStatus  || json.api_status  || "";
+  const apiMsg    = (json as any).apiMessage || json.api_message || text || res.statusText;
+  const apiStatus = (json as any).apiStatus  || json.api_status  || "";
+
+  if (!res.ok) {
+    throw new Error(apiMsg || `Delete failed (${res.status}).`);
+  }
   if (apiStatus && apiStatus !== "S" && apiStatus !== "SUCCESS") {
     throw new Error(apiMsg || "Delete failed on server.");
   }
   return json;
 }
 
-/** Delete a single line. Pass null for section_id. */
+/** Delete a single line item. */
 export async function deleteLine(cfg: AppConfig, lineId: number): Promise<DeleteResponse> {
-  return sendDelete(cfg, {
-    user_email: cfg.app_user,
-    section_id: null,
-    line_id:    lineId,
-  });
+  return sendDelete(cfg, { fin_eval_line_id: lineId });
 }
 
-/** Delete an entire section. Pass null for line_id. */
+/** Delete an entire section and all its lines. */
 export async function deleteSection(cfg: AppConfig, sectionId: number): Promise<DeleteResponse> {
-  return sendDelete(cfg, {
-    user_email: cfg.app_user,
-    section_id: sectionId,
-    line_id:    null,
-  });
+  return sendDelete(cfg, { fin_eval_section_id: sectionId });
 }

@@ -1,109 +1,157 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import { Calendar } from "lucide-react";
 import type { ApiHeader } from "../api/financial-api";
-import { formatNumber, type NumFmtSpec } from "./number-format";
+import { applyScale, formatNumber, decimalsForScale, SCALES, formatDate, type Scale, type NumberFormatKey, type DateFormatKey } from "../lib/format";
 
 type Props = {
-  rawHeader: ApiHeader;
-  onChange: (patch: Partial<ApiHeader>) => void;
-  displayScale: number;
-  fxMultiplier: number;
-  numFmt: NumFmtSpec;
+  rawHeader:    ApiHeader;
+  onChange:     (patch: Partial<ApiHeader>) => void;
+  displayScale: Scale;
+  numberFormat: NumberFormatKey;
+  dateFormat:   DateFormatKey;
+  isReadonly:   boolean;
 };
 
-const PURPLE  = "#7C3AED";
-const NAVY    = "#0F2A4D";
-const MAGENTA = "#8A0F87";
-const GREEN   = "#178C45";
+const GREEN  = "#10B981";
+const PURPLE = "#7C3AED";
 
 const cardShell: React.CSSProperties = {
-  flex: 1,
-  background: "#fff",
-  border: "1px solid #e5e7eb",
-  borderRadius: 8,
-  padding: "14px 16px",
-  borderLeft: "4px solid transparent",
+  flex: 1, background: "#fff", border: "1px solid #e5e7eb",
+  borderRadius: 8, padding: "14px 16px", borderLeft: "4px solid transparent",
 };
 const labelStyle: React.CSSProperties = { fontSize: 11, color: "#6b7280", fontWeight: 600, letterSpacing: 0.3 };
 const valueStyle: React.CSSProperties = { fontSize: 24, fontWeight: 700, color: "#111827", margin: "4px 0" };
 const subStyle:   React.CSSProperties = { fontSize: 11, color: "#9ca3af" };
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  GBP: "£", USD: "$", EUR: "€", CAD: "$", AUD: "A$", JPY: "¥", SGD: "$", INR: "₹", CNY: "¥",
+const fmtNpv = (
+  n: number | null | undefined,
+  scale: Scale,
+  numberFormat: NumberFormatKey
+): { text: string; negative: boolean } => {
+  if (n == null) return { text: "—", negative: false };
+  const scaled = applyScale(n, scale);
+  const abs    = Math.abs(scaled);
+  const suffix = SCALES.find((s) => s.value === scale)?.label ?? "";
+  const decimals = decimalsForScale(scale);
+  const raw    = `${formatNumber(abs, numberFormat, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`;
+  return n < 0
+    ? { text: `(${raw})`, negative: true }
+    : { text: raw,        negative: false };
 };
 
-function currencySymbol(code: string): string {
-  return CURRENCY_SYMBOLS[(code || "").toUpperCase()] ?? code;
-}
+const fmtYears = (n: number | null | undefined): string =>
+  n == null ? "—" : `${n} Year${n === 1 ? "" : "s"}`;
 
-// API values are already stored in thousands (K), so at K we show them as-is
-// and only M/B divide further (divisor = scale / 1,000). The K/M/B letter is
-// appended. This matches the grid (Table.scaleDivisor) so cards and table agree
-// — e.g. a stored 20,000 shows the same magnitude in both:
-//   K → ÷1         , "K"   (20,000 → "20,000K")
-//   M → ÷1,000     , "M"   (20,000 → "20M")
-//   B → ÷1,000,000 , "B"   (20,000 → "0.02B")
-function scaleUnit(scale: number): { divisor: number; suffix: string } {
-  if (scale === 1_000_000_000) return { divisor: 1_000_000, suffix: "B" };
-  if (scale === 1_000_000)     return { divisor: 1_000,     suffix: "M" };
-  return { divisor: 1, suffix: "K" };
-}
+const fieldLabelStyle: React.CSSProperties = { fontSize: 11, color: "#6b7280", fontWeight: 600, letterSpacing: 0.3, marginBottom: 6, fontFamily: "inherit" };
+const fieldInputStyle: React.CSSProperties = {
+  border: "1px solid #d1d5db", borderRadius: 6, padding: "9px 12px",
+  fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none",
+  width: 220, height: 38,
+};
 
-// Decimal places shown depend on the active scale: K = whole numbers,
-// M = 1 decimal, B = 2 decimals.
-function decimalsForScale(scale: number): number {
-  if (scale === 1_000_000_000) return 2;
-  if (scale === 1_000_000)     return 1;
-  return 0;
-}
+// Converts whatever date shape the API returns into the yyyy-mm-dd
+// format required by a native <input type="date">.
+const toDateInputValue = (v: string | null | undefined): string => {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+};
 
-function fmtMoney(
-  raw: number | null | undefined,
-  symbol: string,
-  fxMult: number,
-  scale: number,
-  numFmt: NumFmtSpec,
-): string {
-  if (raw == null) return "—";
-  const { divisor, suffix } = scaleUnit(scale);
-  const v = (raw * fxMult) / divisor;
-  return `${symbol}${formatNumber(v, numFmt, decimalsForScale(scale))}${suffix}`;
-}
+export default function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly }: Props): React.ReactElement {
+  const dateInputRef = useRef<HTMLInputElement>(null);
+  const local   = (rawHeader.local_currency   || "USD").toUpperCase();
+  const display = (rawHeader.display_currency || local).toUpperCase();
+  const rate    = rawHeader.exchange_rate || 0.7350;
 
-function fmtPercent(raw: number | null | undefined, numFmt: NumFmtSpec, scale: number): string {
-  if (raw == null) return "—";
-  return `${raw.toFixed(decimalsForScale(scale)).replace(".", numFmt.decimal)}%`;
-}
+  // Always default display currency to USD on mount
+  useEffect(() => {
+    if (display !== "USD") {
+      onChange({ display_currency: "USD" });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-export default function KpiPanel({ rawHeader, onChange, displayScale, fxMultiplier, numFmt }: Props): React.ReactElement {
-  void onChange;
-
-  const display = (rawHeader.display_currency || rawHeader.local_currency || "USD").toUpperCase();
-  const symbol  = currencySymbol(display);
+  // KPI values (npv, irr, payback) from the API are always in USD.
+  // exchange_rate is stored as "1 CAD = X USD" (e.g. 0.735).
+  // USD display → no conversion (×1).
+  // CAD display → USD × (1/rate) = CAD (e.g. 100 USD × 1/0.735 = 136 CAD).
+  const kpiFxMultiplier = display === "CAD" ? (1 / rate) : 1;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, margin: "0 0 16px 0" }}>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <div style={{ ...cardShell, borderLeftColor: GREEN }}>
-          <div style={labelStyle}>Total Contract Value</div>
-          <div style={valueStyle}>{fmtMoney(rawHeader.total_contract_value, symbol, fxMultiplier, displayScale, numFmt)}</div>
-          <div style={subStyle}>TCV</div>
-        </div>
-        <div style={{ ...cardShell, borderLeftColor: NAVY }}>
-          <div style={labelStyle}>Annual Contract Value</div>
-          <div style={valueStyle}>{fmtMoney(rawHeader.annual_contract_value, symbol, fxMultiplier, displayScale, numFmt)}</div>
-          <div style={subStyle}>ACV</div>
-        </div>
-        <div style={{ ...cardShell, borderLeftColor: MAGENTA }}>
-          <div style={labelStyle}>Margin</div>
-          <div style={valueStyle}>{fmtPercent(rawHeader.contribution_margin_percent, numFmt, displayScale)}</div>
-          <div style={subStyle}>Contribution Margin %</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
+
+      {/* ── KPI cards ── */}
+      <div style={{ display: "flex", gap: 12, marginTop: 5 }}>
+        <div style={{ ...cardShell, borderLeftColor: "#3B82F6" }}>
+          <div style={labelStyle}>Total CAPEX Investment</div>
+          {(() => {
+            const { text, negative } = fmtNpv(
+              rawHeader.investment != null ? rawHeader.investment * kpiFxMultiplier : null,
+              displayScale,
+              numberFormat,
+            );
+            return <div style={{ ...valueStyle, color: negative ? "#DC2626" : "#111827" }}>{text}</div>;
+          })()}
+          <div style={subStyle}>Total capital expenditure</div>
         </div>
         <div style={{ ...cardShell, borderLeftColor: PURPLE }}>
-          <div style={labelStyle}>Contract Duration</div>
-          <div style={valueStyle}>{rawHeader.contract_duration ?? rawHeader.number_of_years ?? "—"}</div>
-          <div style={subStyle}>Years</div>
+          <div style={labelStyle}>Annual OPEX</div>
+          {(() => {
+            const { text, negative } = fmtNpv(
+              rawHeader.annual_opex != null ? rawHeader.annual_opex * kpiFxMultiplier : null,
+              displayScale,
+              numberFormat,
+            );
+            return <div style={{ ...valueStyle, color: negative ? "#DC2626" : "#111827" }}>{text}</div>;
+          })()}
+          <div style={subStyle}>Annual operating expenditure</div>
+        </div>
+        <div style={{ ...cardShell, borderLeftColor: GREEN }}>
+          <div style={labelStyle}>Programme Term</div>
+          <div style={valueStyle}>{fmtYears(rawHeader.investment_term_years)}</div>
+          <div style={subStyle}>Programme duration</div>
         </div>
       </div>
+
+      {/* ── Financial Parameters ── */}
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "14px 16px" }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 12 }}>Financial Parameters</div>
+        <div style={{ display: "flex", gap: 28 }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <label style={fieldLabelStyle}>Amortization Period (Months)</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={rawHeader.amortization_period ?? ""}
+              disabled={isReadonly}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/[^0-9]/g, "");
+                onChange({ amortization_period: digits === "" ? 0 : Number(digits) });
+              }}
+              style={fieldInputStyle}
+            />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <label style={fieldLabelStyle}>Date Placed in Service</label>
+            <div
+              style={{ ...fieldInputStyle, position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: isReadonly ? "default" : "pointer" }}
+              onClick={() => { if (!isReadonly) dateInputRef.current?.showPicker?.(); }}
+            >
+              <span>{formatDate(rawHeader.date_placed_in_service, "DMONY")}</span>
+              <Calendar size={15} color="#6b7280" />
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={toDateInputValue(rawHeader.date_placed_in_service)}
+                disabled={isReadonly}
+                onChange={(e) => onChange({ date_placed_in_service: e.target.value })}
+                style={{ position: "absolute", width: 0, height: 0, opacity: 0, pointerEvents: "none" }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
