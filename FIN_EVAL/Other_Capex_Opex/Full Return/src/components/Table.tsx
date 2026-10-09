@@ -245,9 +245,10 @@ type ParsedRow = { name: string; values: number[] };
 const tok = (s: string | undefined | null): string =>
   (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-// Depreciation / Amortization / EBIT are backend-calculated (not a sum of
-// the other lines in their section) — recomputeGroup must leave them untouched.
-const FIXED_CALC_IDS = new Set(["DEPRECIATION", "AMORTIZATION", "EBIT"]);
+// Depreciation / Amortization / EBIT / Intangibles / Net Assets are backend-calculated
+// (not a sum of the other lines in their section) — recomputeGroup must leave
+// them untouched.
+const FIXED_CALC_IDS = new Set(["DEPRECIATION", "AMORTIZATION", "EBIT", "INTANGIBLES", "NETASSETS"]);
 const isFixedCalcRow = (v: ValueRow): boolean =>
   FIXED_CALC_IDS.has(tok(v.lineIdentifier)) ||
   FIXED_CALC_IDS.has(tok(v.lineType)) ||
@@ -1537,6 +1538,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       const acKey = `${group.id}|${value.id}`;
                       const isAC  = activeAutocomplete === acKey;
                       const bg    = "#fff";
+                      const isReturnsCostSavings = value.lineType === "RETURNS_COST_SAVINGS";
                       // Non-custom lines (is_custom === "N") come from the template and
                       // must not have their name edited — on top of the read-only rule.
                       const nameLocked = isReadonly || value.isCustom === "N";
@@ -1568,6 +1570,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           <td style={{ ...TD, padding: "4px 12px", overflow: "visible" }}>
                             {isReadonly
                               ? <div style={{ fontSize: 12, color: "#6b7280", padding: "4px 6px", background: "#f3f4f6", borderRadius: 4, height: 28, display: "flex", alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value.accountId || "—"}</div>
+                              : isReturnsCostSavings
+                                ? <input
+                                    type="text"
+                                    value={value.accountId ?? ""}
+                                    onChange={(e) => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === group.id ? { ...g, values: g.values.map((v) => v.id === value.id ? { ...v, accountId: e.target.value || undefined } : v) } : g) }) : p)}
+                                    placeholder="Enter account"
+                                    style={{ width: "100%", height: 28, padding: "2px 6px", border: "1px solid #d1d5db", borderRadius: 4, fontSize: 12, color: "#1f2937", outline: "none", boxSizing: "border-box" }}
+                                  />
                               : <AccountCodeSelect
                                   value={value.accountId ?? ""}
                                   options={accountCodesBySection[group.sectionType ?? ""] ?? []}
