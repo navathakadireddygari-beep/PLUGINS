@@ -2,6 +2,10 @@
 module.exports = {
   darkMode: ["class"],
   corePlugins: { preflight: false },
+  // Scopes every generated utility selector under the widget root and raises
+  // its specificity, so the plugin's own Tailwind classes win over the host
+  // page's (APEX) global CSS regardless of stylesheet load order.
+  important: "#fin-eval-widget-root",
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',

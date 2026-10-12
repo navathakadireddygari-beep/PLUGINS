@@ -109,13 +109,16 @@
    container. Here the row wraps instead, so every control stays reachable
    without one.
    ────────────────────────────────────────────────────────────────── */
-.currency-strip {
+/* Scoped under #fin-eval-widget-root (not just bare class selectors) so these
+   rules out-specificity the host page's (APEX) global CSS, whichever order
+   the stylesheets load in — fixes the plugin's own styling being overridden. */
+#fin-eval-widget-root .currency-strip {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   margin-bottom: 5px;
 }
-.currency-strip-row {
+#fin-eval-widget-root .currency-strip-row {
   padding: 6px 10px;
   display: flex;
   align-items: center;
@@ -124,20 +127,20 @@
   row-gap: 8px;
   box-sizing: border-box;
 }
-.strip-label {
+#fin-eval-widget-root .strip-label {
   font-size: 10px;
   color: #6b7280;
   font-weight: 700;
   letter-spacing: 0.3px;
   flex-shrink: 0;
 }
-.toggle-group {
+#fin-eval-widget-root .toggle-group {
   display: flex;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   overflow: hidden;
 }
-.toggle-btn {
+#fin-eval-widget-root .toggle-btn {
   padding: 3px 8px;
   border: none;
   border-left: 1px solid #e5e7eb;
@@ -149,20 +152,20 @@
   background: #fff;
   color: #6b7280;
 }
-.toggle-btn:first-child {
+#fin-eval-widget-root .toggle-btn:first-child {
   border-left: none;
 }
-.toggle-btn.active {
+#fin-eval-widget-root .toggle-btn.active {
   background: #1e2433;
   color: #fff;
 }
-.strip-divider {
+#fin-eval-widget-root .strip-divider {
   width: 1px;
   height: 18px;
   background: #e5e7eb;
   flex-shrink: 0;
 }
-.strip-select {
+#fin-eval-widget-root .strip-select {
   height: 24px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
@@ -175,7 +178,7 @@
   outline: none;
   flex-shrink: 0;
 }
-.info-icon {
+#fin-eval-widget-root .info-icon {
   position: relative;
   width: 15px;
   height: 15px;
@@ -191,30 +194,34 @@
   user-select: none;
   flex-shrink: 0;
 }
+/* NOT scoped under #fin-eval-widget-root — this span is portaled straight into
+   document.body (see Table.tsx's info-icon hover handler), so it's no longer a
+   descendant of the widget root and that ancestor selector wouldn't match it.
+   !important guards its look since it can't rely on ID-ancestor specificity. */
 .info-tooltip {
   position: absolute;
   left: 19px;
   top: -4px;
-  background: #1e2433;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 12px;
+  background: #1e2433 !important;
+  color: #fff !important;
+  padding: 6px 10px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
   white-space: normal;
   width: 360px;
   line-height: 1.5;
   z-index: 300;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
   pointer-events: none;
 }
-.fx-wrap {
+#fin-eval-widget-root .fx-wrap {
   margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
 }
-.fx-badge {
+#fin-eval-widget-root .fx-badge {
   width: 20px;
   height: 20px;
   border-radius: 999px;
@@ -228,16 +235,16 @@
   font-weight: 800;
   flex-shrink: 0;
 }
-.fx-rate-text {
+#fin-eval-widget-root .fx-rate-text {
   font-size: 11px;
   color: rgb(17, 24, 39);
   white-space: nowrap;
   line-height: 1.25;
 }
-.fx-rate-text strong {
+#fin-eval-widget-root .fx-rate-text strong {
   font-weight: 700;
 }
-.fx-error-text {
+#fin-eval-widget-root .fx-error-text {
   font-size: 11px;
   color: #b91c1c;
   white-space: nowrap;
@@ -249,13 +256,13 @@
    One per table block. The scrollbar itself is hidden in every engine —
    scrolling still works by wheel, trackpad, touch and keyboard.
    ────────────────────────────────────────────────────────────────── */
-.table-scroll {
+#fin-eval-widget-root .table-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;      /* Firefox */
   -ms-overflow-style: none;   /* legacy Edge / IE */
 }
-.table-scroll::-webkit-scrollbar {
+#fin-eval-widget-root .table-scroll::-webkit-scrollbar {
   width: 0;
   height: 0;
   display: none;              /* Chrome / Safari / Edge */
