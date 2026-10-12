@@ -1,6 +1,25 @@
-@import "tailwindcss";
+/*
+ * `important`: every Tailwind utility is emitted with !important.
+ *
+ * The widget is mounted inside an APEX page whose global stylesheet styles
+ * bare elements (th, td, button, input, table …). Tailwind v4 puts its
+ * utilities in a cascade layer, and ANY unlayered rule beats a layered one
+ * regardless of specificity — so a host `th { … }` was silently winning over
+ * the widget's own `bg-[#e5e7eb]` / `text-[10px]` / `uppercase` on the table
+ * headings. Important layered declarations beat the host's normal AND
+ * important unlayered ones.
+ *
+ * Consequence: a utility now also beats an inline `style` on the same element,
+ * so never set the same property both ways (see `.mna_partition` below).
+ *
+ * `prefix(mna)`: every utility is written `mna:<class>` (e.g. `mna:border`,
+ * `mna:hover:bg-white`), so no host stylesheet rule for a common name such as
+ * `.border`, `.hidden` or `.uppercase` can ever match the widget's elements.
+ * Tailwind v4 only supports a variant-style prefix, hence `mna:` not `mna_`.
+ * Hand-written classes below use `mna_` instead.
+ */
+@import "tailwindcss" important prefix(mna);
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -119,13 +138,13 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply mna:border-border mna:outline-ring/50;
     }
   body {
-    @apply bg-background text-foreground;
+    @apply mna:bg-background mna:text-foreground;
     }
   html {
-    @apply font-sans;
+    @apply mna:font-sans;
     }
   /* Tailwind v4 resets buttons to cursor: default. Prod Dev gives every
      clickable control a pointer, so restore it for enabled buttons. */
@@ -133,4 +152,79 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
     }
+}
+
+/*
+ * ACTUALS | PROJECTIONS divider on a header or body cell. Element-qualified
+ * (0,1,1) so it out-ranks the cell's own `border-r` / `border-[…]` utilities,
+ * which are equally !important and in the same layer.
+ */
+@layer utilities {
+  th.mna_partition,
+  td.mna_partition {
+    border-right: 2px solid #4b5563 !important;
+  }
+}
+
+/*
+ * Host-page neutraliser, scoped to the widget root.
+ *
+ * Covers decorations a host theme commonly puts on bare elements that the
+ * widget never sets through a utility (so `important` alone cannot shield
+ * them): gradients, shadows, letter-spacing, fixed heights, rounded inputs.
+ * Deliberately UNLAYERED and NOT !important — it out-ranks ordinary host
+ * rules by specificity, while every widget utility (!important) still wins
+ * over it wherever one is set.
+ */
+.mna_widget table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin: 0;
+  background: transparent;
+}
+.mna_widget th,
+.mna_widget td {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: normal;
+  font-family: inherit;
+  vertical-align: middle;
+}
+.mna_widget button {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  min-height: 0;
+  line-height: inherit;
+  font-family: inherit;
+}
+.mna_widget input,
+.mna_widget select,
+.mna_widget textarea {
+  background-image: none;
+  box-shadow: none;
+  border-radius: 0;
+  min-height: 0;
+  font-family: inherit;
+}
+
+/*
+ * Import plugin: the row / section / panel a validation-error click landed on,
+ * flashed for 3s the way Prod Dev's import does (#fef08a fill, amber ring).
+ * Element-qualified and !important so it out-ranks the row's own bg utility.
+ */
+@layer utilities {
+  tr.mna_flash,
+  tr.mna_flash > td,
+  div.mna_flash {
+    background-color: #fef08a !important;
+    transition: background-color 0.4s;
+  }
+  tr.mna_flash,
+  div.mna_flash {
+    box-shadow: inset 0 0 0 2px #f59e0b !important;
+  }
 }

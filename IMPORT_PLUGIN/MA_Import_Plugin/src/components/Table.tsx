@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useCurrencyFormat } from "@/context/CurrencyFormatContext";
 import SpreadsheetCell from "@/components/SpreadsheetCell";
-import { AlertTriangle, ChevronDown, ChevronUp, RefreshCw, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  RefreshCw,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   clampPercent,
   isNoTotalRow,
@@ -106,6 +114,8 @@ type Row = {
   isMandatory?: boolean;
   /** Non-custom template rows should not show delete icon. */
   isCustom?: boolean;
+  /** Server-computed CAGR (`cagr_percent`); falls back to the client calc when absent. */
+  cagrPercent?: number | null;
 };
 
 // The year columns come from the response's own `fiscalYears` (see `fyKeys`),
@@ -187,6 +197,7 @@ const rowFromApi = (
     sectionId: line.sectionId,
     sectionIsCustom: line.sectionIsCustom,
     allowsNewLines: line.allowsNewLines,
+    cagrPercent: line.cagrPercent,
   };
 };
 
@@ -300,7 +311,7 @@ const isRowLocked = (row: Row, isReadonly: boolean): boolean =>
  * at all and the row silently renders unpainted.
  */
 const rowBgClass = (locked: boolean): string =>
-  locked ? "bg-[#f3f4f6]" : "bg-white";
+  locked ? "mna:bg-[#f3f4f6]" : "mna:bg-white";
 
 /**
  * Label cell text. Bold near-black marks a COMPUTED line specifically — not
@@ -309,27 +320,47 @@ const rowBgClass = (locked: boolean): string =>
  */
 const labelTextClass = (isCalculated: boolean | undefined): string =>
   isCalculated
-    ? "text-[12px] font-bold text-[#111]"
-    : "text-[12px] font-normal text-[#1f2937]";
+    ? "mna:text-[12px] mna:font-bold mna:text-[#111]"
+    : "mna:text-[12px] mna:font-normal mna:text-[#1f2937]";
 
 /** Template (non-custom) line names are bold #111827, as in Prod Dev. */
-const TEMPLATE_LABEL_CLASS = "text-[12px] font-bold text-[#111827]";
+const TEMPLATE_LABEL_CLASS = "mna:text-[12px] mna:font-bold mna:text-[#111827]";
 
 /**
- * The divider between the ACTUALS block and the PROJECTIONS block. Dark grey so
- * the two halves of the grid read as separate at a glance; the 2px weight is
- * what distinguishes it from the ordinary 1px cell rules.
+ * The divider between the ACTUALS block and the PROJECTIONS block — a 2px
+ * #4b5563 right border, defined as `.mna_partition` in globals.css.
+ *
+ * A class rather than an inline style: every utility is `!important` (so the
+ * host page's global CSS cannot override the widget), and an `!important`
+ * `border-r` would beat an inline border. `.mna_partition` is element-qualified
+ * so it out-ranks the cell's own `border-r` / `border-[...]` classes.
  */
-const PARTITION_BORDER = "2px solid #4b5563";
+const PARTITION_CLASS = "mna_partition";
 
 /** Right-hand partition on the last ACTUALS column, else nothing. */
-const partitionStyle = (
-  col: number,
-  actualsCount: number,
-): React.CSSProperties | undefined =>
-  actualsCount > 0 && col === actualsCount - 1
-    ? { borderRight: PARTITION_BORDER }
-    : undefined;
+const partitionClass = (col: number, actualsCount: number): string =>
+  actualsCount > 0 && col === actualsCount - 1 ? ` ${PARTITION_CLASS}` : "";
+
+/** Flash on the target of a validation-error click, defined in globals.css. */
+const FLASH_CLASS = "mna_flash";
+
+/**
+ * Which panel a template section the upload is MISSING belongs in, keyed by
+ * its tokenised name ("Total Costs" -> "TOTALCOSTS"). The backend names the
+ * section, not its type, so this is by name; anything unlisted is one of the
+ * Combined Operating Results sections (Revenue, Total Costs, Returns
+ * Analysis), which is where the template keeps every other year-based section.
+ */
+const MISSING_SECTION_GRID: Record<string, "con" | "cor" | "fcf" | "ptr" | "npv"> = {
+  CONSIDERATION: "con",
+  COMBINEDFREECASHFLOWS: "fcf",
+  FREECASHFLOWS: "fcf",
+  POSTTAXRETURN: "ptr",
+  POSTTAXRETURNS: "ptr",
+  NPVCALCULATION: "npv",
+};
+
+const gridOfMissing = (name: string) => MISSING_SECTION_GRID[tok(name)] ?? "cor";
 
 /* ─────────────────── Which rows can be added / deleted ───────────────
  * Per SECTION, not per table, because the first grid renders three sections
@@ -417,7 +448,7 @@ const PercentInput: React.FC<{
   return (
     <input
       readOnly={readOnly}
-      className={`w-20 text-right text-[13px] text-[#1f2937] outline-none ${readOnly ? "cursor-default bg-[#f3f4f6] text-[#6b7280]" : "bg-transparent"}`}
+      className={`mna:w-20 mna:text-right mna:text-[13px] mna:text-[#1f2937] mna:outline-none ${readOnly ? "mna:cursor-default mna:bg-[#f3f4f6] mna:text-[#6b7280]" : "mna:bg-transparent"}`}
       value={value}
       onChange={onChange}
       inputMode="decimal"
@@ -598,14 +629,43 @@ const Table: React.FC = () => {
    *
    * The server owns these numbers: it recomputes on save and its answer
    * replaces this on the next GET. This is the between-saves preview.
+   *
+   * Import plugin: the STAGED figures are what the user uploaded and what the
+   * backend validated, so they are shown exactly as the GET returned them. The
+   * preview only takes over once the user changes something (`loadedRef` holds
+   * the arrays the last GET produced; any edit replaces one of them), and only
+   * when the file carries the Revenue / Costs sections the engine derives EBIT
+   * from. Without those the engine reads every input as 0, so running it on an
+   * upload that is missing them wiped every calculated cell — the "backend has
+   * data but the grid is empty" symptom.
    */
+  const loadedRef = useRef<{
+    cor: Row[];
+    fcf: Row[];
+    ptr: Row[];
+    keyInputs: KeyInput[];
+  } | null>(null);
+  const edited =
+    loadedRef.current !== null &&
+    (loadedRef.current.cor !== corRows ||
+      loadedRef.current.fcf !== fcfRows ||
+      loadedRef.current.ptr !== ptrRows ||
+      loadedRef.current.keyInputs !== keyInputs);
+  const hasEngineInputs = corRows.some((r) => {
+    const t = tok(r.sectionType);
+    return t === "REVENUE" || t === "COSTS";
+  });
+  const liveRecalc = edited && hasEngineInputs;
+
   const [calcCor, calcFcf, calcPtr, calcNpv] = useMemo<
     [Row[], Row[], Row[], Row[]]
   >(() => {
+    if (!liveRecalc) return [corRows, fcfRows, ptrRows, npvRows];
     const { grids, npvBlock } = recalcMaGrids<Row>(
       [corRows, fcfRows, ptrRows],
       keyInputs,
       visibleCols,
+      actualsCount,
     );
     // The NPV Calculation block (S9) is derived from the same pass — its PV
     // components discount the very cash-flow vectors the grids above produce —
@@ -617,7 +677,16 @@ const Table: React.FC = () => {
       grids[2],
       applyMaNpvBlock<Row>(npvRows, npvBlock),
     ];
-  }, [corRows, fcfRows, ptrRows, npvRows, keyInputs, visibleCols]);
+  }, [
+    liveRecalc,
+    corRows,
+    fcfRows,
+    ptrRows,
+    npvRows,
+    keyInputs,
+    visibleCols,
+    actualsCount,
+  ]);
 
   /* ─────────────────────────── Year stepper ────────────────────────────
    * "+" ADDS a projection year, the way the reference does
@@ -729,9 +798,15 @@ const Table: React.FC = () => {
     setConFyKeys([
       ...new Set(template.con.flatMap((l) => Object.keys(l.yearValues))),
     ]);
-    setCorRows(template.cor.map((l, i) => rowFromApi(l, i, colByFy, size)));
-    setFcfRows(template.fcf.map((l, i) => rowFromApi(l, i, colByFy, size)));
-    setPtrRows(template.ptr.map((l, i) => rowFromApi(l, i, colByFy, size)));
+    const cor = template.cor.map((l, i) => rowFromApi(l, i, colByFy, size));
+    const fcf = template.fcf.map((l, i) => rowFromApi(l, i, colByFy, size));
+    const ptr = template.ptr.map((l, i) => rowFromApi(l, i, colByFy, size));
+    // What the server sent, so the live recalc stays off until something
+    // actually changes (see `loadedRef`).
+    loadedRef.current = { cor, fcf, ptr, keyInputs: template.keyInputs };
+    setCorRows(cor);
+    setFcfRows(fcf);
+    setPtrRows(ptr);
     setCusRows(template.cus.map((l, i) => rowFromApi(l, i, colByFy, size)));
     setNpvRows(template.npv.map(npvRowFromApi));
     // Always take the response's Key Inputs, even when it has none. The old
@@ -954,6 +1029,53 @@ const Table: React.FC = () => {
   useEffect(() => () => registerMigrate(null), [registerMigrate]);
 
   const validationIssues: ValidationIssue[] = template?.validationIssues ?? [];
+
+  /**
+   * Where the last validation-error click should land, as selectors tried in
+   * order (the exact row first, then its panel). Prod Dev parity: the target is
+   * found once it has rendered — the click also expands whatever was collapsed
+   * over it — scrolled to the centre, and flashed for 3s. `seq` makes a second
+   * click on the same error re-run the effect.
+   */
+  const [errorFocus, setErrorFocus] = useState<{
+    selectors: string[];
+    seq: number;
+  } | null>(null);
+  useEffect(() => {
+    if (!errorFocus) return;
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let flashed: HTMLElement | null = null;
+    const tryScroll = (): void => {
+      const el =
+        errorFocus.selectors
+          .map((s) => document.querySelector<HTMLElement>(s))
+          .find((e): e is HTMLElement => e !== null) ?? null;
+      if (!el) {
+        if (attempts < 20) {
+          attempts += 1;
+          timer = setTimeout(tryScroll, 50);
+        } else {
+          setToast({
+            kind: "error",
+            message: "That row is not on screen — try adding years or expanding its section.",
+          });
+        }
+        return;
+      }
+      // Clears the APEX sticky navbar, as Prod Dev does.
+      el.style.scrollMarginTop = "120px";
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add(FLASH_CLASS);
+      flashed = el;
+      timer = setTimeout(() => el.classList.remove(FLASH_CLASS), 3000);
+    };
+    tryScroll();
+    return () => {
+      if (timer) clearTimeout(timer);
+      flashed?.classList.remove(FLASH_CLASS);
+    };
+  }, [errorFocus]);
 
   // A failed delete has no error slot of its own, so it reports through the
   // header's status line alongside save failures.
@@ -1368,10 +1490,17 @@ const Table: React.FC = () => {
     if (isNoTotalRow(identityOf(row)) || isPercentRow(identityOf(row))) {
       return "—";
     }
+    // The server's own `cagr_percent` wins when present; rows it never covers
+    // (e.g. ones added on screen this session) fall back to the client calc.
+    if (row.cagrPercent !== undefined && row.cagrPercent !== null) {
+      return formatPercent(row.cagrPercent, numberFormat);
+    }
     const series = cols.map((i) => {
       const v = row.values[i];
-      if (v === undefined || v.trim() === "") return null;
-      const parsed = Number(v);
+      if (v === undefined || v === null) return null;
+      const text = typeof v === "string" ? v : String(v);
+      if (text.trim() === "") return null;
+      const parsed = Number(text);
       return Number.isFinite(parsed) ? parsed : null;
     });
     const result = cagrOf(series);
@@ -1403,21 +1532,20 @@ const Table: React.FC = () => {
    * PROJECTIONS banners over the fiscal-year labels, with the CAGR column
    * spanning both rows where the grid carries one.
    *
-   * One copy, because `actualsColSpan`, `partitionStyle` and the read-only
+   * One copy, because `actualsColSpan`, `partitionClass` and the read-only
    * gutter all have to agree with the BODY those grids render through
    * `gridRows` — three hand-maintained copies is how a header ends up claiming
    * a column the body never draws.
    */
   const gridHead = (cagr: boolean) => (
     <thead>
-      <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-        {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]"></th>
+      <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+        {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
+        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]"></th>
         {actualsColSpan > 0 && (
           <th
             colSpan={actualsColSpan}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase text-[#374151]"
-            style={{ borderRight: PARTITION_BORDER }}
+            className={`mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-center mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151] ${PARTITION_CLASS}`}
           >
             ACTUALS
           </th>
@@ -1425,7 +1553,7 @@ const Table: React.FC = () => {
         {projYearIdx.length > 0 && (
           <th
             colSpan={projYearIdx.length}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-center text-[10px] font-bold uppercase text-[#374151]"
+            className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-center mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]"
           >
             PROJECTIONS
           </th>
@@ -1433,22 +1561,21 @@ const Table: React.FC = () => {
         {cagr && (
           <th
             rowSpan={2}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-[10px] font-bold uppercase text-[#374151]"
+            className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]"
           >
             CAGR
           </th>
         )}
       </tr>
-      <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-        {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">
+      <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+        {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
+        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
           LINE ITEM
         </th>
         {allYearIdx.map((i) => (
           <th
             key={i}
-            className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]"
-            style={partitionStyle(i, actualsCount)}
+            className={`mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]${partitionClass(i, actualsCount)}`}
           >
             {fyLabel(i)}
           </th>
@@ -1476,12 +1603,12 @@ const Table: React.FC = () => {
         // can otherwise override the `text-white` utility class, which is
         // why this title showed black while the plain-<div> bars didn't.
         style={{ color: "#fff", cursor: "pointer" }}
-        className="flex w-full items-center gap-2 rounded-t bg-[#2d3748] px-3 py-2 text-left text-xs font-bold text-white"
+        className="mna:flex mna:w-full mna:items-center mna:gap-2 mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-left mna:text-xs mna:font-bold mna:text-white"
       >
         {collapsed ? (
-          <ChevronDown size={16} className="shrink-0" />
+          <ChevronDown size={16} className="mna:shrink-0" />
         ) : (
-          <ChevronUp size={16} className="shrink-0" />
+          <ChevronUp size={16} className="mna:shrink-0" />
         )}
         {title}
       </button>
@@ -1529,11 +1656,11 @@ const Table: React.FC = () => {
               }
             >
               {!isReadonly && (
-                <td className="h-10 border-b border-r border-[#e5e7eb] p-0 text-center align-middle">
+                <td className="mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:p-0 mna:text-center mna:align-middle">
                   {canDeleteRow(row, isReadonly) && (
                     <button
                       type="button"
-                      className="inline-flex cursor-pointer items-center justify-center text-[#9ca3af]"
+                      className="mna:inline-flex mna:cursor-pointer mna:items-center mna:justify-center mna:text-[#9ca3af]"
                       onClick={() => removeRow(setRows, source, row.id)}
                       aria-label="Remove row"
                     >
@@ -1542,21 +1669,21 @@ const Table: React.FC = () => {
                   )}
                 </td>
               )}
-              <td className="h-10 overflow-hidden border-b border-r border-[#e5e7eb] px-3 align-middle">
+              <td className="mna:h-10 mna:overflow-hidden mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:align-middle">
                 {locked ? (
                   // A locked line is a LABEL, not a disabled field — the
                   // reference renders it as plain bold text, and an input box
                   // the user cannot type into only invites them to try.
                   <div
                     title={row.label}
-                    className={`overflow-hidden text-ellipsis whitespace-nowrap ${labelTextClass(row.isCalculated)}`}
+                    className={`mna:overflow-hidden mna:text-ellipsis mna:whitespace-nowrap ${labelTextClass(row.isCalculated)}`}
                   >
                     {row.label}
                   </div>
                 ) : (
                   <input
                     title={row.label}
-                    className={`w-full overflow-hidden bg-transparent text-ellipsis whitespace-nowrap outline-none ${row.isCustom === false ? TEMPLATE_LABEL_CLASS : labelTextClass(false)}`}
+                    className={`mna:w-full mna:overflow-hidden mna:bg-transparent mna:text-ellipsis mna:whitespace-nowrap mna:outline-none ${row.isCustom === false ? TEMPLATE_LABEL_CLASS : labelTextClass(false)}`}
                     value={row.label}
                     placeholder="New row label..."
                     onChange={(e) =>
@@ -1568,8 +1695,7 @@ const Table: React.FC = () => {
               {cols.map((i) => (
                 <td
                   key={i}
-                  className="h-10 border-b border-r border-[#e5e7eb] p-0 text-right align-middle"
-                  style={partitionStyle(i, actualsCount)}
+                  className={`mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:p-0 mna:text-right mna:align-middle${partitionClass(i, actualsCount)}`}
                 >
                   <SpreadsheetCell
                     gridId={gridId}
@@ -1595,7 +1721,7 @@ const Table: React.FC = () => {
                 // silently overwrite a year the user had scrolled out of view.
                 // Past the end, the guard rejects it and the cell is read-only
                 // in the only sense that counts.
-                <td className="h-10 border-b border-r border-[#e5e7eb] p-0 text-right align-middle">
+                <td className="mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:p-0 mna:text-right mna:align-middle">
                   <SpreadsheetCell
                     gridId={gridId}
                     row={rowIdx}
@@ -1611,16 +1737,16 @@ const Table: React.FC = () => {
             </tr>
           )}
           {showAdd && (
-            <tr className="bg-white">
+            <tr className="mna:bg-white">
               <td
                 colSpan={span}
-                className="border-b border-[#e5e7eb] px-[10px] py-1.5"
+                className="mna:border-b mna:border-[#e5e7eb] mna:px-[10px] mna:py-1.5"
               >
                 <button
                   type="button"
                   // Matches Prod Dev's "+ Add ... Line": 11px / 600 / black,
                   // bottom rule only.
-                  className="flex cursor-pointer items-center gap-1 px-2 py-[3px] text-[11px] font-semibold text-black"
+                  className="mna:flex mna:cursor-pointer mna:items-center mna:gap-1 mna:px-2 mna:py-[3px] mna:text-[11px] mna:font-semibold mna:text-black"
                   onClick={() =>
                     addRowInSection(
                       setRows,
@@ -2086,27 +2212,154 @@ const Table: React.FC = () => {
     return msgs.length ? msgs.join("\n") : null;
   };
 
-  /** DOM selector for the row / section an issue belongs to, if any. */
-  const issueTarget = (issue: ValidationIssue): string | null =>
-    issue.lineId != null
-      ? `[data-line-id="${issue.lineId}"]`
-      : issue.sectionId != null
-        ? `[data-section-id="${issue.sectionId}"]`
-        : null;
+  /** Whether a validation error has anything on screen to navigate to. */
+  const issueHasTarget = (issue: ValidationIssue): boolean =>
+    issue.lineId != null ||
+    issue.sectionId != null ||
+    !!issue.missingSection ||
+    !!issue.header;
 
-  const scrollToIssue = (selector: string) => {
-    const el = document.querySelector<HTMLElement>(selector);
-    if (!el) {
-      setToast({
-        kind: "error",
-        message: "That row is not visible — expand its section or add years.",
+  /** Sections the uploaded file does not contain, as the backend names them. */
+  const missingSections = [
+    ...new Set(
+      validationIssues
+        .map((i) => i.missingSection)
+        .filter((n): n is string => !!n),
+    ),
+  ];
+
+  /**
+   * Validation-error click -> the offending control (Prod Dev's `goToError`).
+   * Whatever is collapsed over the target is expanded first, so the row is in
+   * the DOM by the time the scroll effect looks for it.
+   */
+  const goToIssue = (issue: ValidationIssue): void => {
+    const grids: Array<[string, Row[]]> = [
+      ["con", conRows],
+      ["cor", corRows],
+      ["fcf", fcfRows],
+      ["ptr", ptrRows],
+      ["cus", cusRows],
+    ];
+    const expand = (gridId: string, row?: Row) => {
+      setCollapsedPanels((prev) => {
+        if (!prev.has(gridId)) return prev;
+        const next = new Set(prev);
+        next.delete(gridId);
+        return next;
       });
+      if (!row) return;
+      const key = collapseKey(gridId, row);
+      setCollapsedSections((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    };
+    const focus = (selectors: string[]) =>
+      setErrorFocus((prev) => ({ selectors, seq: (prev?.seq ?? 0) + 1 }));
+
+    if (issue.lineId != null) {
+      for (const [gridId, rows] of grids) {
+        const row = rows.find((r) => r.lineId === issue.lineId);
+        if (row) {
+          expand(gridId, row);
+          break;
+        }
+      }
+      focus([`[data-line-id="${issue.lineId}"]`]);
       return;
     }
-    el.style.scrollMarginTop = "80px";
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    el.querySelector<HTMLElement>("input, [tabindex]")?.focus();
+    if (issue.sectionId != null) {
+      let panel: string | null = null;
+      for (const [gridId, rows] of grids) {
+        const row = rows.find((r) => r.sectionId === issue.sectionId);
+        if (row) {
+          expand(gridId, row);
+          panel = gridId;
+          break;
+        }
+      }
+      // Single-section grids (Free Cash Flows, Post Tax Return) draw no
+      // section bar of their own, so their panel is the target.
+      focus([
+        `[data-section-id="${issue.sectionId}"]`,
+        ...(panel ? [`[data-panel="${panel}"]`] : []),
+      ]);
+      return;
+    }
+    if (issue.missingSection) {
+      const gridId = gridOfMissing(issue.missingSection);
+      expand(gridId);
+      focus([
+        `[data-missing-section="${tok(issue.missingSection)}"]`,
+        `[data-panel="${gridId}"]`,
+      ]);
+      return;
+    }
+    if (issue.header) focus([`[data-panel="key"]`]);
   };
+
+  /**
+   * Placeholder rows for template sections the upload is missing, so the
+   * screen keeps the FinEval layout (a Consideration table, a Revenue bar, …)
+   * and a "Section X is missing" error has somewhere to land. Rendered after
+   * the grid's own rows: the section has no lines of its own to sit among.
+   */
+  const missingSectionRows = (gridId: string, colSpan: number, withBar: boolean) =>
+    missingSections
+      .filter((name) => gridOfMissing(name) === gridId)
+      .map((name) => (
+        <React.Fragment key={`missing:${name}`}>
+          {withBar && (
+            <tr
+              data-missing-section={tok(name)}
+              style={{ background: DARK_HEADER }}
+            >
+              <td
+                colSpan={colSpan}
+                style={{
+                  padding: "10px 14px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#fff",
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                {name}
+              </td>
+            </tr>
+          )}
+          <tr
+            data-missing-section={withBar ? undefined : tok(name)}
+            className="mna:bg-white"
+          >
+            <td
+              colSpan={colSpan}
+              className="mna:h-10 mna:border-b mna:border-[#e5e7eb] mna:px-3 mna:align-middle mna:text-[12px] mna:italic mna:text-[#b91c1c]"
+            >
+              <span className="mna:inline-flex mna:items-center mna:gap-1.5">
+                <AlertTriangle size={13} className="mna:shrink-0" />
+                Section &quot;{name}&quot; is missing from the uploaded file.
+              </span>
+            </td>
+          </tr>
+        </React.Fragment>
+      ));
+
+  /** One full-width muted row for a panel with nothing to show. */
+  const emptyRow = (colSpan: number, text: string) => (
+    <tr className="mna:bg-white">
+      <td
+        colSpan={colSpan}
+        className="mna:h-10 mna:border-b mna:border-[#e5e7eb] mna:px-3 mna:align-middle mna:text-[12px] mna:italic mna:text-[#6b7280]"
+      >
+        {text}
+      </td>
+    </tr>
+  );
 
   return (
     <SpreadsheetProvider value={spreadsheetApi}>
@@ -2115,16 +2368,16 @@ const Table: React.FC = () => {
       {confirmDelete && (
         <div
           onClick={() => setConfirmDelete(null)}
-          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/45"
+          className="mna:fixed mna:inset-0 mna:z-[300] mna:flex mna:items-center mna:justify-center mna:bg-black/45"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="max-w-[420px] min-w-[340px] rounded-lg bg-white px-[22px] py-5 shadow-[0_10px_30px_rgba(0,0,0,.2)]"
+            className="mna:max-w-[420px] mna:min-w-[340px] mna:rounded-lg mna:bg-white mna:px-[22px] mna:py-5 mna:shadow-[0_10px_30px_rgba(0,0,0,.2)]"
           >
-            <div className="mb-2 text-[14px] font-bold text-[#111827]">
+            <div className="mna:mb-2 mna:text-[14px] mna:font-bold mna:text-[#111827]">
               Delete line item
             </div>
-            <div className="mb-[18px] text-[13px] text-[#374151]">
+            <div className="mna:mb-[18px] mna:text-[13px] mna:text-[#374151]">
               Are you sure you want to delete
               {confirmDelete.name ? (
                 <>
@@ -2136,11 +2389,11 @@ const Table: React.FC = () => {
               )}
               ?
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="mna:flex mna:justify-end mna:gap-2">
               <button
                 type="button"
                 onClick={() => setConfirmDelete(null)}
-                className="rounded-md border border-black bg-white px-3.5 py-1.5 text-[12px] font-semibold text-black"
+                className="mna:rounded-md mna:border mna:border-black mna:bg-white mna:px-3.5 mna:py-1.5 mna:text-[12px] mna:font-semibold mna:text-black"
               >
                 Cancel
               </button>
@@ -2150,7 +2403,7 @@ const Table: React.FC = () => {
                   confirmDelete.run();
                   setConfirmDelete(null);
                 }}
-                className="rounded-md border border-black bg-white px-3.5 py-1.5 text-[12px] font-bold text-black"
+                className="mna:rounded-md mna:border mna:border-black mna:bg-white mna:px-3.5 mna:py-1.5 mna:text-[12px] mna:font-bold mna:text-black"
               >
                 OK
               </button>
@@ -2159,42 +2412,90 @@ const Table: React.FC = () => {
         </div>
       )}
 
+      {/* Validation errors from the staging GET — Prod Dev's list: one entry
+          per "|"-separated message, numbered, and clicking one jumps to the
+          line / section / missing-section placeholder it belongs to. */}
       {validationIssues.length > 0 && (
-        <div className="mb-3 rounded-[10px] border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-[12px] text-[#b91c1c]">
-          <div className="mb-1.5 flex items-center gap-2 font-bold">
-            <AlertTriangle size={14} />
-            {validationIssues.length} validation issue
-            {validationIssues.length > 1 ? "s" : ""} — fix and click Validate
+        <div
+          style={{
+            margin: "0 0 12px",
+            border: "1px solid #fecaca",
+            background: "#fef2f2",
+            borderRadius: 8,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "8px 14px",
+              background: "#fee2e2",
+              color: "#b91c1c",
+              fontSize: 12,
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <X size={14} />
+            {validationIssues.length} validation{" "}
+            {validationIssues.length === 1 ? "error" : "errors"}
           </div>
-          <ul className="max-h-40 list-disc space-y-0.5 overflow-y-auto pl-6">
+          <div style={{ minHeight: 88, maxHeight: 200, overflowY: "auto" }}>
             {validationIssues.map((issue, i) => {
-              const target = issueTarget(issue);
+              const hasTarget = issueHasTarget(issue);
               return (
-                <li key={i}>
-                  {target ? (
-                    <button
-                      type="button"
-                      className="text-left underline decoration-dotted underline-offset-2 hover:text-[#7f1d1d]"
-                      onClick={() => scrollToIssue(target)}
-                    >
-                      {issue.message}
-                    </button>
-                  ) : (
-                    issue.message
+                <div
+                  key={i}
+                  role={hasTarget ? "button" : undefined}
+                  tabIndex={hasTarget ? 0 : undefined}
+                  onClick={() => hasTarget && goToIssue(issue)}
+                  onKeyDown={(e) => {
+                    if (hasTarget && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      goToIssue(issue);
+                    }
+                  }}
+                  title={hasTarget ? "Go to field" : undefined}
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    padding: "8px 14px",
+                    fontSize: 12,
+                    color: "#991b1b",
+                    borderTop: i === 0 ? "none" : "1px solid #fecaca",
+                    cursor: hasTarget ? "pointer" : "default",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (hasTarget) e.currentTarget.style.background = "#fee2e2";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  <span style={{ fontWeight: 700, minWidth: 18, flexShrink: 0 }}>
+                    {i + 1}.
+                  </span>
+                  <span style={{ flex: 1 }}>{issue.message}</span>
+                  {hasTarget && (
+                    <ChevronRight
+                      size={14}
+                      style={{ flexShrink: 0, color: "#dc2626" }}
+                    />
                   )}
-                </li>
+                </div>
               );
             })}
-          </ul>
+          </div>
         </div>
       )}
 
-      <div className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b p-3">
-          <div className="flex items-center gap-2">
+      <div className="mna:rounded-[10px] mna:border mna:border-slate-200 mna:bg-white mna:shadow-sm">
+        <div className="mna:flex mna:items-center mna:justify-between mna:border-b mna:p-3">
+          <div className="mna:flex mna:items-center mna:gap-2">
             {loading && (
-              <span className="flex items-center gap-2 text-[13px] text-[#6b7280]">
-                <RefreshCw size={14} className="animate-spin" />
+              <span className="mna:flex mna:items-center mna:gap-2 mna:text-[13px] mna:text-[#6b7280]">
+                <RefreshCw size={14} className="mna:animate-spin" />
                 Loading financial data…
               </span>
             )}
@@ -2205,24 +2506,24 @@ const Table: React.FC = () => {
               in the same sequence). MA had the stepper alone on the right and
               the other two stranded on the left, which read as two unrelated
               toolbars sharing a rule. */}
-          <div className="flex items-center gap-2">
+          <div className="mna:flex mna:items-center mna:gap-2">
             <button
               type="button"
               onClick={removeProjectionYear}
               disabled={isReadonly || projectionsShown <= 1}
-              className="h-7 w-7 rounded border border-[#d1d5db] text-gray-700 disabled:cursor-default disabled:border-[#f3f4f6] disabled:bg-[#f3f4f6] disabled:text-[#9ca3af] disabled:opacity-100"
+              className="mna:h-7 mna:w-7 mna:rounded mna:border mna:border-[#d1d5db] mna:text-gray-700 mna:disabled:cursor-default mna:disabled:border-[#f3f4f6] mna:disabled:bg-[#f3f4f6] mna:disabled:text-[#9ca3af] mna:disabled:opacity-100"
               aria-label="Decrease years"
             >
               −
             </button>
-            <div className="min-w-[60px] text-center text-sm font-semibold text-slate-800">
+            <div className="mna:min-w-[60px] mna:text-center mna:text-sm mna:font-semibold mna:text-slate-800">
               {projectionsShown} Years
             </div>
             <button
               type="button"
               onClick={addProjectionYear}
               disabled={isReadonly}
-              className="h-7 w-7 rounded border border-[#d1d5db] text-gray-700 disabled:cursor-default disabled:border-[#f3f4f6] disabled:bg-[#f3f4f6] disabled:text-[#9ca3af] disabled:opacity-100"
+              className="mna:h-7 mna:w-7 mna:rounded mna:border mna:border-[#d1d5db] mna:text-gray-700 mna:disabled:cursor-default mna:disabled:border-[#f3f4f6] mna:disabled:bg-[#f3f4f6] mna:disabled:text-[#9ca3af] mna:disabled:opacity-100"
               aria-label="Increase years"
             >
               +
@@ -2236,7 +2537,7 @@ const Table: React.FC = () => {
                 disabled={!template?.raw}
                 // Black outline, as both references give this one control, so
                 // it reads as the primary action of the group.
-                className="rounded border border-black bg-white px-3 py-1.5 text-[12px] font-bold text-black disabled:cursor-default disabled:border-[#f3f4f6] disabled:bg-[#f3f4f6] disabled:text-[#9ca3af]"
+                className="mna:rounded mna:border mna:border-black mna:bg-white mna:px-3 mna:py-1.5 mna:text-[12px] mna:font-bold mna:text-black mna:disabled:cursor-default mna:disabled:border-[#f3f4f6] mna:disabled:bg-[#f3f4f6] mna:disabled:text-[#9ca3af]"
               >
                 + Add Section
               </button>
@@ -2244,30 +2545,30 @@ const Table: React.FC = () => {
             <button
               type="button"
               onClick={toggleAll}
-              className="rounded border border-[#d1d5db] bg-white px-3 py-1.5 text-[12px] text-[#374151]"
+              className="mna:rounded mna:border mna:border-[#d1d5db] mna:bg-white mna:px-3 mna:py-1.5 mna:text-[12px] mna:text-[#374151]"
             >
               {allExpanded ? "Collapse All" : "Expand All"}
             </button>
           </div>
         </div>
 
-        <div className="p-4">
+        <div className="mna:p-4">
           {/* Key Inputs (left) and Consideration (right), side by side above
               Combined Operating Results, as in the wireframe. */}
-          <div className="flex items-start gap-6">
+          <div className="mna:flex mna:items-start mna:gap-6">
             {/* Key inputs — one input per row: INPUT | VALUE */}
-            <div className="w-1/3 shrink-0">
-              <div className="rounded-t bg-[#2d3748] px-3 py-2 text-xs font-bold uppercase text-white">
+            <div className="mna:w-1/3 mna:shrink-0" data-panel="key">
+              <div className="mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-xs mna:font-bold mna:uppercase mna:text-white">
                 Key Inputs
               </div>
-              <div className="overflow-auto rounded-b border">
-                <table className="w-full table-fixed border-collapse text-sm">
+              <div className="mna:overflow-auto mna:rounded-b">
+                <table className="mna:w-full mna:table-fixed mna:border-collapse mna:text-sm">
                   <thead>
-                    <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-                      <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">
+                    <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+                      <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
                         INPUT
                       </th>
-                      <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">
+                      <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
                         VALUE
                       </th>
                     </tr>
@@ -2275,42 +2576,45 @@ const Table: React.FC = () => {
                   <tbody>
                     {keyInputs.map((input) => (
                       <tr key={input.code} className={rowBgClass(false)}>
-                        <td className={`h-10 border-b border-r border-[#e5e7eb] px-3 align-middle ${TEMPLATE_LABEL_CLASS}`}>
+                        <td className={`mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:align-middle ${TEMPLATE_LABEL_CLASS}`}>
                           {input.label}
                         </td>
-                        <td className="h-10 border-b border-r border-[#e5e7eb] px-3 text-right align-middle">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:text-right mna:align-middle">
+                          <div className="mna:flex mna:items-center mna:justify-end mna:gap-2">
                             <PercentInput
                               value={input.value}
                               onValueChange={(v) => setKeyInputValue(input.code, v)}
                               readOnly={isReadonly}
                             />
-                            <span className="text-sm text-slate-500">%</span>
+                            <span className="mna:text-sm mna:text-slate-500">%</span>
                           </div>
                         </td>
                       </tr>
                     ))}
+                    {keyInputs.length === 0 &&
+                      emptyRow(2, "No key inputs in the uploaded file.")}
                   </tbody>
                 </table>
               </div>
             </div>
 
             {/* Consideration — Cash / Deferred / Contingent, moved out of
-                Combined Operating Results into its own panel. */}
-            {conRows.length > 0 && (
-              <div className="min-w-0 flex-1">
-                <div className="rounded-t bg-[#2d3748] px-3 py-2 text-xs font-bold uppercase text-white">
+                Combined Operating Results into its own panel. Always shown,
+                as on FinEval: an upload without it gets a placeholder that
+                its "Section 'Consideration' is missing" error points at. */}
+              <div className="mna:min-w-0 mna:flex-1" data-panel="con">
+                <div className="mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-xs mna:font-bold mna:uppercase mna:text-white">
                   Consideration
                 </div>
-                <div className="overflow-auto rounded-b border">
-                  <table className="w-full table-fixed border-collapse text-sm">
+                <div className="mna:overflow-auto mna:rounded-b">
+                  <table className="mna:w-full mna:table-fixed mna:border-collapse mna:text-sm">
                     <GridColgroup showActions={!isReadonly} yearCount={conYearIdx.length} />
                     <thead>
-                      <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-                        {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-                        <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">TYPE</th>
+                      <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+                        {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
+                        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">TYPE</th>
                         {conYearIdx.map((i) => (
-                          <th key={i} className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">
+                          <th key={i} className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
                             {fyLabel(i)}
                           </th>
                         ))}
@@ -2318,39 +2622,47 @@ const Table: React.FC = () => {
                     </thead>
                     <tbody>
                       {gridRows("con", conRows, conRows, setConRows, conYearIdx)}
+                      {missingSectionRows("con", gridColSpan(conYearIdx, false), false)}
+                      {conRows.length === 0 &&
+                        !missingSections.some((n) => gridOfMissing(n) === "con") &&
+                        emptyRow(
+                          gridColSpan(conYearIdx, false),
+                          "No consideration lines in the uploaded file.",
+                        )}
                     </tbody>
                   </table>
                 </div>
               </div>
-            )}
           </div>
 
           {/* Combined Operating Results */}
-          <div className="mt-6">
-            <div className="rounded-t bg-[#2d3748] px-3 py-2 text-xs font-bold text-white">
+          <div className="mna:mt-6" data-panel="cor">
+            <div className="mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-xs mna:font-bold mna:text-white">
               Combined Operating Results
             </div>
-            <div className="overflow-auto rounded-b border">
-              <table className="w-full min-w-[700px] table-fixed border-collapse text-sm">
+            <div className="mna:overflow-auto mna:rounded-b">
+              <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={allYearIdx.length} cagr />
                 {gridHead(true)}
                 <tbody>
                   {gridRows("cor", calcCor, corRows, setCorRows, allYearIdx, true)}
+                  {missingSectionRows("cor", gridColSpan(allYearIdx, true), true)}
                 </tbody>
               </table>
             </div>
           </div>
 
           {/* Combined Free Cash Flows */}
-          <div className="mt-6">
+          <div className="mna:mt-6" data-panel="fcf">
             {panelTitle("fcf", "Combined Free Cash Flows")}
             {!isPanelCollapsed("fcf") && (
-            <div className="overflow-auto rounded-b border">
-              <table className="w-full min-w-[700px] table-fixed border-collapse text-sm">
+            <div className="mna:overflow-auto mna:rounded-b">
+              <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={allYearIdx.length} />
                 {gridHead(false)}
                 <tbody>
                   {gridRows("fcf", calcFcf, fcfRows, setFcfRows, allYearIdx)}
+                  {missingSectionRows("fcf", gridColSpan(allYearIdx, false), false)}
                 </tbody>
               </table>
             </div>
@@ -2358,18 +2670,18 @@ const Table: React.FC = () => {
           </div>
 
           {/* Post Tax Return */}
-          <div className="mt-6">
+          <div className="mna:mt-6" data-panel="ptr">
             {panelTitle("ptr", "Post Tax Return")}
             {!isPanelCollapsed("ptr") && (
-            <div className="overflow-auto rounded-b border">
-              <table className="w-full min-w-[700px] table-fixed border-collapse text-sm">
+            <div className="mna:overflow-auto mna:rounded-b">
+              <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={projYearIdx.length} />
                 <thead>
-                  <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-                    {!isReadonly && <th className="border-b border-r border-[#d1d5db]" />}
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">LINE ITEM</th>
+                  <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+                    {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">LINE ITEM</th>
                     {projYearIdx.map((i) => (
-                      <th key={i} className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">
+                      <th key={i} className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
                         {fyLabel(i)}
                       </th>
                     ))}
@@ -2384,11 +2696,11 @@ const Table: React.FC = () => {
           </div>
 
           {/* NPV Calculation */}
-          <div className="mt-6 w-full">
+          <div className="mna:mt-6 mna:w-full" data-panel="npv">
             {panelTitle("npv", "NPV Calculation")}
             {!isPanelCollapsed("npv") && (
-            <div className="overflow-hidden rounded-b border bg-white">
-              <table className="w-full table-fixed border-collapse text-sm">
+            <div className="mna:overflow-hidden mna:rounded-b mna:bg-white">
+              <table className="mna:w-full mna:table-fixed mna:border-collapse mna:text-sm">
                 {/* No actions column: the NPV block takes neither new rows
                     nor deletions, so a permanently empty 36px gutter would be
                     dead space. */}
@@ -2399,11 +2711,11 @@ const Table: React.FC = () => {
                   ))}
                 </colgroup>
                 <thead>
-                  <tr className="h-[35px] bg-[#e5e7eb] text-xs font-semibold text-[#374151]">
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-left text-[10px] font-bold uppercase text-[#374151]">Component</th>
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">Target (Standalone)</th>
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">Experian Factor</th>
-                    <th className="border-b border-r border-[#d1d5db] px-2 py-1.5 text-right text-[10px] font-bold uppercase text-[#374151]">Total</th>
+                  <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">Component</th>
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">Target (Standalone)</th>
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">Experian Factor</th>
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2411,18 +2723,18 @@ const Table: React.FC = () => {
                     const locked = isRowLocked(row, isReadonly);
                     return (
                       <tr key={row.id} className={rowBgClass(locked)}>
-                        <td className="h-10 overflow-hidden border-b border-r border-[#e5e7eb] px-3 align-middle">
+                        <td className="mna:h-10 mna:overflow-hidden mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:align-middle">
                           {locked ? (
                             <div
                               title={row.label}
-                              className={`overflow-hidden text-ellipsis whitespace-nowrap ${labelTextClass(row.isCalculated)}`}
+                              className={`mna:overflow-hidden mna:text-ellipsis mna:whitespace-nowrap ${labelTextClass(row.isCalculated)}`}
                             >
                               {row.label}
                             </div>
                           ) : (
                             <input
                               title={row.label}
-                              className={`w-full overflow-hidden bg-transparent text-ellipsis whitespace-nowrap outline-none ${row.isCustom === false ? TEMPLATE_LABEL_CLASS : labelTextClass(false)}`}
+                              className={`mna:w-full mna:overflow-hidden mna:bg-transparent mna:text-ellipsis mna:whitespace-nowrap mna:outline-none ${row.isCustom === false ? TEMPLATE_LABEL_CLASS : labelTextClass(false)}`}
                               value={row.label}
                               placeholder="New component..."
                               onChange={(e) =>
@@ -2432,12 +2744,12 @@ const Table: React.FC = () => {
                           )}
                         </td>
                         {[0, 1, 2].map((c) => (
-                          <td key={c} className="h-10 border-b border-r border-[#e5e7eb] p-0 text-right align-middle">
+                          <td key={c} className="mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:p-0 mna:text-right mna:align-middle">
                             <SpreadsheetCell
                               gridId="npv"
                               row={rowIdx}
                               col={c}
-                              className="w-full text-right"
+                              className="mna:w-full mna:text-right"
                               value={cellText(row, row.values[c])}
                               editValue={cellSeed(row, row.values[c])}
                               readOnly={locked}
@@ -2458,9 +2770,9 @@ const Table: React.FC = () => {
               No panel title of its own: each section carries its own dark bar,
               and a wrapper would be a title for a block that has no name. */}
           {cusRows.length > 0 && (
-            <div className="mt-6">
-              <div className="overflow-auto rounded border">
-                <table className="w-full min-w-[700px] table-fixed border-collapse text-sm">
+            <div className="mna:mt-6">
+              <div className="mna:overflow-auto mna:rounded">
+                <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                   <GridColgroup
                     showActions={!isReadonly}
                     yearCount={allYearIdx.length}

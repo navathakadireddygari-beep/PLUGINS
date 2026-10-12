@@ -31,5 +31,9 @@ export default defineConfig(({ command }) => ({
             : "assets/[name]-[hash][extname]",
       },
     },
+    // One CSS file, as FinEval MnA builds it. With code splitting on, the IIFE
+    // build emitted NO stylesheet at all — no pivot-table.css and nothing
+    // injected by the JS — so the widget rendered unstyled on the APEX page.
+    cssCodeSplit: false,
   },
 }));

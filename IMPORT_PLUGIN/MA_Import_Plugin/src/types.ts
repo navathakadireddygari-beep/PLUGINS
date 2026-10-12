@@ -39,6 +39,8 @@ export interface FinEvalLine {
   is_custom: YesNo;
   display_order: number;
   year_values: FinEvalYearValues | null;
+  /** Server-computed CAGR across the line's fiscal years, as a plain percentage. */
+  cagr_percent?: number | null;
   template_fin_eval_line_id: number | null;
   status: string | null;
   /** Locale the line's text is in; every echoed line carries it. */

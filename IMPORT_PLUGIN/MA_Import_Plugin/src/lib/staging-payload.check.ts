@@ -1,12 +1,15 @@
 /**
  * Checks the staging GET → screen model → PUT body round trip against the
- * REAL finEvaluationStaging response in BUY_PLAN_APIS.txt (repo root, file 441).
+ * REAL finEvaluationStaging response in BUY_PLAN_APIS.txt (repo root, file 475:
+ * an upload with only Combined Free Cash Flows + Post Tax Return, flagged
+ * VALIDATION_FAILED for four missing template sections).
  *
  * Run: npx tsx --tsconfig tsconfig.app.json src/lib/staging-payload.check.ts
  */
 import {
   buildFinEvaluationStagingPayload,
   mapStagingEnvelope,
+  missingSectionOf,
   type StagingEnvelope,
 } from "@/api/staging-api";
 import { buildFinancialEvaluationPayload } from "@/api/financial-api";
@@ -35,46 +38,55 @@ const model = mapStagingEnvelope(envelope);
 const raw = model.raw!;
 
 console.log("GET → model");
-eq("header id from finEvalHeaderStgId", raw.fin_eval_header_id, 522);
+eq("header id from finEvalHeaderStgId", raw.fin_eval_header_id, 551);
 eq("proposal id falls back to file.proposalId", raw.proposal_id !== null, true);
 eq("section count", raw.sections?.length, wire.sections.length);
-eq("first section id", raw.sections?.[0].fin_eval_section_id, 3201);
-eq("first line id", raw.sections?.[0].lines?.[0].fin_eval_line_id, 9853);
+eq("first section id", raw.sections?.[0].fin_eval_section_id, 3067);
+eq("first line id", raw.sections?.[0].lines?.[0].fin_eval_line_id, 9990);
 eq(
   "first line fy27 amount",
   raw.sections?.[0].lines?.[0].year_values?.fy27?.spc_projected_amount,
-  420000,
+  68.04,
 );
-eq("mAKeyInputs → m_a_key_inputs", raw.m_a_key_inputs?.inputs?.length, 4);
+eq("fiscal years fy24..fy33 ('7yr cagr' dropped)", model.fiscalYears, [
+  "fy24", "fy25", "fy26", "fy27", "fy28", "fy29", "fy30", "fy31", "fy32", "fy33",
+]);
+eq("Free Cash Flows lines → fcf grid", model.fcf.length, 9);
+eq("Post Tax Return lines → ptr grid", model.ptr.length, 6);
+eq("no Consideration lines in this upload", model.con.length, 0);
+// The grid row the screen renders: base-unit strings keyed by fiscal year.
+eq("fcf EBIT fy27 reaches the grid row", model.fcf[0].yearValues.fy27, "68.04");
+eq("ptr Post tax return fy33 reaches the grid row", model.ptr[5].yearValues.fy33, "0.0182318");
+
+console.log("validation issues");
+eq("four FE_SEC_MISSING issues", model.validationIssues.length, 4);
 eq(
-  "mANpvCalculation → m_a_npv_calculation",
-  raw.m_a_npv_calculation?.components?.length,
-  8,
+  "each tagged with the section it names",
+  model.validationIssues.map((i) => i.missingSection),
+  ["Consideration", "Returns Analysis", "Revenue", "Total Costs"],
 );
-eq("no validation issues on a VALID file", model.validationIssues, []);
+eq(
+  "missingSectionOf ignores unrelated messages",
+  missingSectionOf("Fiscal year FY29 appears more than once."),
+  undefined,
+);
 
 console.log("model → PUT body");
 const body = buildFinEvaluationStagingPayload(
   buildFinancialEvaluationPayload(raw),
 ).header as Record<string, any>;
-eq("header id key", body.finEvalHeaderStgId, 522);
+eq("header id key", body.finEvalHeaderStgId, 551);
 eq("no snake_case keys at header level", Object.keys(body).filter((k) => k.includes("_")), []);
 eq("no plain/mapper keys", ["finEvalHeaderId", "proposalId", "proposalTitle", "userEmail", "val"].filter((k) => k in body), []);
-eq("mAKeyInputs echoed unchanged", body.mAKeyInputs.inputs, wire.mAKeyInputs.inputs);
-eq(
-  "mANpvCalculation components unchanged",
-  body.mANpvCalculation.components,
-  wire.mANpvCalculation.components,
-);
 const section = body.sections[0];
 const line = section.lines[0];
-eq("section id key", section.finEvalSectionStgId, 3201);
+eq("section id key", section.finEvalSectionStgId, 3067);
 eq("section has no plain id", "finEvalSectionId" in section, false);
-eq("line id key", line.finEvalLineStgId, 9853);
-eq("line section id key", line.finEvalSectionStgId, 3201);
+eq("line id key", line.finEvalLineStgId, 9990);
+eq("line section id key", line.finEvalSectionStgId, 3067);
 eq("line has no plain/mapper ids", ["finEvalLineId", "finEvalSectionId", "templateFinEvalLineId", "lineItemCode"].filter((k) => k in line), []);
 eq("yearValues buckets stay snake_case", Object.keys(line.yearValues.fy27), Object.keys(wire.sections[0].lines[0].yearValues.fy27));
-eq("yearValues fy27 amount", line.yearValues.fy27.spc_projected_amount, 420000);
+eq("yearValues fy27 amount", line.yearValues.fy27.spc_projected_amount, 68.04);
 
 const allLinesPut = body.sections.flatMap((s: any) => s.lines).length;
 const allLinesGet = wire.sections.flatMap((s: any) => s.lines).length;

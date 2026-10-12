@@ -167,6 +167,8 @@ export interface FinEvalGridRow {
   readOnly: boolean;
   /** Base-unit strings keyed by fiscal-year bucket, e.g. `{ fy26: "121000" }`. */
   yearValues: Record<string, string>;
+  /** Server-computed CAGR, as a plain percentage; null when the server sends none. */
+  cagrPercent: number | null;
   /** Section the line came from, for grouping/tooltips. */
   sectionName: string;
   sectionType: string;
@@ -293,8 +295,13 @@ const toBase = (value: number | null | undefined): string =>
  * and saved untouched goes back out as it came in. Blank/unparseable -> null.
  */
 const fromBase = (value: string | null | undefined): number | null => {
-  if (value === null || value === undefined || value.trim() === "") return null;
-  const parsed = Number(value);
+  if (value === null || value === undefined) return null;
+  // Coerced rather than assumed: a number can reach here at runtime even
+  // though the type says string (e.g. an un-stringified wire value echoed
+  // straight through), and `.trim` is not defined on it.
+  const text = typeof value === "string" ? value : String(value);
+  if (text.trim() === "") return null;
+  const parsed = Number(text);
   if (!Number.isFinite(parsed)) return null;
   const inCurrency = toDisplayCurrency(
     parsed,
@@ -376,6 +383,7 @@ const mapLine = (
     // `buildFinancialEvaluationPayload` writes `line_type ?? line_item_code`.
     lineType: line.line_type ?? line.line_item_code ?? null,
     lineIdentifier: line.line_identifier ?? null,
+    cagrPercent: line.cagr_percent ?? null,
     // Editable ONLY when the backend says the line is not calculated. A
     // calculated line is owned by the server — its value is recomputed on
     // save, so letting it be typed into just discards the input. `is_calculated`
@@ -748,8 +756,10 @@ const buildNewSection = (
 
 /** Percentage string -> number (null when blank / unparseable). */
 const percentOrNull = (value: string | undefined): number | null => {
-  if (value === undefined || value.trim() === "") return null;
-  const parsed = Number(value);
+  if (value === undefined || value === null) return null;
+  const text = typeof value === "string" ? value : String(value);
+  if (text.trim() === "") return null;
+  const parsed = Number(text);
   return Number.isFinite(parsed) ? parsed : null;
 };
 

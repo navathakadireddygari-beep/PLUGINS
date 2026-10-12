@@ -207,6 +207,12 @@ export interface ValidationIssue {
   lineId?: number;
   /** Header-level message (Key Inputs, currency, …). */
   header?: boolean;
+  /**
+   * Template section the uploaded file does not contain at all, e.g.
+   * "Consideration". There is no staged object to point at, so the screen
+   * renders a placeholder for it and navigates there instead.
+   */
+  missingSection?: string;
 }
 
 /** Split a backend "a | b | c" message into its parts. */
@@ -214,6 +220,13 @@ const splitMessages = (raw: unknown): string[] =>
   typeof raw === "string"
     ? raw.split("|").map((s) => s.trim()).filter(Boolean)
     : [];
+
+/**
+ * The section name in a backend "Section 'X' is part of the template but is
+ * missing from the uploaded file." message (FE_SEC_MISSING), else undefined.
+ */
+export const missingSectionOf = (message: string): string | undefined =>
+  /^Section\s+'([^']+)'.*\bmissing\b/i.exec(message)?.[1]?.trim();
 
 /**
  * Walk header → sections → lines, one issue per "|"-separated piece of EACH
@@ -256,7 +269,12 @@ export const collectValidationIssues = (
     .filter((m) => !seen.has(m))
     .forEach((message) => out.push({ message }));
 
-  return out;
+  // Tag "Section X is missing" wherever it came from, so the screen can point
+  // at the placeholder it renders for that section.
+  return out.map((issue) => {
+    const missingSection = missingSectionOf(issue.message);
+    return missingSection ? { ...issue, missingSection } : issue;
+  });
 };
 
 /* ─────────────────────────── GET ─────────────────────────────────── */
