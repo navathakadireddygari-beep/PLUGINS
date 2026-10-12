@@ -191,9 +191,9 @@ function init(
    * Render React application.
    */
   _reactRoot.render(
-    <React.StrictMode>
+    // <React.StrictMode>
       <App />
-    </React.StrictMode>
+    // </React.StrictMode>
   );
 
 
@@ -264,7 +264,7 @@ if (_hasInitialConfig) {
   );
 
   init(
-    "root",
+    "Mna_import_root",
     _initialConfig
   );
 } else {

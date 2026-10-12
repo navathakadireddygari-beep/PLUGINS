@@ -47,27 +47,6 @@ export default function Header() {
     <header className="mna:overflow-hidden mna:rounded-3xl mna:border mna:border-slate-200 mna:bg-white mna:shadow-sm">
       <div className="mna:flex mna:items-center mna:justify-end mna:border-b mna:border-slate-200 mna:bg-white mna:px-6 mna:py-4">
         <div className="mna:flex mna:flex-wrap mna:items-center mna:gap-2">
-          {/* Back is always visible regardless of proposal status */}
-          <button
-            id="fin-eval-back-btn"
-            type="button"
-            className="mna:inline-flex mna:items-center mna:gap-1.5 mna:rounded mna:border mna:border-black/70 mna:bg-white mna:px-[14px] mna:py-2 mna:text-[13px] mna:font-semibold mna:text-black mna:transition"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Back
-          </button>
           {saveError && !saving && !migrating && (
             <span
               className="mna:max-w-xs mna:truncate mna:text-sm mna:text-red-600"

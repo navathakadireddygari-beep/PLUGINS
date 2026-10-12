@@ -164,12 +164,13 @@ for (const label of [
   eq("leading/trailing space trimmed", newLines[0]?.name, "Padded label");
 }
 
-/* ── 5. rows that must NOT be sent ───────────────────────────────────── */
-console.log("\n5. Unnamed rows are placeholders, not data");
+/* ── 5. unnamed rows are still sent, so the backend can reject them ─── */
+console.log("\n5. Unnamed rows are sent (not silently dropped)");
 for (const [label, why] of [["", "empty"], ["   ", "whitespace only"]] as const) {
   const { newLines, payload } = save(gridWith(label));
-  eq(`${why} label -> not collected`, newLines.length, 0);
-  eq(`${why} label -> not in the body`, linesOf(payload).length, 3);
+  eq(`${why} label -> still collected`, newLines.length, 1);
+  eq(`${why} label -> name sent trimmed`, newLines[0]?.name, "");
+  eq(`${why} label -> in the body`, linesOf(payload).length, 4);
 }
 // A row added before any template row has no section to attach to.
 {

@@ -44,7 +44,7 @@ import { applyMaNpvBlock, recalcMaGrids } from "@/lib/ma-recalc";
 import { DARK_HEADER } from "@/components/strip-styles";
 import { cagrOf } from "@/lib/ma-formulas";
 import { formatNumber, formatPercent } from "@/lib/number-format";
-import { actualsCountOf, fyNumberOf } from "@/lib/fiscal-years";
+import { actualsCountOf } from "@/lib/fiscal-years";
 import { collectGridRows, type NewSectionDraft } from "@/lib/save-collect";
 import {
   getFileId,
@@ -592,7 +592,6 @@ const Table: React.FC = () => {
    * fiscal year on the actuals side, so the two can disagree by a column, and
    * that slack used to swallow the first press of "-".
    */
-  const projectionsShown = Math.max(0, visibleCols - actualsCount);
   /**
    * Grid column index of the trailing CAGR cell: one past every fiscal-year
    * bucket, so it can never collide with a real value slot (see the cell
@@ -687,61 +686,6 @@ const Table: React.FC = () => {
     visibleCols,
     actualsCount,
   ]);
-
-  /* ─────────────────────────── Year stepper ────────────────────────────
-   * "+" ADDS a projection year, the way the reference does
-   * (Prod Dev -> increaseYears): it takes the highest fiscal year, appends the
-   * next one, and seeds an empty cell for it on every row.
-   *
-   * MA's stepper used to only SLICE the buckets the response happened to send,
-   * so once they were all on screen "+" had nothing left to reveal and "-"
-   * needed two presses before a column moved (the response's `display_years`
-   * and our own actuals split disagreed by one, and that slack ate the first
-   * press). Both are now exact: one press, one column.
-   *
-   * "-" only hides the trailing projection; it never deletes the bucket or its
-   * values. The reference does delete them, but its years are a client-side
-   * list — here they are the server's own `fy..` buckets, and dropping one on a
-   * mis-click would take a year of entered figures with it. Hiding is
-   * reversible, and the narrowed `display_years` still goes out on save.
-   */
-
-  /** Widen the grid by one fiscal year, seeding an empty cell on every row. */
-  const addProjectionYear = () => {
-    if (isReadonly) return;
-    const available = Math.max(0, fyKeys.length - actualsCount);
-    // A year the response already carries but the view has narrowed past: just
-    // widen the view again rather than inventing a duplicate bucket.
-    if (projectionsShown < available) {
-      setYears(projectionsShown + 1);
-      return;
-    }
-    // Otherwise there is no bucket left to show, so make one.
-    const highest = fyKeys.reduce((max, fy) => {
-      const n = fyNumberOf(fy);
-      return n !== null && n > max ? n : max;
-    }, -1);
-    if (highest < 0) return; // no parseable buckets; nothing to count from
-    const next = `fy${String((highest + 1) % 100).padStart(2, "0")}`;
-    if (fyKeys.includes(next)) return;
-    setFyKeys([...fyKeys, next]);
-    // Every row gains a slot for it, or the new column would render "-" and
-    // silently refuse edits (`writeCells` bounds-checks the row's own length).
-    const widen = (rows: Row[]): Row[] =>
-      rows.map((r) => ({ ...r, values: [...r.values, ""] }));
-    setConRows(widen);
-    setCorRows(widen);
-    setFcfRows(widen);
-    setPtrRows(widen);
-    setCusRows(widen);
-    setYears(projectionsShown + 1);
-  };
-
-  /** Narrow the grid by one projection year (the bucket is kept). */
-  const removeProjectionYear = () => {
-    if (isReadonly) return;
-    setYears(Math.max(1, projectionsShown - 1));
-  };
 
   // ----- template load -----
   // The grids are empty until this resolves; every row on screen comes from the
@@ -905,14 +849,15 @@ const Table: React.FC = () => {
 
   // Validate: PUT the screen's edits to finEvaluationStaging/{file_id} so the
   // backend re-runs validation, then re-fetch the refreshed error messages.
-  const onSave = () => {
-    if (!template?.raw) return;
+  // Extracted from `onSave` so "Save Model" can stage the same edits before
+  // migrating (see `onMigrate`) without duplicating this assembly.
+  const buildEdits = (): FinancialEvaluationEdits | null => {
     if (!getFileId()) {
       setToast({
         kind: "error",
         message: "Cannot validate — File ID is required.",
       });
-      return;
+      return null;
     }
 
     const yearValues: Record<string, Record<string, string>> = {};
@@ -977,6 +922,13 @@ const Table: React.FC = () => {
       deletedSectionIds,
     };
 
+    return edits;
+  };
+
+  const onSave = () => {
+    if (!template?.raw) return;
+    const edits = buildEdits();
+    if (!edits) return;
     void save(template.raw, edits);
   };
 
@@ -994,8 +946,9 @@ const Table: React.FC = () => {
   useEffect(() => () => registerSave(null), [registerSave]);
 
   // Save Model: migrate staging → proposal (POST finEvalStagingMigrate). Like
-  // the other import plugins it sends no body — Validate is what pushes edits
-  // into staging — so it needs a proposal to migrate into and a file to read.
+  // Prod Dev's own Save Model, it sends no body — Validate is what pushes
+  // edits into staging — so it needs a proposal to migrate into and a file
+  // to read.
   const onMigrate = async () => {
     if (!getProposalId() && !template?.raw?.proposal_id) {
       setToast({
@@ -1282,43 +1235,7 @@ const Table: React.FC = () => {
       return next;
     });
 
-  /* ───────────────────────── Section CRUD ─────────────────────────
-   * A new section is a LOCAL block until it is saved: it carries no
-   * `fin_eval_section_id` and neither do its lines, and the backend assigns
-   * both on the PUT (see `buildNewSection`) — the same contract a new LINE
-   * already goes out under, so there is no POST-on-add and no id to reconcile.
-   *
-   * It is appended to the block BELOW the NPV table, and it comes back there:
-   * `gridIdOf` routes any section flagged `is_custom` to that block, so the
-   * screen's placement survives the round trip. `display_order` past the
-   * highest the template uses keeps it last within the payload too.
-   */
-  const addSection = (): void => {
-    if (isReadonly) return;
-    const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-    const key = `new:${id}`;
-    // Created WITH one blank row, as the reference does: a section with no rows
-    // has nothing to render "+ Add Row" beneath, so it would be a dead header.
-    const blank: Row = {
-      ...makeRow(Math.max(fyKeys.length, visibleCols), "", "yellow"),
-      sectionType: "CUSTOM",
-      sectionName: "",
-      sectionKey: key,
-      sectionId: null,
-      sectionIsCustom: true,
-      newSectionId: id,
-      allowsNewLines: true,
-    };
-    setCusRows((prev) => [...prev, blank]);
-    // "Collapse All" may have left everything folded; a section the user just
-    // asked for has to be visible.
-    setCollapsedSections((prev) => {
-      const next = new Set(prev);
-      next.delete(`cus:${key}`);
-      return next;
-    });
-    setPendingScroll(`cus:${key}`);
-  };
+  /* ───────────────────────── Section CRUD ───────────────────────── */
 
   /** Rename a section — every row carries the name, so all of them move. */
   const renameSection = (key: string, name: string): void =>
@@ -2500,48 +2417,9 @@ const Table: React.FC = () => {
               </span>
             )}
           </div>
-          {/* One right-aligned group, in the reference's order: the year
-              stepper, then "+ Add Section", then the collapse toggle (Sales
-              Contract → its toolbar; Property Leases → the same four controls
-              in the same sequence). MA had the stepper alone on the right and
-              the other two stranded on the left, which read as two unrelated
-              toolbars sharing a rule. */}
+          {/* Right-aligned group: just the collapse toggle, matching Prod
+              Dev's toolbar (no year stepper, no "+ Add Section" control). */}
           <div className="mna:flex mna:items-center mna:gap-2">
-            <button
-              type="button"
-              onClick={removeProjectionYear}
-              disabled={isReadonly || projectionsShown <= 1}
-              className="mna:h-7 mna:w-7 mna:rounded mna:border mna:border-[#d1d5db] mna:text-gray-700 mna:disabled:cursor-default mna:disabled:border-[#f3f4f6] mna:disabled:bg-[#f3f4f6] mna:disabled:text-[#9ca3af] mna:disabled:opacity-100"
-              aria-label="Decrease years"
-            >
-              −
-            </button>
-            <div className="mna:min-w-[60px] mna:text-center mna:text-sm mna:font-semibold mna:text-slate-800">
-              {projectionsShown} Years
-            </div>
-            <button
-              type="button"
-              onClick={addProjectionYear}
-              disabled={isReadonly}
-              className="mna:h-7 mna:w-7 mna:rounded mna:border mna:border-[#d1d5db] mna:text-gray-700 mna:disabled:cursor-default mna:disabled:border-[#f3f4f6] mna:disabled:bg-[#f3f4f6] mna:disabled:text-[#9ca3af] mna:disabled:opacity-100"
-              aria-label="Increase years"
-            >
-              +
-            </button>
-            {!isReadonly && (
-              <button
-                type="button"
-                onClick={addSection}
-                // The grid's columns are the response's own fiscal years, so a
-                // section added before it lands would be sized to nothing.
-                disabled={!template?.raw}
-                // Black outline, as both references give this one control, so
-                // it reads as the primary action of the group.
-                className="mna:rounded mna:border mna:border-black mna:bg-white mna:px-3 mna:py-1.5 mna:text-[12px] mna:font-bold mna:text-black mna:disabled:cursor-default mna:disabled:border-[#f3f4f6] mna:disabled:bg-[#f3f4f6] mna:disabled:text-[#9ca3af]"
-              >
-                + Add Section
-              </button>
-            )}
             <button
               type="button"
               onClick={toggleAll}

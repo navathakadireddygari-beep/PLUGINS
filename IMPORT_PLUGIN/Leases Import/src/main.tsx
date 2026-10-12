@@ -99,9 +99,9 @@ function init(hostId: string, config: AppConfig): void {
   _mountedHostId = hostId;
 
   _reactRoot.render(
-    <React.StrictMode>
+    // <React.StrictMode>
       <App />
-    </React.StrictMode>
+    // </React.StrictMode>
   );
 
   console.log(

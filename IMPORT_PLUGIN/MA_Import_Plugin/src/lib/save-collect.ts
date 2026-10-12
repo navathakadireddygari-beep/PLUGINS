@@ -59,8 +59,10 @@ export const byYearOf = (
  * `afterKey` records that row, which is what fixes the new line's
  * `display_order` and keeps it above the subtotal it feeds.
  *
- * Rows added before any template row have nothing to attach to and are skipped,
- * as are rows the user never named — a blank line is a placeholder, not data.
+ * Rows added before any template row have nothing to attach to and are
+ * skipped. A row the user never named is still sent — same as the reference
+ * project — so the backend's own validation rejects it with a proper error
+ * instead of the row silently vanishing from the save.
  *
  * Rows in a section the USER added take neither route: they belong to that
  * section, which has no server identity yet either, so they are gathered into
@@ -84,7 +86,9 @@ export const collectGridRows = (
       into[row.apiKey] = byYearOf(row, cols, fyKeys);
       return;
     }
-    // A row belonging to a section the user added this session.
+    // A row belonging to a section the user added this session. (Unreachable
+    // via the UI now that "+ Add Section" is gone, but kept for any leftover
+    // in-flight local section state from before this change.)
     if (row.newSectionId) {
       if (!newSections) return;
       const draft = (newSections[row.newSectionId] ??= { name: "", lines: [] });
@@ -99,7 +103,7 @@ export const collectGridRows = (
       }
       return;
     }
-    if (sectionIndex === null || !row.label.trim()) return;
+    if (sectionIndex === null) return;
     added.push({
       sectionIndex,
       name: row.label.trim(),
