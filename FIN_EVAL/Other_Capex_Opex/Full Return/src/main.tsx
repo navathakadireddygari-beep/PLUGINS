@@ -25,7 +25,6 @@
 // );
 
 
-import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles/globals.css";
@@ -57,9 +56,9 @@ function init(hostId: string, config: AppConfig): void {
   /* Create a fresh React root and render */
   _reactRoot = ReactDOM.createRoot(container);
   _reactRoot.render(
-    <React.StrictMode>
+    // <React.StrictMode>
       <App />
-    </React.StrictMode>
+    // </React.StrictMode>
   );
 
   //console.log("[InvestmentReport] init() mounted for proposal_id:", config.proposal_id);
