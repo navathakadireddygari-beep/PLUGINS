@@ -72,22 +72,9 @@ const LOCAL_DEV_USER_EMAIL = "arvind.tammineni@test.exp.com";
 const LOCAL_DEV_LANGUAGE = "en";
 
 /* ─────────────────────────── Token endpoint ─────────────────────── */
-
-/** OAuth2 token endpoint, relative to the base URL. */
-export const TOKEN_PATH = "/oauth/token";
-
-/**
- * Credentials for the token endpoint, as the base64 payload of the
- * `authorization: Basic …` header — i.e. base64("<client id>:<client secret>").
- *
- * Local-dev only: inside APEX the token comes from the page's own AJAX callback
- * and this is never read. M&A has its own OAuth client, distinct from the
- * reference project's — the two apps talk to different ORDS modules.
- */
-const DEV_BASIC_AUTH =
-  "QVRCNEI5OEVWZ1RnZm1rUUJ2ek5ndy4uOk9TWDJBVUJoWVZyMThDVG5HOVZQZEEuLg==";
-
-export const getBasicAuth = (): string | undefined => DEV_BASIC_AUTH;
+// No OAuth client-credentials endpoint here (see src/api/auth-api.ts) — this
+// plugin only uses the APEX AJAX path or the static dev token, matching Sales
+// Contract Import Plugin's auth-api.ts structure.
 
 /**
  * A pre-issued bearer token that bypasses the token endpoint entirely, for

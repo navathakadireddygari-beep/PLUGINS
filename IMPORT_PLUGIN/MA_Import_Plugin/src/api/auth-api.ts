@@ -1,17 +1,19 @@
 /**
- * Authentication API — same structure as the reference project (Prod Dev,
- * src/api/auth-api.ts), with M&A's own token source. The two apps talk to
- * different ORDS modules and have separate OAuth clients, so the credential
- * here is M&A's, not Prod Dev's.
+ * Authentication API — same structure as Sales Contract Import Plugin's
+ * src/api/auth-api.ts (ported verbatim):
  *
  * Token source, in order:
  *   1. APEX (`window.$v` present): POST AJAX call to wwv_flow.ajax with
  *      plugin/flow/step/instance from the widget config. The secret stays
  *      server-side and this is the only path a deployment takes.
- *   2. Standalone / local dev: the OAuth2 client-credentials endpoint,
- *      POST {base}/oauth/token with `authorization: Basic …`.
- *   3. If that endpoint is unreachable or rejects us, the static dev token
- *      below, so local work is not blocked by an auth outage.
+ *   2. Standalone / local dev: the static dev token below.
+ *
+ * No OAuth client-credentials call here — M&A FinEval's own auth-api.ts has
+ * one (for gisdev), but this import plugin's `api_endpoint` now points at
+ * gisuat, which doesn't recognize that gisdev client, so attempting it just
+ * produced a 401 on every load before silently falling back to this token
+ * anyway. Matching Sales Contract's simpler, OAuth-free structure avoids
+ * that noise entirely.
  *
  * The token is cached in memory for the lifetime of the page; concurrent
  * callers share a single in-flight request, and `clearAccessToken()` /
@@ -19,10 +21,7 @@
  */
 
 import {
-  TOKEN_PATH,
-  getApiBaseUrl,
   getAppConfig,
-  getBasicAuth,
   getStaticToken,
   isApexHost,
   type AppConfig,
@@ -103,22 +102,11 @@ export async function fetchAuthToken(
     };
   }
 
-  // Outside APEX: mint a real token, and only fall back if that fails.
-  try {
-    return await requestOAuthToken();
-  } catch (error) {
-    console.warn(
-      "[auth-api] Token endpoint unavailable, using the static dev token:",
-      error instanceof Error ? error.message : error,
-    );
-  }
-
   // ── Local dev token — replace with a fresh token when you get 401 ──
-  // Only reached when the OAuth endpoint above could not be used. Generate a
-  // new one via: POST {base}/oauth/token with the client_credentials grant.
-  // Tokens live ~1 hour, so this goes stale quickly and is a stopgap, not a
-  // configuration — a 401 here means it needs replacing.
-  const ACCESS_TOKEN = "_gT9SOFQN7yBweEn8c1L4A";
+  // Generate via: POST {base}/oauth/token with the client_credentials grant.
+  // Tokens live ~1 hour, so this goes stale quickly — a 401 here means it
+  // needs replacing.
+  const ACCESS_TOKEN = "KQuOZi3qTFE9fXdgKNXWAw.v1.Ovco6WA0b_JiG6Ki";
   return {
     accessToken: ACCESS_TOKEN,
     token_type: "Bearer",
@@ -126,54 +114,6 @@ export async function fetchAuthToken(
     app_user: cfg.app_user,
   };
 }
-
-/** Shape returned by the OAuth2 client-credentials endpoint. */
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-  /** Lifetime in seconds. */
-  expires_in: number;
-}
-
-/**
- * Request a brand-new token from the OAuth endpoint:
- *
- *   POST {base}/oauth/token
- *     authorization: Basic <client id:secret, base64>
- *     content-type:  application/x-www-form-urlencoded
- *     body:          grant_type=client_credentials
- *
- * Uses `fetch` rather than the shared axios client on purpose — that client's
- * request interceptor calls back into this module for a token, so routing the
- * token request through it would recurse.
- */
-const requestOAuthToken = async (): Promise<AuthTokenResponse> => {
-  const basicAuth = getBasicAuth();
-  if (!basicAuth) {
-    throw new Error(
-      "Missing API credentials: set DEV_BASIC_AUTH in config/app-config.ts, or run inside an APEX page so the token comes from the AJAX callback.",
-    );
-  }
-
-  const res = await fetch(`${getApiBaseUrl()}${TOKEN_PATH}`, {
-    method: "POST",
-    headers: {
-      authorization: `Basic ${basicAuth}`,
-      "content-type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ grant_type: "client_credentials" }).toString(),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Token request failed: ${res.status} ${res.statusText}`);
-  }
-
-  const data = (await res.json()) as TokenResponse;
-  if (!data?.access_token) {
-    throw new Error("Token endpoint returned no access_token");
-  }
-  return { token: data.access_token, expiresIn: data.expires_in };
-};
 
 /** The bearer string out of either response shape. */
 export function extractToken(t: AuthTokenResponse): string {

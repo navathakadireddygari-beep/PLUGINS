@@ -1489,7 +1489,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         </th>
                       )}
                       <th style={TH({ textAlign: "left", whiteSpace: "nowrap", background: "#e5e7eb", width: colWidths.targetGoLive, position: "relative" })}>
-                        TARGET GO-LIVE DATE (UAT)
+                        TARGET GO-LIVE DATE
                         <div onMouseDown={(e) => startResize("targetGoLive", e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", background: "transparent" }} />
                       </th>
                       {data.years.map((year: number, yi: number) => (
