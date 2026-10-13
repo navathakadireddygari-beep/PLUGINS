@@ -44,6 +44,7 @@ export type Group = {
   values:              ValueRow[];
   sectionId?:          number;
   sectionType?:        string;
+  parentSectionId?:    number;
   isCustom?:           string;
   isMandatory?:        string;
   isNewLineRequired?:  string;
@@ -94,6 +95,7 @@ export type ApiSection = {
   template_section_id?:  number | null;
   section_name:          string;
   section_type:          string;
+  parent_fin_eval_section_id?: number | null;
   is_custom:             string;
   is_mandatory?:         string;
   is_new_line_required?: string;
@@ -310,6 +312,7 @@ export function transformApiData(
         values,
         sectionId:    section.fin_eval_section_id ?? undefined,
         sectionType:  section.section_type   ?? "CUSTOM",
+        parentSectionId: section.parent_fin_eval_section_id ?? undefined,
         isCustom:           section.is_custom             ?? "N",
         isMandatory:        section.is_mandatory          ?? "N",
         isNewLineRequired:  section.is_new_line_required  ?? "Y",

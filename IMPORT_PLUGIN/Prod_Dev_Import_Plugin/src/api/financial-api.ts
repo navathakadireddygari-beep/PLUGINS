@@ -49,6 +49,7 @@ export type Group = {
   values:              ValueRow[];
   sectionId?:          number;
   sectionType?:        string;
+  parentSectionId?:    number;
   isCustom?:           string;
   isMandatory?:        string;
   isNewLineRequired?:  string;
@@ -583,6 +584,7 @@ function transformStagingData(
         values,
         sectionId:          section.finEvalSectionStgId ?? undefined,
         sectionType:        section.sectionType ?? "CUSTOM",
+        parentSectionId:    section.parentFinEvalSectionStgId ?? undefined,
         isCustom:           section.isCustom          ?? "N",
         isMandatory:        section.isMandatory       ?? "N",
         isNewLineRequired:  section.isNewLineRequired ?? "Y",

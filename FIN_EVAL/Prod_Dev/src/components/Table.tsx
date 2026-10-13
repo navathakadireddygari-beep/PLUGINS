@@ -32,6 +32,7 @@ import {
 
 const BRAND        = "#A5005A";
 const DARK_HEADER  = "#2d3748";
+const SUB_HEADER   = "#4a5568";
 const DARK_TOGGLE  = "#1e2433";
 
 const CURRENCY_LABELS: Record<string, string> = {
@@ -238,6 +239,28 @@ const tok = (s: string | undefined | null): string =>
 // saved section_name is left untouched.
 const sectionDisplayName = (g: Group): string =>
   tok(g.name) === "REVENUE" || tok(g.sectionType) === "REVENUE" ? "P&L" : g.name;
+
+// P&L (Revenue) is a parent section: Opex Costs and Returns Analysis render
+// nested beneath it as sub-sections and collapse along with it. A section is
+// a P&L child when the API links it via its parent id, or by name/type.
+const isPnlGroup = (g: Group): boolean =>
+  sectionDisplayName(g) === "P&L" || ["PL", "PANDL", "PROFITANDLOSS"].includes(tok(g.name));
+const PNL_CHILD_TOKENS = new Set(["OPEXCOST", "OPEXCOSTS", "RETURNANALYSIS", "RETURNSANALYSIS"]);
+const isPnlChildGroup = (g: Group, pnl: Group | undefined): boolean =>
+  !!pnl && g.id !== pnl.id && (
+    (g.parentSectionId != null && g.parentSectionId === pnl.sectionId) ||
+    PNL_CHILD_TOKENS.has(tok(g.name)) || PNL_CHILD_TOKENS.has(tok(g.sectionType))
+  );
+// Render order only (state order is untouched): P&L sub-sections move directly
+// under P&L, keeping their relative order.
+const orderWithSubSections = (groups: Group[]): { ordered: Group[]; pnl?: Group } => {
+  const pnl = groups.find(isPnlGroup);
+  if (!pnl) return { ordered: groups };
+  const children = groups.filter((g) => isPnlChildGroup(g, pnl));
+  const rest     = groups.filter((g) => !isPnlChildGroup(g, pnl));
+  const at       = rest.indexOf(pnl) + 1;
+  return { ordered: [...rest.slice(0, at), ...children, ...rest.slice(at)], pnl };
+};
 
 // Amortization Period / Date Placed in Service columns are only editable on
 // Capital Investment lines; every other section shows them disabled.
@@ -902,6 +925,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
     </>);
   };
 
+  const sectionTree = orderWithSubSections(data?.groups ?? []);
+  const isSubSection = (g: Group): boolean => isPnlChildGroup(g, sectionTree.pnl);
+
   /* ── Loading / error gates ──────────────────────────────────── */
   if (loading) return (
     <div style={{ padding: 60, textAlign: "center", color: "#6b7280", fontSize: 13 }}>
@@ -1442,12 +1468,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
               <col style={{ width: 140 }} />
             </colgroup>
             <tbody>
-              {data.groups.map((group: Group) => (
+              {sectionTree.ordered.filter((g) => !(isSubSection(g) && !sectionTree.pnl?.expanded)).map((group: Group) => (
                 <React.Fragment key={group.id}>
                   {/* Section header */}
-                  <tr data-section-id={group.sectionId} data-section-type={group.sectionType || group.id} style={{ background: DARK_HEADER, cursor: "pointer" }} onClick={() => toggleGroup(group.id)}>
+                  <tr data-section-id={group.sectionId} data-section-type={group.sectionType || group.id} style={{ background: isSubSection(group) ? SUB_HEADER : DARK_HEADER, cursor: "pointer" }} onClick={() => toggleGroup(group.id)}>
                     {group.expanded ? (
-                      <td colSpan={5 + numYears + 1} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                      <td colSpan={5 + numYears + 1} style={{ padding: isSubSection(group) ? "8px 14px 8px 34px" : "10px 14px", fontSize: isSubSection(group) ? 11 : 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <ChevronUp size={16} style={{ flexShrink: 0 }} />
                           {editingGroupId === group.id && group.isCustom === "Y" ? (
@@ -1473,7 +1499,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         </div>
                       </td>
                     ) : (
-                      <td colSpan={5 + numYears + 1} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                      <td colSpan={5 + numYears + 1} style={{ padding: isSubSection(group) ? "8px 14px 8px 34px" : "10px 14px", fontSize: isSubSection(group) ? 11 : 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <ChevronDown size={16} style={{ flexShrink: 0 }} />
                           <span style={{ flex: 1 }}>{sectionDisplayName(group)}</span>
