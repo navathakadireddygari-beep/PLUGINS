@@ -234,6 +234,24 @@ type ParsedRow = { name: string; values: number[] };
 const tok = (s: string | undefined | null): string =>
   (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
+// The "Revenue" section is labelled "P&L" on screen — display only, the
+// saved section_name is left untouched.
+const sectionDisplayName = (g: Group): string =>
+  tok(g.name) === "REVENUE" || tok(g.sectionType) === "REVENUE" ? "P&L" : g.name;
+
+// Amortization Period / Date Placed in Service columns are only editable on
+// Capital Investment lines; every other section shows them disabled.
+const isCapitalInvestmentGroup = (g: Group): boolean =>
+  tok(g.sectionType) === "CAPITALINVESTMENT" || tok(g.name) === "CAPITALINVESTMENT";
+
+// Balance Sheet and user-added custom sections never show a cross-year TOTAL.
+const isNoTotalGroup = (g: Group): boolean =>
+  g.isCustom === "Y" || tok(g.sectionType) === "CUSTOM" ||
+  tok(g.sectionType) === "BALANCESHEET" || tok(g.name) === "BALANCESHEET";
+
+// Amortization period: whole months only, max 4 digits (0–9999), no decimals.
+const isValidMonthsInput = (s: string): boolean => s === "" || /^\d{0,4}$/.test(s);
+
 // Read-only rows (e.g. Depreciation/Amortization) only ever show the
 // account actually saved on the line — the account-codes list is the full
 // GL chart of accounts with no "default" marker, so guessing by name match
@@ -824,6 +842,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // neither the value nor its decimal precision shifts when scale changes.
   const rawFmt = (n: number): string => {
     if (!n) return "—";
+    // A non-zero value that rounds to zero at the shown decimals (e.g. 0.001 at 2dp)
+    // must still read as empty, same as a true zero — not "0.00".
+    if (Number(Math.abs(n).toFixed(2)) === 0) return "—";
     const formatted = groupNumberTrimmed(n, numberFormat, 2);
     return n < 0 ? `(${formatted})` : formatted;
   };
@@ -831,6 +852,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const displayFmt = (n: number): string => {
     if (!n) return "—";
     const v = (n * fxMultiplier) / scaleDivisor(displayScale);
+    if (Number(Math.abs(v).toFixed(scaleDecimalsOf(displayScale))) === 0) return "—";
     const formatted = groupNumber(Math.abs(v), numberFormat, scaleDecimalsOf(displayScale));
     return v < 0 ? `(${formatted})` : formatted;
   };
@@ -841,10 +863,43 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const cellDisplay = (val: number, rawRow: boolean): string => {
     if (val === 0) return "";
     const sv = rawRow ? val : (val * fxMultiplier) / scaleDivisor(displayScale);
+    if (Number(Math.abs(sv).toFixed(rawRow ? 2 : scaleDecimalsOf(displayScale))) === 0) return "";
     const formatted = rawRow
       ? groupNumberTrimmed(sv, numberFormat, 2)
       : groupNumber(Math.abs(sv), numberFormat, scaleDecimalsOf(displayScale));
     return sv < 0 ? `(${formatted})` : formatted;
+  };
+
+  /* ── Amortization Period / Date Placed in Service cells ──────── */
+  const updateLineAsset = (gId: string, vId: string, patch: Partial<ValueRow>): void =>
+    setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? { ...g, values: g.values.map((v) => v.id === vId ? { ...v, ...patch } : v) } : g) }) : p);
+
+  const renderAssetCells = (group: Group, value: ValueRow, padding: string): React.ReactElement => {
+    const enabled = !isReadonly && isCapitalInvestmentGroup(group) && value.isCalculated !== "Y" && value.isLineReadOnly !== "Y";
+    const amort   = value.amortizationPeriod ?? "";
+    const placed  = value.datePlacedInService ?? "";
+    const style: CSSProperties = {
+      width: "100%", height: 28, border: "none", outline: "none", borderRadius: 4, padding: "0 6px", boxSizing: "border-box",
+      fontSize: 12, color: "#1f2937", background: enabled ? "transparent" : "#f3f4f6", cursor: enabled ? "text" : "not-allowed",
+    };
+    return (<>
+      <td style={{ ...TD, padding }}>
+        <input type="text" inputMode="numeric" disabled={!enabled} value={amort} placeholder={enabled ? "Months" : ""}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => { const next = e.target.value; if (!isValidMonthsInput(next)) return; updateLineAsset(group.id, value.id, { amortizationPeriod: next === "" ? null : Number(next) }); }}
+          style={{ ...style, textAlign: "right" }}
+        />
+      </td>
+      <td style={{ ...TD, padding }}>
+        {enabled
+          ? <input type="date" value={placed.slice(0, 10)}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => updateLineAsset(group.id, value.id, { datePlacedInService: e.target.value || null })}
+              style={{ ...style, cursor: "pointer" }}
+            />
+          : <input type="text" disabled value={placed} style={style} />}
+      </td>
+    </>);
   };
 
   /* ── Loading / error gates ──────────────────────────────────── */
@@ -1381,6 +1436,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
               <col style={{ width: 36 }} />
               <col style={{ width: colWidths.lineItem }} />
               <col style={{ width: colWidths.account }} />
+              <col style={{ width: 120 }} />
+              <col style={{ width: 150 }} />
               {data.years.map((y) => <col key={y} style={{ minWidth: 120 }} />)}
               <col style={{ width: 140 }} />
             </colgroup>
@@ -1390,7 +1447,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {/* Section header */}
                   <tr data-section-id={group.sectionId} data-section-type={group.sectionType || group.id} style={{ background: DARK_HEADER, cursor: "pointer" }} onClick={() => toggleGroup(group.id)}>
                     {group.expanded ? (
-                      <td colSpan={3 + numYears + 1} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                      <td colSpan={5 + numYears + 1} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <ChevronUp size={16} style={{ flexShrink: 0 }} />
                           {editingGroupId === group.id && group.isCustom === "Y" ? (
@@ -1406,7 +1463,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             <span
                               style={{ flex: 1, cursor: group.isCustom === "Y" ? "pointer" : "default", opacity: group.name ? 1 : 0.45, fontStyle: group.name ? "normal" : "italic" }}
                               onClick={(e) => { if (group.isCustom !== "Y") return; e.stopPropagation(); setEditingGroupId(group.id); setEditingGroupName(group.name); }}
-                            >{group.name || "Enter section name"}</span>
+                            >{sectionDisplayName(group) || "Enter section name"}</span>
                           )}
                           {!isReadonly && group.isCustom === "Y" && group.isMandatory !== "Y" && (
                             <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, name: group.name, kind: "section" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", display: "flex", padding: 2 }} title="Delete section">
@@ -1416,10 +1473,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         </div>
                       </td>
                     ) : (
-                      <td colSpan={3 + numYears + 1} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                      <td colSpan={5 + numYears + 1} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <ChevronDown size={16} style={{ flexShrink: 0 }} />
-                          <span style={{ flex: 1 }}>{group.name}</span>
+                          <span style={{ flex: 1 }}>{sectionDisplayName(group)}</span>
                           {!isReadonly && group.isCustom === "Y" && group.isMandatory !== "Y" && (
                             <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, name: group.name, kind: "section" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", display: "flex", padding: 2 }} title="Delete section">
                               <Trash2 size={14} />
@@ -1444,6 +1501,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           <div onMouseDown={(e) => startResize("account", e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", background: "transparent" }} />
                         </th>
                       )}
+                      <th style={TH({ textAlign: "left", background: "#e5e7eb" })}>AMORTIZATION PERIOD (MONTHS)</th>
+                      <th style={TH({ textAlign: "left", background: "#e5e7eb" })}>DATE PLACED IN SERVICE</th>
                       {data.years.map((year: number, yi: number) => (
                         <th key={year} style={TH({ textAlign: "right", whiteSpace: "nowrap", position: "relative", background: "#e5e7eb" })}
                           onMouseMove={(e) => { if (hoverTimer.current) clearTimeout(hoverTimer.current); const r = e.currentTarget.getBoundingClientRect(); setHoveredColIdx(e.clientX - r.left > r.width * 0.8 ? yi : null); }}
@@ -1485,7 +1544,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           )}
                         </th>
                       ))}
-                      <th style={TH({ textAlign: "right", whiteSpace: "nowrap", width: 90, background: "#e5e7eb" })}>TOTAL</th>
+                      <th style={TH({ textAlign: "right", whiteSpace: "nowrap", width: 90, background: "#e5e7eb" })}>{isNoTotalGroup(group) ? "" : "TOTAL"}</th>
                     </tr>
                   )}
 
@@ -1496,6 +1555,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     // Bypass scale on this section's calculated/total rows only when every
                     // editable line in it is NON_FINANCIAL (mixed sections still scale).
                     const groupAllNonFinancial = editable.length > 0 && editable.every(isNonFinancialRow);
+                    // Balance Sheet and custom sections never show a cross-year TOTAL — empty cell.
+                    const groupNoTotal = isNoTotalGroup(group);
 
                     const renderEditable = (value: ValueRow, _idx: number) => {
                       const acKey = `${group.id}|${value.id}`;
@@ -1542,6 +1603,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             }
                           </td>
                           )}
+                          {renderAssetCells(group, value, "4px 8px")}
                           {data.years.map((year: number, yi: number) => {
                             const val = value.yearValues[year] ?? 0;
                             return (
@@ -1589,8 +1651,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               );
                             })}
                           <td style={{ ...TD, padding: "4px 12px" }}>
-                            {isNoTotalRow(value)
-                              ? <input type="text" readOnly value="—" data-cell-nav="1" data-vid={value.id} data-year="total" tabIndex={-1}
+                            {(isNoTotalRow(value) || groupNoTotal)
+                              ? <input type="text" readOnly value={groupNoTotal ? "" : "—"} data-cell-nav="1" data-vid={value.id} data-year="total" tabIndex={-1}
                                   style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: "#1f2937", outline: "none", height: 28, cursor: "default" }}
                                   onKeyDown={(e) => handleCellArrowNav(e, value.id, "total")}
                                 />
@@ -1618,13 +1680,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {group.isAccountRequired === "Y" && (
                           <td style={{ ...TD, padding: "8px 12px", fontSize: 12, color: "#6b7280" }}>{deriveReadonlyAccount(value) || "—"}</td>
                         )}
+                        {renderAssetCells(group, value, "4px 8px")}
                         {data.years.map((year: number) => {
                           const val = value.yearValues[year] ?? 0;
                           const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial;
                           return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{rawRow ? rawFmt(val) : displayFmt(val)}</td>);
                         })}
-                        {isNoTotalRow(value)
-                          ? <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>—</td>
+                        {(isNoTotalRow(value) || groupNoTotal)
+                          ? <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>{groupNoTotal ? "" : "—"}</td>
                           : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial; return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{rawRow ? rawFmt(t) : displayFmt(t)}</td>; })()
                         }
                       </tr>
@@ -1633,7 +1696,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     return (<>
                       {(hasOngoing ? regularEditable : editable).map((v, i) => renderEditable(v, i))}
                       {!isReadonly && group.isNewLineRequired !== "N" && (
-                        <tr key="add-btn"><td colSpan={3 + numYears + 1} style={{ padding: "6px 10px", borderBottom: "1px solid #e5e7eb" }}><button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 11, background: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", cursor: "pointer", color: "#000", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, height: 15 }}>+ Add {group.name} Line</button></td></tr>
+                        <tr key="add-btn"><td colSpan={5 + numYears + 1} style={{ padding: "6px 10px", borderBottom: "1px solid #e5e7eb" }}><button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 11, background: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", cursor: "pointer", color: "#000", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, height: 15 }}>+ Add {sectionDisplayName(group)} Line</button></td></tr>
                       )}
                       {hasOngoing ? (<>
                         {calcInitial.map(renderCalcRow)}
@@ -1645,13 +1708,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           {group.isAccountRequired === "Y" && (
                             <td style={{ ...TD, padding: "10px 14px", fontSize: 12, color: "#6b7280" }}>{deriveReadonlyAccount(value) || "—"}</td>
                           )}
+                          {renderAssetCells(group, value, "4px 8px")}
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
                             const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial;
                             return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{rawRow ? rawFmt(val) : displayFmt(val)}</td>);
                           })}
-                          {isNoTotalRow(value)
-                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>—</td>
+                          {(isNoTotalRow(value) || groupNoTotal)
+                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>{groupNoTotal ? "" : "—"}</td>
                             : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial; return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{rawRow ? rawFmt(t) : displayFmt(t)}</td>; })()
                           }
                         </tr>

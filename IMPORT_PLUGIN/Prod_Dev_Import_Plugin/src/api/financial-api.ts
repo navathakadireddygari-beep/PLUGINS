@@ -28,6 +28,9 @@ export type ValueRow = {
   isCalculated?:    string;
   isMandatory?:     string;
   isCustom?:        string;
+  // Per-line asset fields — only editable on Capital Investment lines.
+  amortizationPeriod?:  number | string | null;
+  datePlacedInService?: string | null;
   displayOrder?:    number;
   status?:          string;
   languageCode?:    string;
@@ -170,6 +173,8 @@ export type StagingLine = {
   isReadOnly?:          string;
   isCustom?:            string;
   account:              string | null;
+  amortizationPeriod?:  string | number | null;
+  datePlacedInService?: string | null;
   displayOrder:         number;
   yearValues:           Record<string, YearEntry>;
   targetGoLiveDate?:    string | null;
@@ -360,6 +365,8 @@ export function buildFinEvaluationStagingPutPayload(
         isCalculated:     value.isCalculated ?? "N",
         isCustom:         value.isCustom     ?? "Y",
         account:          value.accountId    ?? null,
+        amortizationPeriod:  value.amortizationPeriod ?? null,
+        datePlacedInService: value.datePlacedInService || null,
         displayOrder:     value.displayOrder ?? lineIdx + 1,
         targetGoLiveDate: null,
         yearValues,
@@ -560,6 +567,8 @@ function transformStagingData(
             isCalculated:   line.isCalculated ?? "N",
             isMandatory:    line.isMandatory  ?? "N",
             isCustom:       line.isCustom     ?? "Y",
+            amortizationPeriod:  line.amortizationPeriod  ?? null,
+            datePlacedInService: line.datePlacedInService ?? null,
             displayOrder:   line.displayOrder,
             status:         "ACTIVE",
             languageCode:   "EN",

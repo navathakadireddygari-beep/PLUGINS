@@ -29,6 +29,9 @@ export type ValueRow = {
   isMandatory?:     string;
   isCustom?:        string;
   isLineReadOnly?:  string;
+  // Per-line asset fields — only editable on Capital Investment lines.
+  amortizationPeriod?:  number | null;
+  datePlacedInService?: string | null;
   displayOrder?:    number;
   status?:          string;
   languageCode?:    string;
@@ -78,6 +81,8 @@ export type ApiLine = {
   is_custom?:                 string;
   is_read_only?:              string;
   account:                    string | null;
+  amortization_period?:       number | null;
+  date_placed_in_service?:    string | null;
   display_order:              number;
   year_values:                Record<string, YearEntry>;
   status:                     string;
@@ -288,6 +293,8 @@ export function transformApiData(
             isMandatory:    line.is_mandatory     ?? "N",
             isCustom:       line.is_custom        ?? "Y",
             isLineReadOnly: line.is_read_only     ?? "N",
+            amortizationPeriod:  line.amortization_period != null ? Number(line.amortization_period) : null,
+            datePlacedInService: line.date_placed_in_service ?? null,
             displayOrder:   line.display_order,
             status:         line.status           ?? "ACTIVE",
             languageCode:   line.language_code    ?? "EN",
@@ -378,6 +385,8 @@ export function buildPutPayload(
         is_calculated:       value.isCalculated   ?? "N",
         is_custom:           value.isCustom       ?? "Y",
         account:             value.accountId      ?? null,
+        amortization_period:    value.amortizationPeriod  ?? null,
+        date_placed_in_service: value.datePlacedInService || null,
         display_order:       value.displayOrder   ?? lineIdx + 1,
         year_values,
         status:              value.status       ?? "ACTIVE",
@@ -723,6 +732,8 @@ function buildLineInsertBody(
     is_calculated:       value.isCalculated   ?? "N",
     is_custom:           value.isCustom       ?? "Y",
     account:             value.accountId      ?? null,
+    amortization_period:    value.amortizationPeriod  ?? null,
+    date_placed_in_service: value.datePlacedInService || null,
     display_order:       value.displayOrder   ?? lineIdx,
     year_values,
     status:              value.status       ?? "ACTIVE",
