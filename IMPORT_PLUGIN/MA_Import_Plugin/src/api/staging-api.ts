@@ -121,6 +121,43 @@ const OPAQUE_KEYS = new Set([
   "performance_metrics",
 ]);
 
+/**
+ * OPAQUE blobs whose contents the last GET sent in camelCase (e.g.
+ * `mAKeyInputs.inputs[].inputCode`). `snakeKeys` flattens them for the screen;
+ * the PUT has to answer in the GET's own spelling, or the backend finds no
+ * `inputCode` / `value` it recognises and the Key Inputs (WACC, terminal
+ * growth, …) come back blank after the round trip.
+ */
+let camelOpaque = new Set<string>();
+
+/** True when any key anywhere inside `value` is camelCase. */
+const hasCamelKey = (value: unknown): boolean => {
+  if (Array.isArray(value)) return value.some(hasCamelKey);
+  if (value && typeof value === "object") {
+    return Object.entries(value as Loose).some(
+      ([k, v]) => /^[a-z][a-z0-9]*[A-Z]/.test(k) || hasCamelKey(v),
+    );
+  }
+  return false;
+};
+
+/** Record which OPAQUE blobs in the raw (un-snaked) GET body are camelCase. */
+const detectOpaqueCasing = (value: unknown, into: Set<string>): void => {
+  if (Array.isArray(value)) {
+    value.forEach((v) => detectOpaqueCasing(v, into));
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  Object.entries(value as Loose).forEach(([k, v]) => {
+    const key = toSnake(k);
+    if (OPAQUE_KEYS.has(key)) {
+      if (hasCamelKey(v)) into.add(key);
+    } else {
+      detectOpaqueCasing(v, into);
+    }
+  });
+};
+
 /** Deep-convert structural keys to camelCase, leaving OPAQUE_KEYS' contents. */
 const camelKeys = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(camelKeys);
@@ -128,7 +165,7 @@ const camelKeys = (value: unknown): unknown => {
     return Object.fromEntries(
       Object.entries(value as Loose).map(([k, v]) => [
         toCamel(k),
-        OPAQUE_KEYS.has(k) ? v : camelKeys(v),
+        OPAQUE_KEYS.has(k) && !camelOpaque.has(k) ? v : camelKeys(v),
       ]),
     );
   }
@@ -330,6 +367,10 @@ export const mapStagingEnvelope = (envelope: StagingEnvelope): StagingModel => {
   const header = (Array.isArray(items) ? items[0] : items) ?? null;
 
   if (header) {
+    const rawData = (envelope?.data ?? {}) as Loose;
+    const casing = new Set<string>();
+    detectOpaqueCasing(rawData.header ?? rawData.items, casing);
+    camelOpaque = casing;
     const hasStg = JSON.stringify(header).includes("_stg_id");
     const hasPlain = JSON.stringify(header).includes('"fin_eval_line_id"');
     detectedIdStyle = hasStg || !hasPlain ? "stg" : "plain";

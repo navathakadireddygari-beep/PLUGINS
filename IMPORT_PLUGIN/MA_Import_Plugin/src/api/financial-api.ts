@@ -1044,6 +1044,22 @@ export const buildFinancialEvaluationPayload = (
 
   const rawAny = raw as unknown as Record<string, unknown>;
 
+  // A Key Input naming a header column in `source_column` is stored THERE, and
+  // the backend rebuilds the input from that column on the next GET. Only
+  // Discount and Tax were written back, so any other input backed by a header
+  // column (terminal growth, …) reverted on every save. Columns the header
+  // does not carry are left alone rather than invented.
+  const sourceColumns: Record<string, number | null> = {};
+  (raw.m_a_key_inputs?.inputs ?? []).forEach((input) => {
+    const edited = edits.keyInputs?.[input.input_code];
+    const column = (input.source_column ?? "").trim();
+    if (edited === undefined || !column) return;
+    const key = column.includes("_")
+      ? column.toLowerCase()
+      : column.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+    if (key in rawAny) sourceColumns[key] = percentOrNull(edited);
+  });
+
   // The endpoint REPLACES the whole evaluation, so the body is the GET payload
   // with this screen's edits applied on top — not a hand-picked subset. The
   // header carries identity and units the UI never renders (`proposal_id`,
@@ -1053,6 +1069,7 @@ export const buildFinancialEvaluationPayload = (
   // answer "S" and still leave the stored evaluation untouched.
   return {
     ...rawAny,
+    ...sourceColumns,
     fin_eval_header_id: raw.fin_eval_header_id ?? null,
     proposal_id: raw.proposal_id ?? getAppConfig().proposal_id ?? null,
     user_email: getAppConfig().app_user,

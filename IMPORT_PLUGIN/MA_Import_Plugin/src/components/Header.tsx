@@ -95,10 +95,19 @@ export default function Header() {
             <button
               id="fin-eval-save-model-btn"
               type="button"
-              className="mna:inline-flex mna:items-center mna:gap-1.5 mna:rounded-md mna:border mna:border-black/70 mna:bg-white mna:px-[18px] mna:py-2 mna:text-[13px] mna:font-bold mna:text-black mna:transition mna:disabled:cursor-not-allowed mna:disabled:opacity-70"
+              className="mna:inline-flex mna:items-center mna:gap-1.5 mna:rounded-md mna:border mna:border-black/70 mna:bg-white mna:px-[18px] mna:py-2 mna:text-[13px] mna:font-bold mna:text-black mna:transition mna:disabled:cursor-not-allowed mna:disabled:opacity-40"
               onClick={requestMigrate}
-              disabled={busy || !ready}
-              title={ready ? undefined : "Nothing to save until the staged data loads"}
+              // Prod Dev parity: migrating is blocked until the staged data
+              // validates clean, so Validate (which PUTs the edits) always runs
+              // before the migrate that copies staging into the proposal.
+              disabled={busy || !ready || issueCount > 0}
+              title={
+                issueCount > 0
+                  ? "Resolve all validation errors before saving the model."
+                  : ready
+                    ? undefined
+                    : "Nothing to save until the staged data loads"
+              }
             >
               <svg
                 width="14"

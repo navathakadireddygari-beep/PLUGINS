@@ -948,7 +948,7 @@ const Table: React.FC = () => {
   // Save Model: migrate staging → proposal (POST finEvalStagingMigrate). Like
   // Prod Dev's own Save Model, it sends no body — Validate is what pushes
   // edits into staging — so it needs a proposal to migrate into and a file
-  // to read.
+  // to read. The header keeps it disabled while validation issues remain.
   const onMigrate = async () => {
     if (!getProposalId() && !template?.raw?.proposal_id) {
       setToast({
@@ -2178,14 +2178,29 @@ const Table: React.FC = () => {
       setErrorFocus((prev) => ({ selectors, seq: (prev?.seq ?? 0) + 1 }));
 
     if (issue.lineId != null) {
+      let panel: string | null = null;
       for (const [gridId, rows] of grids) {
-        const row = rows.find((r) => r.lineId === issue.lineId);
+        const row =
+          rows.find((r) => r.lineId === issue.lineId) ??
+          (issue.sectionId != null
+            ? rows.find((r) => r.sectionId === issue.sectionId)
+            : undefined);
         if (row) {
           expand(gridId, row);
+          panel = gridId;
           break;
         }
       }
-      focus([`[data-line-id="${issue.lineId}"]`]);
+      // The row itself first; failing that (a line the grid does not draw),
+      // its section bar, then its panel — landing near the problem beats a
+      // "not on screen" toast.
+      focus([
+        `[data-line-id="${issue.lineId}"]`,
+        ...(issue.sectionId != null
+          ? [`[data-section-id="${issue.sectionId}"]`]
+          : []),
+        ...(panel ? [`[data-panel="${panel}"]`] : []),
+      ]);
       return;
     }
     if (issue.sectionId != null) {
