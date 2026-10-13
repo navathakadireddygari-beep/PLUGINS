@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Download, Upload, Save } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Download, Upload, Save, Calendar } from "lucide-react";
 import { getAppConfig } from "../config/app-config";
 import { subscribeAllActions, publishToBridge } from "../lib";
 import type {} from "../types/fin-eval-bridge";
@@ -968,7 +968,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
             native date input on top supplies the calendar picker. */}
         <div style={{ position: "relative" }}>
           <input type="text" readOnly tabIndex={-1} value={fmtCellDate(placed)} placeholder={dateFormatHint}
-            style={{ ...style, cursor: "pointer" }}
+            style={{ ...style, paddingRight: 28, cursor: "pointer" }}
+          />
+          {/* Same calendar icon as the Financial Parameters date field. */}
+          <Calendar size={14}
+            style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}
           />
           <input type="date" aria-label="Date Placed in Service" value={placed.slice(0, 10)}
             onClick={(e) => {
