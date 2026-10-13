@@ -916,10 +916,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
       width: "100%", height: 28, border: "none", outline: "none", borderRadius: 4, padding: "0 6px", boxSizing: "border-box",
       fontSize: 12, color: "#1f2937", background: "transparent", cursor: "text",
     };
-    // Disabled: a plain cell (no input box, no grey fill) — shows a saved value, if any, as text.
+    // Disabled: the whole cell is filled grey, same as the calculated rows
+    // (#f3f4f6) — no inner box; a saved value, if any, shows as plain text.
     if (!enabled) return (<>
-      <td style={{ ...TD, padding: "4px 14px", fontSize: 12, color: "#1f2937", textAlign: "right" }}>{amort}</td>
-      <td style={{ ...TD, padding: "4px 14px", fontSize: 12, color: "#1f2937" }}>{placed.slice(0, 10)}</td>
+      <td style={{ ...TD, padding: "4px 14px", background: "#f3f4f6", fontSize: 12, color: "#1f2937", textAlign: "right", cursor: "not-allowed" }}>{amort}</td>
+      <td style={{ ...TD, padding: "4px 14px", background: "#f3f4f6", fontSize: 12, color: "#1f2937", cursor: "not-allowed" }}>{placed.slice(0, 10)}</td>
     </>);
     return (<>
       <td style={{ ...TD, padding }}>
