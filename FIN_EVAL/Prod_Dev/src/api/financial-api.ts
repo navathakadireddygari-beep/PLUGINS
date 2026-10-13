@@ -295,7 +295,7 @@ export function transformApiData(
             isMandatory:    line.is_mandatory     ?? "N",
             isCustom:       line.is_custom        ?? "Y",
             isLineReadOnly: line.is_read_only     ?? "N",
-            amortizationPeriod:  line.amortization_period != null ? Number(line.amortization_period) : null,
+            amortizationPeriod:  line.amortization_period != null && Number.isFinite(Number(line.amortization_period)) ? Number(line.amortization_period) : null,
             datePlacedInService: line.date_placed_in_service ?? null,
             displayOrder:   line.display_order,
             status:         line.status           ?? "ACTIVE",

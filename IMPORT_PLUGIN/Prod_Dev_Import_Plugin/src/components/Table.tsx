@@ -26,7 +26,7 @@ import { DATE_FORMATS, type DateFormatId } from "../lib/date-helper";
 import KpiPanel from "./KpiPanel";
 import Toast, { type ToastState } from "./Toast";
 
-const BRAND        = "#A5005A";
+const BRAND        = "#111827";
 const DARK_HEADER  = "#2d3748";
 // P&L sub-sections are indented by this much; the gutter stays white so the
 // section bar, delete icon and line items all start at the indented edge.
@@ -172,8 +172,8 @@ function AccountCodeSelect({
                     onMouseDown={() => { onChange(optVal); setOpen(false); setSearch(""); }}
                     style={{
                       padding: "6px 10px", fontSize: 12, cursor: "pointer",
-                      background: selected ? "#ede9fe" : "#fff",
-                      color: selected ? "#5b21b6" : "#1f2937",
+                      background: selected ? "#e5e7eb" : "#fff",
+                      color: selected ? "#111827" : "#1f2937",
                     }}
                     onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "#f3f4f6"; }}
                     onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "#fff"; }}
@@ -1001,24 +1001,27 @@ export default function PivotTableWithAPI(): React.ReactElement {
     const placed  = value.datePlacedInService ?? "";
     const style: CSSProperties = {
       width: "100%", height: 28, border: "none", outline: "none", borderRadius: 4, padding: "0 6px", boxSizing: "border-box",
-      fontSize: 12, color: "#1f2937", background: enabled ? "transparent" : "#f3f4f6", cursor: enabled ? "text" : "not-allowed",
+      fontSize: 12, color: "#1f2937", background: "transparent", cursor: "text",
     };
+    // Disabled: a plain cell (no input box, no grey fill) — shows a saved value, if any, as text.
+    if (!enabled) return (<>
+      <td style={{ ...TD, padding: "4px 14px", fontSize: 12, color: "#1f2937", textAlign: "right" }}>{amort}</td>
+      <td style={{ ...TD, padding: "4px 14px", fontSize: 12, color: "#1f2937" }}>{placed.slice(0, 10)}</td>
+    </>);
     return (<>
       <td style={{ ...TD, padding }}>
-        <input type="text" inputMode="numeric" disabled={!enabled} value={amort} placeholder={enabled ? "Months" : ""}
+        <input type="text" inputMode="numeric" value={amort} placeholder="Months"
           onClick={(e) => e.stopPropagation()}
           onChange={(e) => { const next = e.target.value; if (!isValidMonthsInput(next)) return; updateLineAsset(group.id, value.id, { amortizationPeriod: next === "" ? null : Number(next) }); }}
           style={{ ...style, textAlign: "right" }}
         />
       </td>
       <td style={{ ...TD, padding }}>
-        {enabled
-          ? <input type="date" value={placed.slice(0, 10)}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => updateLineAsset(group.id, value.id, { datePlacedInService: e.target.value || null })}
-              style={{ ...style, cursor: "pointer" }}
-            />
-          : <input type="text" disabled value={placed} style={style} />}
+        <input type="date" value={placed.slice(0, 10)}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => updateLineAsset(group.id, value.id, { datePlacedInService: e.target.value || null })}
+          style={{ ...style, cursor: "pointer" }}
+        />
       </td>
     </>);
   };

@@ -16,7 +16,7 @@ type Props = {
 };
 
 const GREEN  = "#10B981";
-const PURPLE = "#7C3AED";
+const SLATE  = "#2d3748";
 
 const cardShell: React.CSSProperties = {
   flex: 1, background: "#fff", border: "1px solid #e5e7eb",
@@ -187,7 +187,7 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, isReadonly
           })()}
           <div style={subStyle}>Net Present Value</div>
         </div>
-        <div style={{ ...cardShell, borderLeftColor: PURPLE }}>
+        <div style={{ ...cardShell, borderLeftColor: SLATE }}>
           <div style={labelStyle}>IRR</div>
           {(() => { const { text, negative } = fmtPercent(rawHeader.irr_percent, displayScale); return <div style={{ ...valueStyle, color: negative ? "#DC2626" : "#111827" }}>{text}</div>; })()}
           <div style={subStyle}>Internal Rate of Return</div>
@@ -280,7 +280,7 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, isReadonly
           <div style={fieldWrap}>
             <label style={{ ...fieldLabel, display: "flex", alignItems: "center", gap: 4 }}>
               Discount Rate (%)
-              <span id="discount_rate_info" style={{ color: "#A5005A", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
+              <span id="discount_rate_info" style={{ color: "#111827", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
             </label>
             <input type="text" inputMode="decimal"
               style={fieldStyle("discount_rate_percent")}
@@ -291,7 +291,7 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, isReadonly
           <div style={fieldWrap}>
             <label style={{ ...fieldLabel, display: "flex", alignItems: "center", gap: 4 }}>
               Share Repurchase (%)
-              <span id="share_purchase_info" style={{ color: "#A5005A", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
+              <span id="share_purchase_info" style={{ color: "#111827", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
             </label>
             <input type="text" inputMode="decimal"
               style={fieldStyle("share_repurchase_percent")}

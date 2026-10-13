@@ -17,7 +17,7 @@ type Props = {
 };
 
 const GREEN  = "#10B981";
-const PURPLE = "#7C3AED";
+const SLATE  = "#2d3748";
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   GBP: "£", USD: "$", EUR: "€", CAD: "$", AUD: "A$", JPY: "¥", SGD: "$", INR: "₹", CNY: "¥",
@@ -168,7 +168,7 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, numberForm
           })()}
           <div style={subStyle}>Net Present Value</div>
         </div>
-        <div style={{ ...cardShell, borderLeftColor: PURPLE }}>
+        <div style={{ ...cardShell, borderLeftColor: SLATE }}>
           <div style={labelStyle}>IRR <span style={{ color: "#9ca3af", fontWeight: 500 }}>· {display}</span></div>
           {(() => { const { text, negative } = fmtPercent(rawHeader.irr_percent); return <div style={{ ...valueStyle, color: negative ? "#DC2626" : "#111827" }}>{text}</div>; })()}
           <div style={subStyle}>Internal Rate of Return</div>
@@ -263,7 +263,7 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, numberForm
           <div style={fieldWrap}>
             <label style={{ ...fieldLabel, display: "flex", alignItems: "center", gap: 4 }}>
               Discount Rate (%)
-              <span id="discount_rate_info" style={{ color: "#A5005A", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
+              <span id="discount_rate_info" style={{ color: "#111827", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
             </label>
             <input type="text" inputMode="decimal"
               style={{ ...fieldInput, background: isReadonly ? "#f3f4f6" : "#fff", cursor: isReadonly ? "default" : "text" }}
@@ -273,7 +273,7 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, numberForm
           <div style={fieldWrap}>
             <label style={{ ...fieldLabel, display: "flex", alignItems: "center", gap: 4 }}>
               Share Repurchase (%)
-              <span id="share_purchase_info" style={{ color: "#A5005A", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
+              <span id="share_purchase_info" style={{ color: "#111827", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
             </label>
             <input type="text" inputMode="decimal"
               style={{ ...fieldInput, background: isReadonly ? "#f3f4f6" : "#fff", cursor: isReadonly ? "default" : "text" }}
