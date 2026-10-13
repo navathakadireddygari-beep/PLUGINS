@@ -1,1596 +1,1601 @@
 {
-    "apiStatus": "S",
-    "apiMessage": "Staged financial evaluation retrieved successfully.",
-    "data": {
-        "file": {
-            "fileId": 475,
-            "proposalId": 1514,
-            "fileName": "M_A_29TH_sep_Project_orion_Wires_copy_2_copy_1_copy_11_copy_1_copy_1.xlsx",
-            "spcTypeId": 104,
-            "spcTypeTemplateId": 308,
-            "displayCurrency": "USD",
-            "loadStatus": "VALIDATION_FAILED",
-            "totalSectionCount": 2,
-            "totalLineCount": 15,
-            "errorCode": "FE_SEC_MISSING; FE_SEC_MISSING; FE_SEC_MISSING; FE_SEC_MISSING",
-            "errorMessage": "Section 'Consideration' is part of the template but is missing from the uploaded file. | Section 'Returns Analysis' is part of the template but is missing from the uploaded file. | Section 'Revenue' is part of the template but is missing from the uploaded file. | Section 'Total Costs' is part of the template but is missing from the uploaded file.",
-            "migratedDate": null
-        },
-        "header": {
-            "finEvalHeaderStgId": 551,
-            "localCurrency": null,
-            "displayCurrency": "USD",
-            "exchangeRate": null,
-            "hurdleRatePercent": null,
-            "discountRatePercent": "10.8",
-            "shareRepurchasePercent": null,
-            "amortisationPeriodYears": null,
-            "amortizationPeriod": null,
-            "datePlacedInService": null,
-            "taxRatePercent": "29.2",
-            "displayYears": null,
-            "kpiType": null,
-            "npv": null,
-            "irrPercent": null,
-            "paybackPeriodYears": null,
-            "totalCashInflow": null,
-            "totalCashOutflow": null,
-            "grossProfit": null,
-            "grossMarginPercent": null,
-            "contributionMarginPercent": null,
-            "totalContractValue": null,
-            "numberOfYears": null,
-            "annualContractValue": null,
-            "contractDuration": null,
-            "totalLeaseValue": null,
-            "leaseTermsYears": null,
-            "proposedTerm": null,
-            "investment": null,
-            "annualCost": null,
-            "totalCapexInvestment": null,
-            "annualOpex": null,
-            "investmentTerm": null,
-            "npvActuals": null,
-            "irrActualsPercent": null,
-            "paybackActualsYears": null,
-            "npvVariance": null,
-            "irrVariance": null,
-            "paybackVariance": null,
-            "avgWeeklyPeakHeadcount": null,
-            "performanceMetrics": null,
-            "status": "ACTIVE",
-            "languageCode": "EN",
-            "attribute1": null,
-            "attribute2": null,
-            "attribute3": null,
-            "attribute4": null,
-            "attribute5": null,
-            "attribute6": null,
-            "attribute7": null,
-            "attribute8": null,
-            "attribute9": null,
-            "attribute10": null,
-            "validationStatus": "VALID",
-            "errorCode": null,
-            "errorMessage": null,
-            "val": {
-                "proposalId": "VALID",
-                "displayCurrency": "VALID",
-                "hurdleRatePercent": "NA",
-                "discountRatePercent": "VALID",
-                "shareRepurchasePercent": "NA",
-                "amortisationPeriodYears": null,
-                "amortizationPeriod": "NA",
-                "datePlacedInService": "NA",
-                "performanceMetrics": "NA",
-                "contractDuration": "NA",
-                "proposedTerm": "NA",
-                "investmentTerm": "NA"
-            },
-            "sections": [
-                {
-                    "finEvalSectionStgId": 3067,
-                    "parentFinEvalSectionStgId": null,
-                    "sectionName": "Combined Free Cash Flows",
-                    "sectionType": "COMBINED_FREE_CASH_FLOWS",
-                    "isCustom": "N",
-                    "isMandatory": "Y",
-                    "isReadOnly": "N",
-                    "isAccountRequired": "N",
-                    "isNewLineRequired": "N",
-                    "isGoLiveReq": "N",
-                    "displayOrder": 40,
-                    "status": "ACTIVE",
-                    "languageCode": "EN",
-                    "attribute1": null,
-                    "attribute2": null,
-                    "attribute3": null,
-                    "attribute4": null,
-                    "attribute5": null,
-                    "attribute6": null,
-                    "attribute7": null,
-                    "attribute8": null,
-                    "attribute9": null,
-                    "attribute10": null,
-                    "validationStatus": "VALID",
-                    "errorCode": null,
-                    "errorMessage": null,
-                    "val": {
-                        "proposalId": "VALID",
-                        "sectionName": "VALID",
-                        "parentFinEvalSecStgId": "NA"
-                    },
-                    "lines": [
-                        {
-                            "finEvalLineStgId": 9990,
-                            "finEvalSectionStgId": 3067,
-                            "lineType": "CF_EBIT",
-                            "lineItemName": "EBIT",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 10,
-                            "yearValues": {
-                                "7yr cagr": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy24": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy25": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy26": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy27": {
-                                    "spc_projected_amount": 68.04,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": 47.52,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": 114.48,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": 93.96,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": 106.92,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": 106.92,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 106.92,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 9991,
-                            "finEvalSectionStgId": 3067,
-                            "lineType": "INTEGRATION_COSTS_ONE_TIME",
-                            "lineItemName": "One-time exceptional integration costs",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "N",
-                            "isMandatory": "Y",
-                            "isReadOnly": "N",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 20,
-                            "yearValues": {
-                                "7yr cagr": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy24": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy25": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy26": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy27": {
-                                    "spc_projected_amount": -16.2,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 9992,
-                            "finEvalSectionStgId": 3067,
-                            "lineType": "AMORT_DEPREC",
-                            "lineItemName": "Depreciation and Amortization",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 30,
-                            "yearValues": {
-                                "7yr cagr": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy24": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy25": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy26": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy27": {
-                                    "spc_projected_amount": 2.16,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": 3.24,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": 4.32,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": 4.32,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": 4.32,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": 4.32,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 4.32,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 9993,
-                            "finEvalSectionStgId": 3067,
-                            "lineType": "CASH_TAX_EBIT",
-                            "lineItemName": "Taxes payable",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 40,
-                            "yearValues": {
-                                "7yr cagr": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy24": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy25": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy26": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy27": {
-                                    "spc_projected_amount": -19.86768,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": -13.87584,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": -33.42816,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": -27.43632,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": -31.22064,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": -31.22064,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": -31.22064,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 9994,
-                            "finEvalSectionStgId": 3067,
-                            "lineType": "OPERATING_CF",
-                            "lineItemName": "Operating Free Cash Flow",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 70,
-                            "yearValues": {
-                                "7yr cagr": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy24": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy25": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy26": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy27": {
-                                    "spc_projected_amount": 62.21232,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": 30.40416,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": 76.73184,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": 62.20368,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": 71.37936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": 71.37936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 71.37936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 9995,
-                            "finEvalSectionStgId": 3067,
-                            "lineType": "EXPERIAN_SHARE_OPERATING_FCF",
-                            "lineItemName": "Experian Share of Operating Free Cash Flow",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 90,
-                            "yearValues": {
-                                "7yr cagr": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy24": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy25": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy26": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy27": {
-                                    "spc_projected_amount": 62.21232,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": 30.40416,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": 76.73184,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": 62.20368,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": 71.37936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": 71.37936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 71.37936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 9996,
-                            "finEvalSectionStgId": 3067,
-                            "lineType": "PURCHASE_PRICE",
-                            "lineItemName": "Purchase Price",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "N",
-                            "isMandatory": "Y",
-                            "isReadOnly": "N",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 100,
-                            "yearValues": {
-                                "7yr cagr": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy24": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy25": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy26": {
-                                    "spc_projected_amount": -453.6,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy27": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 9997,
-                            "finEvalSectionStgId": 3067,
-                            "lineType": "TERMINAL_VALUE",
-                            "lineItemName": "Terminal value",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 110,
-                            "yearValues": {
-                                "7yr cagr": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy24": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy25": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy26": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy27": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 1145.36419,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 9998,
-                            "finEvalSectionStgId": 3067,
-                            "lineType": "NET_CASH_FLOW",
-                            "lineItemName": "Net Free Cash Flow",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 120,
-                            "yearValues": {
-                                "7yr cagr": {
-                                    "spc_projected_amount": null,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy24": {
-                                    "spc_projected_amount": 0,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy25": {
-                                    "spc_projected_amount": 0,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy26": {
-                                    "spc_projected_amount": -453.6,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy27": {
-                                    "spc_projected_amount": 62.21232,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": 30.40416,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": 76.73184,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": 62.20368,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": 71.37936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": 71.37936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 1216.74355,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        }
-                    ]
+  "apiStatus": "S",
+  "apiMessage": "Financial evaluation retrieved successfully",
+  "data": {
+    "items": {
+      "fin_eval_header_id": 1251,
+      "proposal_id": 1182,
+      "proposal_title": "Temp prod dev -1",
+      "proposal_code": "NA-PD-2026-1182",
+      "proposal_status": "DRAFT",
+      "planned_go_live_date": null,
+      "go_live_pending": "Y",
+      "local_currency": "USD",
+      "display_currency": null,
+      "exchange_rate": null,
+      "hurdle_rate_percent": null,
+      "discount_rate_percent": null,
+      "share_repurchase_percent": null,
+      "amortisation_period_years": null,
+      "amortization_period": null,
+      "date_placed_in_service": null,
+      "actual_acquisition_date": null,
+      "tax_rate_percent": null,
+      "display_years": null,
+      "kpi_type": null,
+      "number_of_years": null,
+      "avg_weekly_peak_headcount": null,
+      "npv": null,
+      "irr_percent": null,
+      "payback_period_years": null,
+      "total_cash_inflow": null,
+      "total_cash_outflow": null,
+      "gross_profit": null,
+      "gross_margin_percent": null,
+      "contribution_margin_percent": null,
+      "total_contract_value": null,
+      "annual_contract_value": null,
+      "contract_duration": null,
+      "total_lease_value": null,
+      "lease_terms_years": null,
+      "investment": null,
+      "annual_cost": null,
+      "investment_term_years": null,
+      "total_capex_investment": null,
+      "annual_opex": null,
+      "performance_metrics": {
+        "hurdle_checks": [
+          {
+            "check_code": "IRR_VS_HURDLE",
+            "label": "IRR > hurdle rate",
+            "hurdle_value": null,
+            "actual_value": null,
+            "pass": null
+          },
+          {
+            "check_code": "YEAR5_PTR",
+            "label": "Year 5 PTR > 10%",
+            "hurdle_value": 10,
+            "actual_value": null,
+            "pass": null
+          },
+          {
+            "check_code": "AVG3YR_PTR_VS_BUYBACK",
+            "label": "Avg 3 year PTR > buyback",
+            "hurdle_value": null,
+            "actual_value": null,
+            "pass": null
+          }
+        ],
+        "computed_at": null
+      },
+      "m_a_key_inputs": null,
+      "m_a_npv_calculation": null,
+      "npv_actuals": null,
+      "irr_actuals_percent": null,
+      "payback_actuals_years": null,
+      "npv_variance": null,
+      "irr_variance": null,
+      "payback_variance": null,
+      "region_code": null,
+      "country_code": null,
+      "entity_code": null,
+      "bu_code": null,
+      "scopes": [
+        {
+          "proposal_scope_id": 2418,
+          "region_code": "REG_N_AMERICA",
+          "country_code": "25",
+          "entity_code": "1000",
+          "bu_code": null,
+          "spc_type_id": 101
+        }
+      ],
+      "status": "ACTIVE",
+      "language_code": "EN",
+      "attribute1": null,
+      "attribute2": null,
+      "attribute3": null,
+      "attribute4": null,
+      "attribute5": null,
+      "attribute6": null,
+      "attribute7": null,
+      "attribute8": null,
+      "attribute9": null,
+      "attribute10": null,
+      "created_by": "vineet.karwa@test.exp.com",
+      "creation_date": "2026-10-13T10:18:24",
+      "last_updated_by": "vineet.karwa@test.exp.com",
+      "last_updated_date": "2026-10-13T10:18:24",
+      "sections": [
+        {
+          "fin_eval_section_id": 14536,
+          "parent_fin_eval_section_id": null,
+          "section_name": "Capital Investment",
+          "section_type": "CAPITAL_INVESTMENT",
+          "is_custom": "N",
+          "is_read_only": "N",
+          "is_account_required": "Y",
+          "is_new_line_required": "Y",
+          "is_go_live_req": "N",
+          "display_order": 1,
+          "region_code": null,
+          "country_code": null,
+          "entity_code": null,
+          "bu_code": null,
+          "status": "ACTIVE",
+          "language_code": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "created_by": "vineet.karwa@test.exp.com",
+          "creation_date": "2026-10-13T10:18:24",
+          "last_updated_by": "vineet.karwa@test.exp.com",
+          "last_updated_date": "2026-10-13T10:18:24",
+          "lines": [
+            {
+              "fin_eval_line_id": 31503,
+              "fin_eval_section_id": 14536,
+              "line_type": "TOTAL_CAPEX",
+              "line_item_name": "Total CAPEX Investment",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 3,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
                 },
-                {
-                    "finEvalSectionStgId": 3068,
-                    "parentFinEvalSectionStgId": null,
-                    "sectionName": "Post Tax Return",
-                    "sectionType": "POST_TAX_RETURN",
-                    "isCustom": "N",
-                    "isMandatory": "Y",
-                    "isReadOnly": "Y",
-                    "isAccountRequired": "N",
-                    "isNewLineRequired": "N",
-                    "isGoLiveReq": "N",
-                    "displayOrder": 50,
-                    "status": "ACTIVE",
-                    "languageCode": "EN",
-                    "attribute1": null,
-                    "attribute2": null,
-                    "attribute3": null,
-                    "attribute4": null,
-                    "attribute5": null,
-                    "attribute6": null,
-                    "attribute7": null,
-                    "attribute8": null,
-                    "attribute9": null,
-                    "attribute10": null,
-                    "validationStatus": "VALID",
-                    "errorCode": null,
-                    "errorMessage": null,
-                    "val": {
-                        "proposalId": "VALID",
-                        "sectionName": "VALID",
-                        "parentFinEvalSecStgId": "NA"
-                    },
-                    "lines": [
-                        {
-                            "finEvalLineStgId": 9999,
-                            "finEvalSectionStgId": 3068,
-                            "lineType": "PTR_EBIT",
-                            "lineItemName": "EBIT",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 10,
-                            "yearValues": {
-                                "fy27": {
-                                    "spc_projected_amount": 68.04,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": 47.52,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": 114.48,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": 93.96,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": 106.92,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": 106.92,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 106.92,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 10000,
-                            "finEvalSectionStgId": 3068,
-                            "lineType": "PTR_TAXES_PAYABLE",
-                            "lineItemName": "Taxes payable",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 20,
-                            "yearValues": {
-                                "fy27": {
-                                    "spc_projected_amount": -19.86768,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": -13.87584,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": -33.42816,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": -27.43632,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": -31.22064,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": -31.22064,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": -31.22064,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 10001,
-                            "finEvalSectionStgId": 3068,
-                            "lineType": "EBIT_AFTER_TAX",
-                            "lineItemName": "EBIT after Tax",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 30,
-                            "yearValues": {
-                                "fy27": {
-                                    "spc_projected_amount": 48.17232,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": 33.64416,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": 81.05184,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": 66.52368,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": 75.69936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": 75.69936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 75.69936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 10002,
-                            "finEvalSectionStgId": 3068,
-                            "lineType": "CASH_BENEFITS",
-                            "lineItemName": "Cash benefits",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "N",
-                            "isMandatory": "Y",
-                            "isReadOnly": "N",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 40,
-                            "yearValues": {
-                                "fy27": {
-                                    "spc_projected_amount": 1,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": 2,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": 4.33,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": 4.34,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": 5,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": 6,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 7,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 10003,
-                            "finEvalSectionStgId": 3068,
-                            "lineType": "POST_TAX_EBIT",
-                            "lineItemName": "Post tax EBIT",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 50,
-                            "yearValues": {
-                                "fy27": {
-                                    "spc_projected_amount": 49.17232,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": 35.64416,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": 85.38184,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": 70.86368,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": 80.69936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": 81.69936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 82.69936,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        },
-                        {
-                            "finEvalLineStgId": 10004,
-                            "finEvalSectionStgId": 3068,
-                            "lineType": "POST_TAX_RETURN",
-                            "lineItemName": "Post tax return",
-                            "lineIdentifier": "Financial",
-                            "isCalculated": "Y",
-                            "isMandatory": "Y",
-                            "isReadOnly": "Y",
-                            "isCustom": "N",
-                            "account": null,
-                            "displayOrder": 60,
-                            "yearValues": {
-                                "fy27": {
-                                    "spc_projected_amount": 0.0108405,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy28": {
-                                    "spc_projected_amount": 0.0078581,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy29": {
-                                    "spc_projected_amount": 0.0188232,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy30": {
-                                    "spc_projected_amount": 0.0156225,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy31": {
-                                    "spc_projected_amount": 0.0177909,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy32": {
-                                    "spc_projected_amount": 0.0180113,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                },
-                                "fy33": {
-                                    "spc_projected_amount": 0.0182318,
-                                    "ytd_budgeted_forecast": null,
-                                    "ytd_actuals": null,
-                                    "variance": null
-                                }
-                            },
-                            "targetGoLiveDate": null,
-                            "status": "ACTIVE",
-                            "languageCode": "EN",
-                            "attribute1": null,
-                            "attribute2": null,
-                            "attribute3": null,
-                            "attribute4": null,
-                            "attribute5": null,
-                            "attribute6": null,
-                            "attribute7": null,
-                            "attribute8": null,
-                            "attribute9": null,
-                            "attribute10": null,
-                            "validationStatus": "VALID",
-                            "errorCode": null,
-                            "errorMessage": null,
-                            "val": {
-                                "proposalId": "VALID",
-                                "finEvalSectionStgId": "VALID",
-                                "lineItemName": "VALID",
-                                "account": "NA",
-                                "yearValues": "VALID",
-                                "targetGoLiveDate": "NA"
-                            }
-                        }
-                    ]
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
                 }
-            ]
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "amortization_period": null,
+              "date_placed_in_service": null,
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            }
+          ]
         },
-        "orphanLines": []
+        {
+          "fin_eval_section_id": 14537,
+          "parent_fin_eval_section_id": null,
+          "section_name": "Revenue",
+          "section_type": "REVENUE",
+          "is_custom": "N",
+          "is_read_only": "N",
+          "is_account_required": "Y",
+          "is_new_line_required": "Y",
+          "is_go_live_req": "N",
+          "display_order": 3,
+          "region_code": null,
+          "country_code": null,
+          "entity_code": null,
+          "bu_code": null,
+          "status": "ACTIVE",
+          "language_code": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "created_by": "vineet.karwa@test.exp.com",
+          "creation_date": "2026-10-13T10:18:24",
+          "last_updated_by": "vineet.karwa@test.exp.com",
+          "last_updated_date": "2026-10-13T10:18:24",
+          "lines": [
+            {
+              "fin_eval_line_id": 31504,
+              "fin_eval_section_id": 14537,
+              "line_type": "SUBTOTAL_REVENUE",
+              "line_item_name": "Subtotal Revenue",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 1,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            }
+          ]
+        },
+        {
+          "fin_eval_section_id": 14538,
+          "parent_fin_eval_section_id": null,
+          "section_name": "OPEX Costs",
+          "section_type": "OPEX",
+          "is_custom": "N",
+          "is_read_only": "N",
+          "is_account_required": "Y",
+          "is_new_line_required": "Y",
+          "is_go_live_req": "N",
+          "display_order": 4,
+          "region_code": null,
+          "country_code": null,
+          "entity_code": null,
+          "bu_code": null,
+          "status": "ACTIVE",
+          "language_code": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "created_by": "vineet.karwa@test.exp.com",
+          "creation_date": "2026-10-13T10:18:24",
+          "last_updated_by": "vineet.karwa@test.exp.com",
+          "last_updated_date": "2026-10-13T10:18:24",
+          "lines": [
+            {
+              "fin_eval_line_id": 31505,
+              "fin_eval_section_id": 14538,
+              "line_type": "DEPRECIATION",
+              "line_item_name": "Depreciation",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "Y",
+              "account": "PLDEPREC",
+              "display_order": 1,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31506,
+              "fin_eval_section_id": 14538,
+              "line_type": "AMORTIZATION",
+              "line_item_name": "Amortization",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "Y",
+              "account": "PLAMORTI",
+              "display_order": 2,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31507,
+              "fin_eval_section_id": 14538,
+              "line_type": "OPEX_COSTS",
+              "line_item_name": "OPEX Costs",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 3,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            }
+          ]
+        },
+        {
+          "fin_eval_section_id": 14539,
+          "parent_fin_eval_section_id": null,
+          "section_name": "Returns Analysis",
+          "section_type": "RETURNS_ANALYSIS",
+          "is_custom": "N",
+          "is_read_only": "N",
+          "is_account_required": "N",
+          "is_new_line_required": "N",
+          "is_go_live_req": "N",
+          "display_order": 5,
+          "region_code": null,
+          "country_code": null,
+          "entity_code": null,
+          "bu_code": null,
+          "status": "ACTIVE",
+          "language_code": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "created_by": "vineet.karwa@test.exp.com",
+          "creation_date": "2026-10-13T10:18:24",
+          "last_updated_by": "vineet.karwa@test.exp.com",
+          "last_updated_date": "2026-10-13T10:18:24",
+          "lines": [
+            {
+              "fin_eval_line_id": 31508,
+              "fin_eval_section_id": 14539,
+              "line_type": "EBIT",
+              "line_item_name": "EBIT",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 1,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31509,
+              "fin_eval_section_id": 14539,
+              "line_type": "EBIT_MARGIN_PCT",
+              "line_item_name": "EBIT Margin %",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 2,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31510,
+              "fin_eval_section_id": 14539,
+              "line_type": "TAX_RATE_PCT",
+              "line_item_name": "Tax Rate %",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "N",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 3,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31511,
+              "fin_eval_section_id": 14539,
+              "line_type": "POST_TAX_EBIT",
+              "line_item_name": "Post Tax EBIT",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 4,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31512,
+              "fin_eval_section_id": 14539,
+              "line_type": "POST_TAX_RETURN",
+              "line_item_name": "Post Tax Return",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 5,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            }
+          ]
+        },
+        {
+          "fin_eval_section_id": 14540,
+          "parent_fin_eval_section_id": null,
+          "section_name": "Balance Sheet",
+          "section_type": "BALANCE_SHEET",
+          "is_custom": "N",
+          "is_read_only": "N",
+          "is_account_required": "N",
+          "is_new_line_required": "N",
+          "is_go_live_req": "N",
+          "display_order": 6,
+          "region_code": null,
+          "country_code": null,
+          "entity_code": null,
+          "bu_code": null,
+          "status": "ACTIVE",
+          "language_code": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "created_by": "vineet.karwa@test.exp.com",
+          "creation_date": "2026-10-13T10:18:24",
+          "last_updated_by": "vineet.karwa@test.exp.com",
+          "last_updated_date": "2026-10-13T10:18:24",
+          "lines": [
+            {
+              "fin_eval_line_id": 31513,
+              "fin_eval_section_id": 14540,
+              "line_type": "PP_AND_E",
+              "line_item_name": "PP&E",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "N",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 1,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31514,
+              "fin_eval_section_id": 14540,
+              "line_type": "INTANGIBLES",
+              "line_item_name": "Intangibles",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "N",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 2,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31515,
+              "fin_eval_section_id": 14540,
+              "line_type": "WORKING_CAPITAL",
+              "line_item_name": "Working Capital",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "N",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 3,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31516,
+              "fin_eval_section_id": 14540,
+              "line_type": "NET_ASSETS",
+              "line_item_name": "Net Assets",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 4,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            }
+          ]
+        },
+        {
+          "fin_eval_section_id": 14541,
+          "parent_fin_eval_section_id": null,
+          "section_name": "Cash Flow",
+          "section_type": "CASH_FLOW",
+          "is_custom": "N",
+          "is_read_only": "N",
+          "is_account_required": "N",
+          "is_new_line_required": "N",
+          "is_go_live_req": "N",
+          "display_order": 7,
+          "region_code": null,
+          "country_code": null,
+          "entity_code": null,
+          "bu_code": null,
+          "status": "ACTIVE",
+          "language_code": "EN",
+          "attribute1": null,
+          "attribute2": null,
+          "attribute3": null,
+          "attribute4": null,
+          "attribute5": null,
+          "attribute6": null,
+          "attribute7": null,
+          "attribute8": null,
+          "attribute9": null,
+          "attribute10": null,
+          "created_by": "vineet.karwa@test.exp.com",
+          "creation_date": "2026-10-13T10:18:24",
+          "last_updated_by": "vineet.karwa@test.exp.com",
+          "last_updated_date": "2026-10-13T10:18:24",
+          "lines": [
+            {
+              "fin_eval_line_id": 31517,
+              "fin_eval_section_id": 14541,
+              "line_type": "CF_EBIT",
+              "line_item_name": "EBIT",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 1,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31518,
+              "fin_eval_section_id": 14541,
+              "line_type": "AMORT_DEPREC",
+              "line_item_name": "+ Amortisation & Depreciation",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 2,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31519,
+              "fin_eval_section_id": 14541,
+              "line_type": "CAPEX",
+              "line_item_name": "- Capex",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 3,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31520,
+              "fin_eval_section_id": 14541,
+              "line_type": "OPERATING_CF",
+              "line_item_name": "Operating Cash Flow",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 5,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31521,
+              "fin_eval_section_id": 14541,
+              "line_type": "CASH_TAX_EBIT",
+              "line_item_name": "Cash Tax on EBIT",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 6,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31522,
+              "fin_eval_section_id": 14541,
+              "line_type": "CASH_TAX_ADJ",
+              "line_item_name": "Cash Tax Adjustments",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "N",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 7,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            },
+            {
+              "fin_eval_line_id": 31523,
+              "fin_eval_section_id": 14541,
+              "line_type": "UNLEVERED_FCF",
+              "line_item_name": "Unlevered Free Cash Flow",
+              "line_identifier": "FINANCIAL",
+              "is_calculated": "Y",
+              "is_custom": "N",
+              "is_read_only": "N",
+              "account": null,
+              "display_order": 8,
+              "year_values": {
+                "fy27": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy28": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "fy29": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                },
+                "total": {
+                  "spc_projected_amount": null,
+                  "ytd_budgeted_forecast": null,
+                  "ytd_actuals": null,
+                  "variance": null
+                }
+              },
+              "target_go_live_date": null,
+              "cagr_percent": null,
+              "currency_code": "USD",
+              "region_code": null,
+              "country_code": null,
+              "entity_code": null,
+              "bu_code": null,
+              "status": "ACTIVE",
+              "language_code": "EN",
+              "attribute1": null,
+              "attribute2": null,
+              "attribute3": null,
+              "attribute4": null,
+              "attribute5": null,
+              "attribute6": null,
+              "attribute7": null,
+              "attribute8": null,
+              "attribute9": null,
+              "attribute10": null,
+              "created_by": "vineet.karwa@test.exp.com",
+              "creation_date": "2026-10-13T10:18:24",
+              "last_updated_by": "vineet.karwa@test.exp.com",
+              "last_updated_date": "2026-10-13T10:18:24"
+            }
+          ]
+        }
+      ]
     }
+  }
 }
