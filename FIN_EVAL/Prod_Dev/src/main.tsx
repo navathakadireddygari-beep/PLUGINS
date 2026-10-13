@@ -41,7 +41,19 @@ type AppConfig = {
   instance: string;
 };
 
-let _reactRoot: ReturnType<typeof ReactDOM.createRoot> | null = null;
+type MountState = {
+  root:      ReturnType<typeof ReactDOM.createRoot> | null;
+  container: HTMLElement | null;
+  key:       string | null;
+};
+// Kept on window (not module scope) so that if the APEX page loads this
+// bundle more than once, every copy sees the same mount and can't add a
+// second live widget.
+const w = window as any;
+const mount: MountState = (w.__investmentReportMount ??= { root: null, container: null, key: null });
+
+// Identifies which proposal/template a mount is showing.
+const mountKey = (c: AppConfig): string => `${c.proposal_id}|${c.spc_type_id}|${c.template_type_id}`;
 
 function init(hostId: string, config: AppConfig): void {
   const container = document.getElementById(hostId);
@@ -54,9 +66,27 @@ function init(hostId: string, config: AppConfig): void {
   /* Update global config before mounting */
   (window as any).__APP_CONFIG__ = config;
 
+  // init() runs on page load (auto-mount below) AND whenever APEX calls
+  // InvestmentReportWidget.init. Previously each call created another React
+  // root without unmounting the old one, so several copies of the widget ran
+  // at once, each doing its own GET / account-code calls and each listening
+  // for refresh events. Now: same container + same proposal → keep the live
+  // widget; anything else → unmount the old one before mounting fresh.
+  if (mount.root) {
+    if (mount.container === container && container.isConnected && mount.key === mountKey(config)) {
+      return;
+    }
+    mount.root.unmount();
+    mount.root = null;
+    mount.container = null;
+    mount.key = null;
+  }
+
   /* Create a fresh React root and render */
-  _reactRoot = ReactDOM.createRoot(container);
-  _reactRoot.render(
+  mount.root = ReactDOM.createRoot(container);
+  mount.container = container;
+  mount.key = mountKey(config);
+  mount.root.render(
     // <React.StrictMode>
       <App />
     // </React.StrictMode>
@@ -66,9 +96,11 @@ function init(hostId: string, config: AppConfig): void {
 }
 
 function destroy(hostId: string): void {
-  if (_reactRoot) {
-    _reactRoot.unmount();
-    _reactRoot = null;
+  if (mount.root) {
+    mount.root.unmount();
+    mount.root = null;
+    mount.container = null;
+    mount.key = null;
     //console.log("[InvestmentReport] destroy() unmounted from:", hostId);
   }
 
