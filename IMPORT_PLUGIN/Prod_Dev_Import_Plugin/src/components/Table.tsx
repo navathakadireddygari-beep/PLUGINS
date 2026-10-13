@@ -28,7 +28,10 @@ import Toast, { type ToastState } from "./Toast";
 
 const BRAND        = "#A5005A";
 const DARK_HEADER  = "#2d3748";
-const SUB_HEADER   = "#4a5568";
+// P&L sub-sections are indented by this much; the gutter stays white so the
+// section bar, delete icon and line items all start at the indented edge.
+const SUB_INDENT   = 16;
+const subGutter = (on: boolean): CSSProperties => (on ? { boxShadow: `inset ${SUB_INDENT}px 0 0 #fff` } : {});
 const DARK_TOGGLE  = "#1e2433";
 
 const CURRENCY_LABELS: Record<string, string> = {
@@ -1514,10 +1517,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
               {sectionTree.ordered.filter((g) => !(isSubSection(g) && !sectionTree.pnl?.expanded)).map((group: Group) => (
                 <React.Fragment key={group.id}>
                   {/* Section header */}
-                  <tr data-section-id={group.sectionId} data-section-type={group.sectionType || group.id} style={{ background: isSubSection(group) ? SUB_HEADER : DARK_HEADER, cursor: "pointer" }} onClick={() => toggleGroup(group.id)}>
+                  <tr data-section-id={group.sectionId} data-section-type={group.sectionType || group.id} style={{ background: isSubSection(group) ? "#fff" : DARK_HEADER, cursor: "pointer" }} onClick={() => toggleGroup(group.id)}>
                     {group.expanded ? (
-                      <td colSpan={5 + numYears + 1} style={{ padding: isSubSection(group) ? "8px 14px 8px 34px" : "10px 14px", fontSize: isSubSection(group) ? 11 : 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <td colSpan={5 + numYears + 1} style={{ padding: isSubSection(group) ? `6px 0 0 ${SUB_INDENT}px` : "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, ...(isSubSection(group) ? { background: DARK_HEADER, padding: "10px 14px" } : {}) }}>
                           <ChevronUp size={16} style={{ flexShrink: 0 }} />
                           {editingGroupId === group.id && group.isCustom === "Y" ? (
                             <input autoFocus value={editingGroupName}
@@ -1542,8 +1545,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         </div>
                       </td>
                     ) : (
-                      <td colSpan={5 + numYears + 1} style={{ padding: isSubSection(group) ? "8px 14px 8px 34px" : "10px 14px", fontSize: isSubSection(group) ? 11 : 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <td colSpan={5 + numYears + 1} style={{ padding: isSubSection(group) ? `6px 0 0 ${SUB_INDENT}px` : "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, ...(isSubSection(group) ? { background: DARK_HEADER, padding: "10px 14px" } : {}) }}>
                           <ChevronDown size={16} style={{ flexShrink: 0 }} />
                           <span style={{ flex: 1 }}>{sectionDisplayName(group)}</span>
                           {!isReadonly && group.isCustom === "Y" && group.isMandatory !== "Y" && (
@@ -1559,8 +1562,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {/* Per-section column sub-header */}
                   {group.expanded && (
                     <tr style={{ background: "#e5e7eb", height: 35 }}>
-                      <th style={TH({ width: 28, background: "#e5e7eb" })} />
-                      <th colSpan={group.isAccountRequired !== "Y" ? 2 : 1} style={TH({ textAlign: "left", width: colWidths.lineItem, position: "relative", background: "#e5e7eb" })}>
+                      <th style={TH({ width: 28, background: "#e5e7eb", ...subGutter(isSubSection(group)) })} />
+                      <th colSpan={group.isAccountRequired !== "Y" ? 2 : 1} style={TH({ textAlign: "left", width: colWidths.lineItem, position: "relative", background: "#e5e7eb", paddingLeft: isSubSection(group) ? 8 + SUB_INDENT : 8 })}>
                         LINE ITEM
                         <div onMouseDown={(e) => startResize("lineItem", e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", background: "transparent" }} />
                       </th>
@@ -1626,6 +1629,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     const groupAllNonFinancial = editable.length > 0 && editable.every(isNonFinancialRow);
                     // Balance Sheet and custom sections never show a cross-year TOTAL — empty cell.
                     const groupNoTotal = isNoTotalGroup(group);
+                    const sub = isSubSection(group);
 
                     const renderEditable = (value: ValueRow, _idx: number) => {
                       const acKey = `${group.id}|${value.id}`;
@@ -1645,12 +1649,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       const isHighlighted = value.id === highlightLineId;
                       return (
                         <tr key={value.id} data-line-id={value.id} style={{ background: isHighlighted ? "#fef08a" : bg, transition: "background 0.4s", boxShadow: isHighlighted ? "inset 0 0 0 2px #f59e0b" : undefined }}>
-                          <td style={{ ...TD, padding: "4px 0", textAlign: "center", verticalAlign: "middle" }}>
+                          <td style={{ ...TD, padding: sub ? `4px 0 4px ${SUB_INDENT}px` : "4px 0", ...subGutter(sub), textAlign: "center", verticalAlign: "middle" }}>
                             {!isReadonly && value.isMandatory !== "Y" && value.isCustom !== "N" && (
                               <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, vId: value.id, name: value.name, kind: "line" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={12} /></button>
                             )}
                           </td>
-                          <td colSpan={group.isAccountRequired !== "Y" ? 2 : 1} style={{ ...TD, padding: "4px 12px", position: "relative", overflow: "hidden" }} title={value.name}>
+                          <td colSpan={group.isAccountRequired !== "Y" ? 2 : 1} style={{ ...TD, padding: sub ? `4px 12px 4px ${12 + SUB_INDENT}px` : "4px 12px", position: "relative", overflow: "hidden" }} title={value.name}>
                             <input type="text"
                               value={isAC ? autocompleteSearch : value.name}
                               onChange={(e) => { if (nameLocked) return; updateValueName(group.id, value.id, e.target.value); if (isAC) setAutocompleteSearch(e.target.value); }}
@@ -1742,7 +1746,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
                     const renderCalcRow = (value: ValueRow) => (
                       <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#fef08a" : "#f3f4f6", transition: "background 0.4s", boxShadow: value.id === highlightLineId ? "inset 0 0 0 2px #f59e0b" : undefined }}>
-                        <td colSpan={3} style={{ ...TD, padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
+                        <td colSpan={3} style={{ ...TD, padding: sub ? `8px 12px 8px ${12 + SUB_INDENT}px` : "8px 12px", ...subGutter(sub), fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
                         {renderAssetCells(group, value, "4px 8px")}
                         {data.years.map((year: number) => {
                           const val = value.yearValues[year] ?? 0;
@@ -1759,7 +1763,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     return (<>
                       {(hasOngoing ? regularEditable : editable).map((v, i) => renderEditable(v, i))}
                       {!isReadonly && group.isNewLineRequired !== "N" && (
-                        <tr key="add-btn"><td colSpan={5 + numYears + 1} style={{ padding: "6px 10px", borderBottom: "1px solid #e5e7eb" }}><button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 11, background: "none", border: "none", cursor: "pointer", color: "#000", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, height: 15 }}>+ Add {sectionDisplayName(group)} Line</button></td></tr>
+                        <tr key="add-btn"><td colSpan={5 + numYears + 1} style={{ padding: sub ? `6px 10px 6px ${10 + SUB_INDENT}px` : "6px 10px", ...subGutter(sub), borderBottom: "1px solid #e5e7eb" }}><button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 11, background: "none", border: "none", cursor: "pointer", color: "#000", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, height: 15 }}>+ Add {sectionDisplayName(group)} Line</button></td></tr>
                       )}
                       {hasOngoing ? (<>
                         {calcInitial.map(renderCalcRow)}
@@ -1767,7 +1771,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {calcRest.map(renderCalcRow)}
                       </>) : calc.map((value: ValueRow) => (
                         <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#fef08a" : "#f3f4f6", transition: "background 0.4s", boxShadow: value.id === highlightLineId ? "inset 0 0 0 2px #f59e0b" : undefined }}>
-                          <td colSpan={3} style={{ ...TD, padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
+                          <td colSpan={3} style={{ ...TD, padding: sub ? `10px 14px 10px ${14 + SUB_INDENT}px` : "10px 14px", ...subGutter(sub), fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
                           {renderAssetCells(group, value, "4px 8px")}
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
