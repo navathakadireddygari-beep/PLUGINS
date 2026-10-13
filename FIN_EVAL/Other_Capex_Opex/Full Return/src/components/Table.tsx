@@ -28,6 +28,7 @@ import {
   applyScale,
   unapplyScale,
   formatNumber,
+  formatDate,
   decimalsForScale,
   type Scale,
   type NumberFormatKey,
@@ -934,6 +935,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const updateLineAsset = (gId: string, vId: string, patch: Partial<ValueRow>): void =>
     setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? { ...g, values: g.values.map((v) => v.id === vId ? { ...v, ...patch } : v) } : g) }) : p);
 
+  // Date Placed in Service follows the toolbar's date-format picker
+  // (default dd-mm-yyyy). The stored / API value stays ISO yyyy-mm-dd.
+  const fmtCellDate = (iso: string): string => (iso ? (/^\d{4}-\d{2}-\d{2}/.test(iso) ? formatDate(`${iso.slice(0, 10)}T00:00:00`, dateFormat) : iso) : "");
+  const dateFormatHint: string = (DATE_FORMATS.find((f) => f.value === dateFormat)?.label ?? "dd-mm-yyyy");
+
   const renderAssetCells = (group: Group, value: ValueRow, padding: string): React.ReactElement => {
     const enabled = !isReadonly && isCapitalInvestmentGroup(group) && value.isCalculated !== "Y";
     const amort   = value.amortizationPeriod ?? "";
@@ -946,7 +952,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     // (#f3f4f6) — no inner box; a saved value, if any, shows as plain text.
     if (!enabled) return (<>
       <td style={{ ...TD, padding: "4px 14px", background: "#f3f4f6", fontSize: 12, color: "#1f2937", textAlign: "right", cursor: "not-allowed" }}>{amort}</td>
-      <td style={{ ...TD, padding: "4px 14px", background: "#f3f4f6", fontSize: 12, color: "#1f2937", cursor: "not-allowed" }}>{placed.slice(0, 10)}</td>
+      <td style={{ ...TD, padding: "4px 14px", background: "#f3f4f6", fontSize: 12, color: "#1f2937", cursor: "not-allowed" }}>{fmtCellDate(placed)}</td>
     </>);
     return (<>
       <td style={{ ...TD, padding }}>
@@ -957,11 +963,22 @@ export default function PivotTableWithAPI(): React.ReactElement {
         />
       </td>
       <td style={{ ...TD, padding }}>
-        <input type="date" value={placed.slice(0, 10)}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => updateLineAsset(group.id, value.id, { datePlacedInService: e.target.value || null })}
-          style={{ ...style, cursor: "pointer" }}
-        />
+        {/* A native date input can't take a custom display format, so the
+            formatted date shows in a read-only text box and a transparent
+            native date input on top supplies the calendar picker. */}
+        <div style={{ position: "relative" }}>
+          <input type="text" readOnly tabIndex={-1} value={fmtCellDate(placed)} placeholder={dateFormatHint}
+            style={{ ...style, cursor: "pointer" }}
+          />
+          <input type="date" aria-label="Date Placed in Service" value={placed.slice(0, 10)}
+            onClick={(e) => {
+              e.stopPropagation();
+              try { e.currentTarget.showPicker?.(); } catch { /* picker opens on focus instead */ }
+            }}
+            onChange={(e) => updateLineAsset(group.id, value.id, { datePlacedInService: e.target.value || null })}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer", border: "none", padding: 0, margin: 0 }}
+          />
+        </div>
       </td>
     </>);
   };
