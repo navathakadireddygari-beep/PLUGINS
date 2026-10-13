@@ -1,1601 +1,1126 @@
-{
-  "apiStatus": "S",
-  "apiMessage": "Financial evaluation retrieved successfully",
-  "data": {
-    "items": {
-      "fin_eval_header_id": 1251,
-      "proposal_id": 1182,
-      "proposal_title": "Temp prod dev -1",
-      "proposal_code": "NA-PD-2026-1182",
-      "proposal_status": "DRAFT",
-      "planned_go_live_date": null,
-      "go_live_pending": "Y",
-      "local_currency": "USD",
-      "display_currency": null,
-      "exchange_rate": null,
-      "hurdle_rate_percent": null,
-      "discount_rate_percent": null,
-      "share_repurchase_percent": null,
-      "amortisation_period_years": null,
-      "amortization_period": null,
-      "date_placed_in_service": null,
-      "actual_acquisition_date": null,
-      "tax_rate_percent": null,
-      "display_years": null,
-      "kpi_type": null,
-      "number_of_years": null,
-      "avg_weekly_peak_headcount": null,
-      "npv": null,
-      "irr_percent": null,
-      "payback_period_years": null,
-      "total_cash_inflow": null,
-      "total_cash_outflow": null,
-      "gross_profit": null,
-      "gross_margin_percent": null,
-      "contribution_margin_percent": null,
-      "total_contract_value": null,
-      "annual_contract_value": null,
-      "contract_duration": null,
-      "total_lease_value": null,
-      "lease_terms_years": null,
-      "investment": null,
-      "annual_cost": null,
-      "investment_term_years": null,
-      "total_capex_investment": null,
-      "annual_opex": null,
-      "performance_metrics": {
-        "hurdle_checks": [
-          {
-            "check_code": "IRR_VS_HURDLE",
-            "label": "IRR > hurdle rate",
-            "hurdle_value": null,
-            "actual_value": null,
-            "pass": null
-          },
-          {
-            "check_code": "YEAR5_PTR",
-            "label": "Year 5 PTR > 10%",
-            "hurdle_value": 10,
-            "actual_value": null,
-            "pass": null
-          },
-          {
-            "check_code": "AVG3YR_PTR_VS_BUYBACK",
-            "label": "Avg 3 year PTR > buyback",
-            "hurdle_value": null,
-            "actual_value": null,
-            "pass": null
-          }
-        ],
-        "computed_at": null
-      },
-      "m_a_key_inputs": null,
-      "m_a_npv_calculation": null,
-      "npv_actuals": null,
-      "irr_actuals_percent": null,
-      "payback_actuals_years": null,
-      "npv_variance": null,
-      "irr_variance": null,
-      "payback_variance": null,
-      "region_code": null,
-      "country_code": null,
-      "entity_code": null,
-      "bu_code": null,
-      "scopes": [
-        {
-          "proposal_scope_id": 2418,
-          "region_code": "REG_N_AMERICA",
-          "country_code": "25",
-          "entity_code": "1000",
-          "bu_code": null,
-          "spc_type_id": 101
-        }
-      ],
-      "status": "ACTIVE",
-      "language_code": "EN",
-      "attribute1": null,
-      "attribute2": null,
-      "attribute3": null,
-      "attribute4": null,
-      "attribute5": null,
-      "attribute6": null,
-      "attribute7": null,
-      "attribute8": null,
-      "attribute9": null,
-      "attribute10": null,
-      "created_by": "vineet.karwa@test.exp.com",
-      "creation_date": "2026-10-13T10:18:24",
-      "last_updated_by": "vineet.karwa@test.exp.com",
-      "last_updated_date": "2026-10-13T10:18:24",
-      "sections": [
-        {
-          "fin_eval_section_id": 14536,
-          "parent_fin_eval_section_id": null,
-          "section_name": "Capital Investment",
-          "section_type": "CAPITAL_INVESTMENT",
-          "is_custom": "N",
-          "is_read_only": "N",
-          "is_account_required": "Y",
-          "is_new_line_required": "Y",
-          "is_go_live_req": "N",
-          "display_order": 1,
-          "region_code": null,
-          "country_code": null,
-          "entity_code": null,
-          "bu_code": null,
-          "status": "ACTIVE",
-          "language_code": "EN",
-          "attribute1": null,
-          "attribute2": null,
-          "attribute3": null,
-          "attribute4": null,
-          "attribute5": null,
-          "attribute6": null,
-          "attribute7": null,
-          "attribute8": null,
-          "attribute9": null,
-          "attribute10": null,
-          "created_by": "vineet.karwa@test.exp.com",
-          "creation_date": "2026-10-13T10:18:24",
-          "last_updated_by": "vineet.karwa@test.exp.com",
-          "last_updated_date": "2026-10-13T10:18:24",
-          "lines": [
-            {
-              "fin_eval_line_id": 31503,
-              "fin_eval_section_id": 14536,
-              "line_type": "TOTAL_CAPEX",
-              "line_item_name": "Total CAPEX Investment",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 3,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "amortization_period": null,
-              "date_placed_in_service": null,
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            }
-          ]
-        },
-        {
-          "fin_eval_section_id": 14537,
-          "parent_fin_eval_section_id": null,
-          "section_name": "Revenue",
-          "section_type": "REVENUE",
-          "is_custom": "N",
-          "is_read_only": "N",
-          "is_account_required": "Y",
-          "is_new_line_required": "Y",
-          "is_go_live_req": "N",
-          "display_order": 3,
-          "region_code": null,
-          "country_code": null,
-          "entity_code": null,
-          "bu_code": null,
-          "status": "ACTIVE",
-          "language_code": "EN",
-          "attribute1": null,
-          "attribute2": null,
-          "attribute3": null,
-          "attribute4": null,
-          "attribute5": null,
-          "attribute6": null,
-          "attribute7": null,
-          "attribute8": null,
-          "attribute9": null,
-          "attribute10": null,
-          "created_by": "vineet.karwa@test.exp.com",
-          "creation_date": "2026-10-13T10:18:24",
-          "last_updated_by": "vineet.karwa@test.exp.com",
-          "last_updated_date": "2026-10-13T10:18:24",
-          "lines": [
-            {
-              "fin_eval_line_id": 31504,
-              "fin_eval_section_id": 14537,
-              "line_type": "SUBTOTAL_REVENUE",
-              "line_item_name": "Subtotal Revenue",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 1,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            }
-          ]
-        },
-        {
-          "fin_eval_section_id": 14538,
-          "parent_fin_eval_section_id": null,
-          "section_name": "OPEX Costs",
-          "section_type": "OPEX",
-          "is_custom": "N",
-          "is_read_only": "N",
-          "is_account_required": "Y",
-          "is_new_line_required": "Y",
-          "is_go_live_req": "N",
-          "display_order": 4,
-          "region_code": null,
-          "country_code": null,
-          "entity_code": null,
-          "bu_code": null,
-          "status": "ACTIVE",
-          "language_code": "EN",
-          "attribute1": null,
-          "attribute2": null,
-          "attribute3": null,
-          "attribute4": null,
-          "attribute5": null,
-          "attribute6": null,
-          "attribute7": null,
-          "attribute8": null,
-          "attribute9": null,
-          "attribute10": null,
-          "created_by": "vineet.karwa@test.exp.com",
-          "creation_date": "2026-10-13T10:18:24",
-          "last_updated_by": "vineet.karwa@test.exp.com",
-          "last_updated_date": "2026-10-13T10:18:24",
-          "lines": [
-            {
-              "fin_eval_line_id": 31505,
-              "fin_eval_section_id": 14538,
-              "line_type": "DEPRECIATION",
-              "line_item_name": "Depreciation",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "Y",
-              "account": "PLDEPREC",
-              "display_order": 1,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31506,
-              "fin_eval_section_id": 14538,
-              "line_type": "AMORTIZATION",
-              "line_item_name": "Amortization",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "Y",
-              "account": "PLAMORTI",
-              "display_order": 2,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31507,
-              "fin_eval_section_id": 14538,
-              "line_type": "OPEX_COSTS",
-              "line_item_name": "OPEX Costs",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 3,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            }
-          ]
-        },
-        {
-          "fin_eval_section_id": 14539,
-          "parent_fin_eval_section_id": null,
-          "section_name": "Returns Analysis",
-          "section_type": "RETURNS_ANALYSIS",
-          "is_custom": "N",
-          "is_read_only": "N",
-          "is_account_required": "N",
-          "is_new_line_required": "N",
-          "is_go_live_req": "N",
-          "display_order": 5,
-          "region_code": null,
-          "country_code": null,
-          "entity_code": null,
-          "bu_code": null,
-          "status": "ACTIVE",
-          "language_code": "EN",
-          "attribute1": null,
-          "attribute2": null,
-          "attribute3": null,
-          "attribute4": null,
-          "attribute5": null,
-          "attribute6": null,
-          "attribute7": null,
-          "attribute8": null,
-          "attribute9": null,
-          "attribute10": null,
-          "created_by": "vineet.karwa@test.exp.com",
-          "creation_date": "2026-10-13T10:18:24",
-          "last_updated_by": "vineet.karwa@test.exp.com",
-          "last_updated_date": "2026-10-13T10:18:24",
-          "lines": [
-            {
-              "fin_eval_line_id": 31508,
-              "fin_eval_section_id": 14539,
-              "line_type": "EBIT",
-              "line_item_name": "EBIT",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 1,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31509,
-              "fin_eval_section_id": 14539,
-              "line_type": "EBIT_MARGIN_PCT",
-              "line_item_name": "EBIT Margin %",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 2,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31510,
-              "fin_eval_section_id": 14539,
-              "line_type": "TAX_RATE_PCT",
-              "line_item_name": "Tax Rate %",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "N",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 3,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31511,
-              "fin_eval_section_id": 14539,
-              "line_type": "POST_TAX_EBIT",
-              "line_item_name": "Post Tax EBIT",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 4,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31512,
-              "fin_eval_section_id": 14539,
-              "line_type": "POST_TAX_RETURN",
-              "line_item_name": "Post Tax Return",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 5,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            }
-          ]
-        },
-        {
-          "fin_eval_section_id": 14540,
-          "parent_fin_eval_section_id": null,
-          "section_name": "Balance Sheet",
-          "section_type": "BALANCE_SHEET",
-          "is_custom": "N",
-          "is_read_only": "N",
-          "is_account_required": "N",
-          "is_new_line_required": "N",
-          "is_go_live_req": "N",
-          "display_order": 6,
-          "region_code": null,
-          "country_code": null,
-          "entity_code": null,
-          "bu_code": null,
-          "status": "ACTIVE",
-          "language_code": "EN",
-          "attribute1": null,
-          "attribute2": null,
-          "attribute3": null,
-          "attribute4": null,
-          "attribute5": null,
-          "attribute6": null,
-          "attribute7": null,
-          "attribute8": null,
-          "attribute9": null,
-          "attribute10": null,
-          "created_by": "vineet.karwa@test.exp.com",
-          "creation_date": "2026-10-13T10:18:24",
-          "last_updated_by": "vineet.karwa@test.exp.com",
-          "last_updated_date": "2026-10-13T10:18:24",
-          "lines": [
-            {
-              "fin_eval_line_id": 31513,
-              "fin_eval_section_id": 14540,
-              "line_type": "PP_AND_E",
-              "line_item_name": "PP&E",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "N",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 1,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31514,
-              "fin_eval_section_id": 14540,
-              "line_type": "INTANGIBLES",
-              "line_item_name": "Intangibles",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "N",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 2,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31515,
-              "fin_eval_section_id": 14540,
-              "line_type": "WORKING_CAPITAL",
-              "line_item_name": "Working Capital",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "N",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 3,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31516,
-              "fin_eval_section_id": 14540,
-              "line_type": "NET_ASSETS",
-              "line_item_name": "Net Assets",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 4,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            }
-          ]
-        },
-        {
-          "fin_eval_section_id": 14541,
-          "parent_fin_eval_section_id": null,
-          "section_name": "Cash Flow",
-          "section_type": "CASH_FLOW",
-          "is_custom": "N",
-          "is_read_only": "N",
-          "is_account_required": "N",
-          "is_new_line_required": "N",
-          "is_go_live_req": "N",
-          "display_order": 7,
-          "region_code": null,
-          "country_code": null,
-          "entity_code": null,
-          "bu_code": null,
-          "status": "ACTIVE",
-          "language_code": "EN",
-          "attribute1": null,
-          "attribute2": null,
-          "attribute3": null,
-          "attribute4": null,
-          "attribute5": null,
-          "attribute6": null,
-          "attribute7": null,
-          "attribute8": null,
-          "attribute9": null,
-          "attribute10": null,
-          "created_by": "vineet.karwa@test.exp.com",
-          "creation_date": "2026-10-13T10:18:24",
-          "last_updated_by": "vineet.karwa@test.exp.com",
-          "last_updated_date": "2026-10-13T10:18:24",
-          "lines": [
-            {
-              "fin_eval_line_id": 31517,
-              "fin_eval_section_id": 14541,
-              "line_type": "CF_EBIT",
-              "line_item_name": "EBIT",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 1,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31518,
-              "fin_eval_section_id": 14541,
-              "line_type": "AMORT_DEPREC",
-              "line_item_name": "+ Amortisation & Depreciation",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 2,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31519,
-              "fin_eval_section_id": 14541,
-              "line_type": "CAPEX",
-              "line_item_name": "- Capex",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 3,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31520,
-              "fin_eval_section_id": 14541,
-              "line_type": "OPERATING_CF",
-              "line_item_name": "Operating Cash Flow",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 5,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31521,
-              "fin_eval_section_id": 14541,
-              "line_type": "CASH_TAX_EBIT",
-              "line_item_name": "Cash Tax on EBIT",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 6,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31522,
-              "fin_eval_section_id": 14541,
-              "line_type": "CASH_TAX_ADJ",
-              "line_item_name": "Cash Tax Adjustments",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "N",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 7,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            },
-            {
-              "fin_eval_line_id": 31523,
-              "fin_eval_section_id": 14541,
-              "line_type": "UNLEVERED_FCF",
-              "line_item_name": "Unlevered Free Cash Flow",
-              "line_identifier": "FINANCIAL",
-              "is_calculated": "Y",
-              "is_custom": "N",
-              "is_read_only": "N",
-              "account": null,
-              "display_order": 8,
-              "year_values": {
-                "fy27": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy28": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "fy29": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                },
-                "total": {
-                  "spc_projected_amount": null,
-                  "ytd_budgeted_forecast": null,
-                  "ytd_actuals": null,
-                  "variance": null
-                }
-              },
-              "target_go_live_date": null,
-              "cagr_percent": null,
-              "currency_code": "USD",
-              "region_code": null,
-              "country_code": null,
-              "entity_code": null,
-              "bu_code": null,
-              "status": "ACTIVE",
-              "language_code": "EN",
-              "attribute1": null,
-              "attribute2": null,
-              "attribute3": null,
-              "attribute4": null,
-              "attribute5": null,
-              "attribute6": null,
-              "attribute7": null,
-              "attribute8": null,
-              "attribute9": null,
-              "attribute10": null,
-              "created_by": "vineet.karwa@test.exp.com",
-              "creation_date": "2026-10-13T10:18:24",
-              "last_updated_by": "vineet.karwa@test.exp.com",
-              "last_updated_date": "2026-10-13T10:18:24"
-            }
-          ]
-        }
-      ]
-    }
-  }
-}
+Prod_Dev_Code.js:86 [GIS Onboarding] Controller loaded.
+Prod_Dev_Code.js:445 [P3 KPI] ================================================
+Prod_Dev_Code.js:445 [P3 KPI] PAGE 3 KPI CONTROLLER INITIALIZED
+Prod_Dev_Code.js:445 [P3 KPI] Initial state: {"currency":"USD","denomination":"K"}
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+fn_init @ Prod_Dev_Code.js:544
+(anonymous) @ Prod_Dev_Code.js:547
+(anonymous) @ Prod_Dev_Code.js:547
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:445 [P3 KPI] NPV DOM observer started.
+Prod_Dev_Code.js:445 [P3 KPI] Initialization complete.
+Prod_Dev_Code.js:445 [P3 KPI] ================================================
+Prod_Dev_Code.js:115 [GIS Onboarding] Initial saved state recorded.
+All_spc_shared_function_global_1.min.js:1 checking regions scroll issue
+All_spc_shared_function_global_1.min.js:1 [scroll-spy] actual scroll parent attached: div#R192206318396355207.gis-body
+All_spc_shared_function_global_1.min.js:1 [scroll-spy] active: editor-9737 | bottom: false | scrollParent: div#R192206318396355207.gis-body
+All_spc_shared_function_global_1.min.js:1 [scroll-spy] initialised
+All_spc_shared_function_global_1.min.js:1 [spcSteps] init: container found
+All_spc_shared_function_global_1.min.js:1 [spcSteps] update called
+All_spc_shared_function_global_1.min.js:1 [SPC Access] Mode: EDITABLE {proposalId: '1188', proposalCode: 'NA-PD-2026-1188', status: 'DRAFT', statusKey: 'DRAFT', contributorRole: '', …}
+All_spc_shared_exec_on_load_1.min.js:1 [FIN-EVAL] Registering AppBridge subscriber.
+All_spc_shared_exec_on_load_1.min.js:1 [FIN-EVAL] AppBridge subscriber registered successfully.
+sparkle_ai_insights.min.js:1 [AI] Controller loaded for Page 3
+pivot-table_22_09_26.js:156 [InvestmentReport] init() mounting for 1188|null|null
+pivot-table_22_09_26.js:154 [getFinancialData] new GET — trigger: initial mount
+pivot-table_11_09_26.min.js:46 App component rendered
+All_spc_shared_function_global_1.min.js:1 [DynamicSection] baseSectionCount: 10
+[Violation] Forced reflow while executing JavaScript took <N>ms
+[Violation] Forced reflow while executing JavaScript took <N>ms
+[Violation] Forced reflow while executing JavaScript took <N>ms
+[Violation] Forced reflow while executing JavaScript took <N>ms
+[Violation] Forced reflow while executing JavaScript took <N>ms
+[Violation] Forced reflow while executing JavaScript took <N>ms
+[Violation] Forced reflow while executing JavaScript took <N>ms
+[Violation] 'setTimeout' handler took <N>ms
+[Violation] 'setTimeout' handler took <N>ms
+[Violation] 'setTimeout' handler took <N>ms
+[Violation] 'setTimeout' handler took <N>ms
+[Violation] 'setTimeout' handler took <N>ms
+Prod_Dev_Code.js:437 [gis] AI Draft controller booted on P3_ (P3_PROPOSAL_ID_REDIRECT).
+product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:4446 Region ID set on load: REG_N_AMERICA
+product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:4551 [primeStickyMeasurements] done. nav height: 56 buttons height: 127
+product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:4600 [aliasSummaryRegion] anchor created before summary_kpi
+product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5688 [GIS] scroll-spy bridge + navigateToSection patch active
+All_spc_shared_function_global_1.min.js:1 [scanDomSections] Found 8 sections: (8) ['9737', '9738', '9739', '9740', '9741', '9742', '9743', '9744']
+All_spc_shared_function_global_1.min.js:1 [initQuillEditors] Sections detected: 8 | Quill instances ready: 8
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:544
+setTimeout
+fn_init @ Prod_Dev_Code.js:544
+(anonymous) @ Prod_Dev_Code.js:547
+(anonymous) @ Prod_Dev_Code.js:547
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+All_spc_shared_function_global_1.min.js:1 [scroll-spy] active: summary-region | bottom: false | scrollParent: <div id=​"R192206318396355207" class=​"gis-body">​…​</div>​scroll
+product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5763 999999 - Prod dev SPC
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:544
+setTimeout
+fn_init @ Prod_Dev_Code.js:544
+(anonymous) @ Prod_Dev_Code.js:547
+(anonymous) @ Prod_Dev_Code.js:547
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+All_spc_shared_function_global_1.min.js:1 [DirtyTracker] Listeners attached
+All_spc_shared_exec_on_load_1.min.js:1 [loadSectionsFromDB] proposal_id: 1188
+pivot-table_22_09_26.js:156 [InvestmentReport] init() mounting for 1188|null|null
+product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:4567 [page-load nav] active step target: summary-region
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region t-Region--noPadding t-Region--removeHeader js-removeLandmark t-Region--scrollBody margin-bottom-none js-apex-region" id=​"R2577117622675200491">​…​</div>​
+All_spc_shared_exec_on_load_1.min.js:1 [Preview] Window loaded
+pivot-table_22_09_26.js:156 [InvestmentReport] init() skipped — widget already mounted for 1188|null|null
+pivot-table_22_09_26.js:154 [getFinancialData] GET /api/GIS/proposalAuthoring/financialEvaluation?proposal_id=1188
+pivot-table_22_09_26.js:154 [getFinancialData] reused in-flight GET — trigger: initial mount
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region t-Region--hideShow is-expanded t-Region--scrollBody js-apex-region a-Collapsible" id=​"collaboration" data-region-id=​"R2596698432174422322" role=​"region" aria-labelledby=​"collaboration_heading">​…​</div>​
+All_spc_shared_exec_on_load_1.min.js:1 [Preview] apexafterrefresh fired
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div id=​"Prev_Fin_Eval_Region" class=​"js-apex-region">​…​</div>​
+product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:3753 IP Address:131.229.221.46
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region t-Region--hideShow is-expanded t-Region--scrollBody js-apex-region a-Collapsible" id=​"R177416729817201008" data-region-id=​"R177416729817201008" role=​"region" aria-labelledby=​"R177416729817201008_heading">​…​</div>​
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+l @ desktop_all.min.js?v=26.1.5:34
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+F.s.setValue @ desktop_all.min.js?v=26.1.5:17
+javascriptCode @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:4445
+t.executeJavaScriptCode @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+l @ desktop_all.min.js?v=26.1.5:34
+t.resume @ desktop_all.min.js?v=26.1.5:34
+success @ desktop_all.min.js?v=26.1.5:35
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+t.setValue @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region t-Region--hideShow is-expanded t-Region--scrollBody js-apex-region a-Collapsible" id=​"R177416877242201010" data-region-id=​"R177416877242201010" role=​"region" aria-labelledby=​"R177416877242201010_heading">​…​</div>​
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region t-Region--hideShow is-expanded t-Region--scrollBody js-apex-region a-Collapsible" id=​"R177417038827201011" data-region-id=​"R177417038827201011" role=​"region" aria-labelledby=​"R177417038827201011_heading">​…​</div>​
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region spc-readonly-comment-allow t-Region--removeHeader js-removeLandmark t-Region--noUI t-Region--scrollBody js-apex-region" id=​"comments-authoring">​…​</div>​
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+l @ desktop_all.min.js?v=26.1.5:34
+t.resume @ desktop_all.min.js?v=26.1.5:34
+success @ desktop_all.min.js?v=26.1.5:35
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+t.setValue @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_…:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+l @ desktop_all.min.js?v=26.1.5:34
+t.resume @ desktop_all.min.js?v=26.1.5:34
+success @ desktop_all.min.js?v=26.1.5:35
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+t.setValue @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+l @ desktop_all.min.js?v=26.1.5:34
+t.resume @ desktop_all.min.js?v=26.1.5:34
+success @ desktop_all.min.js?v=26.1.5:35
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+t.setValue @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+l @ desktop_all.min.js?v=26.1.5:34
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+F.s.setValue @ desktop_all.min.js?v=26.1.5:17
+$s @ desktop_all.min.js?v=26.1.5:19
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.clear @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region spc-readonly-comment-allow t-Region--removeHeader js-removeLandmark t-Region--noUI t-Region--scrollBody js-apex-region" id=​"comments-authoring">​…​</div>​
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+l @ desktop_all.min.js?v=26.1.5:34
+t.resume @ desktop_all.min.js?v=26.1.5:34
+_ @ desktop_all.min.js?v=26.1.5:35
+success @ desktop_all.min.js?v=26.1.5:35
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+t.setValue @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+l @ desktop_all.min.js?v=26.1.5:34
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+F.s.setValue @ desktop_all.min.js?v=26.1.5:17
+$s @ desktop_all.min.js?v=26.1.5:19
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.clear @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region t-Region--removeHeader js-removeLandmark t-Region--noUI t-Region--scrollBody js-apex-region" id=​"ai_insightss">​…​</div>​
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region t-Region--hideShow is-expanded t-Region--scrollBody js-apex-region a-Collapsible" id=​"collaboration" data-region-id=​"R2596698432174422322" role=​"region" aria-labelledby=​"collaboration_heading">​…​</div>​
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+l @ desktop_all.min.js?v=26.1.5:34
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+F.s.setValue @ desktop_all.min.js?v=26.1.5:17
+setSelectedSection @ Prod_Dev_Code.js:1
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:4664
+setTimeout
+javascriptCode @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:4661
+t.executeJavaScriptCode @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+l @ desktop_all.min.js?v=26.1.5:34
+t.resume @ desktop_all.min.js?v=26.1.5:34
+success @ desktop_all.min.js?v=26.1.5:35
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+t.setValue @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+All_spc_shared_function_global_1.min.js:1 [DirtyTracker] Snapshot captured — 42 fields. Keys: (42) ['spc_proposal_id', 'spc_proposal_title', 'spc_region', 'summary_field_3', 'spc_country_code', 'summary_field_5', 'spc_entity', 'summary_field_7', 'spc_business_area', 'summary_field_9', 'spc_bu', 'summary_field_11', 'spc_invest-cat', 'summary_field_13', 'spc_ism', 'spc_pcs', 'summary_field_16', 'spc_pc', 'spc_local_currency', 'spc_executive_sponsor', 'summary_field_20', 'spc_opco_sponsor', 'summary_field_22', 'spc_project_lead', 'summary_field_24', 'spc_finance_lead', 'summary_field_26', 'spc_investment_total', 'spc_return_savings', 'spc_budget_relief', 'summary_field_30', 'spc_status_timetable', 'spc_start_date', 'spc_go_live_date', 'quill_editor-9737', 'quill_editor-9738', 'quill_editor-9739', 'quill_editor-9740', 'quill_editor-9741', 'quill_editor-9742', 'quill_editor-9743', 'quill_editor-9744']
+All_spc_shared_exec_on_load_1.min.js:1 [DirtyTracker] Snapshot captured in create mode
+All_spc_shared_exec_on_load_1.min.js:1 [DirtyTracker] Page ready — tracking active
+widget_session_id.js:62  GET https://gisdev.uk.experian.com/api/GIS/proposalAuthoring/1188/financialEvaluation 405 (Method Not Allowed)
+window.fetch @ widget_session_id.js:62
+Sy @ pivot-table_11_09_26.min.js:46
+await in Sy
+(anonymous) @ pivot-table_11_09_26.min.js:46
+vc @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+Sd @ pivot-table_11_09_26.min.js:46
+(anonymous) @ pivot-table_11_09_26.min.js:46
+C @ pivot-table_11_09_26.min.js:28
+postMessage
+k @ pivot-table_11_09_26.min.js:28
+C @ pivot-table_11_09_26.min.js:28
+postMessage
+k @ pivot-table_11_09_26.min.js:28
+e.unstable_scheduleCallback @ pivot-table_11_09_26.min.js:28
+Ud @ pivot-table_11_09_26.min.js:46
+$d @ pivot-table_11_09_26.min.js:46
+(anonymous) @ pivot-table_11_09_26.min.js:46
+pivot-table_11_09_26.min.js:46 [ForecastDashboard] currency lookup failed Error: HTTP 405: 
+    at Sy (pivot-table_11_09_26.min.js:46:296436)
+(anonymous) @ pivot-table_11_09_26.min.js:46
+Promise.catch
+(anonymous) @ pivot-table_11_09_26.min.js:46
+vc @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+nu @ pivot-table_11_09_26.min.js:46
+tu @ pivot-table_11_09_26.min.js:46
+Sd @ pivot-table_11_09_26.min.js:46
+(anonymous) @ pivot-table_11_09_26.min.js:46
+C @ pivot-table_11_09_26.min.js:28
+postMessage
+k @ pivot-table_11_09_26.min.js:28
+C @ pivot-table_11_09_26.min.js:28
+postMessage
+k @ pivot-table_11_09_26.min.js:28
+e.unstable_scheduleCallback @ pivot-table_11_09_26.min.js:28
+Ud @ pivot-table_11_09_26.min.js:46
+$d @ pivot-table_11_09_26.min.js:46
+(anonymous) @ pivot-table_11_09_26.min.js:46
+pivot-table_11_09_26.min.js:46 [KPIVariance] request {url: '/api/GIS/PIR/KPIVariance', headers: {…}}
+pivot-table_11_09_26.min.js:46 [KPIVariance] response {}
+All_spc_shared_exec_on_load_1.min.js:1 [Preview] apexafterrefresh fired
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div id=​"Preview_Quill_Region" class=​"js-apex-region">​…​</div>​
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:534
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:534
+dispatch @ desktop_all.min.js?v=26.1.5:5
+v.handle @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+trigger @ desktop_all.min.js?v=26.1.5:5
+e.trigger @ desktop_all.min.js?v=26.1.5:14
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:446 [P3 KPI] No .npv-kpi-value elements found.
+fn_warn @ Prod_Dev_Code.js:446
+fn_render_kpis @ Prod_Dev_Code.js:523
+(anonymous) @ Prod_Dev_Code.js:542
+setTimeout
+(anonymous) @ Prod_Dev_Code.js:542
+childList
+Be @ desktop_all.min.js?v=26.1.5:5
+remove @ desktop_all.min.js?v=26.1.5:5
+o @ desktop_all.min.js?v=26.1.5:21
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+finish @ desktop_all.min.js?v=26.1.5:8
+N @ desktop_all.min.js?v=26.1.5:21
+(anonymous) @ desktop_all.min.js?v=26.1.5:21
+k.success @ desktop_all.min.js?v=26.1.5:21
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+E @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+XMLHttpRequest.send
+send @ desktop_all.min.js?v=26.1.5:5
+ajax @ desktop_all.min.js?v=26.1.5:5
+$ @ desktop_all.min.js?v=26.1.5:21
+D @ desktop_all.min.js?v=26.1.5:21
+t.plugin @ desktop_all.min.js?v=26.1.5:21
+l @ desktop_all.min.js?v=26.1.5:66
+(anonymous) @ desktop_all.min.js?v=26.1.5:35
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.refresh @ desktop_all.min.js?v=26.1.5:35
+t.doAction @ desktop_all.min.js?v=26.1.5:34
+t.doActions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+each @ desktop_all.min.js?v=26.1.5:5
+each @ desktop_all.min.js?v=26.1.5:5
+t.actions @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ desktop_all.min.js?v=26.1.5:34
+t.init @ desktop_all.min.js?v=26.1.5:34
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5572
+c @ desktop_all.min.js?v=26.1.5:5
+add @ desktop_all.min.js?v=26.1.5:5
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5569
+e.init @ desktop_all.min.js?v=26.1.5:22
+(anonymous) @ product-development?p3_proposal_code=NA-PD-2026-1188&p3_proposal_id_redirect=1188&p3_create_update_proposal=1&p3_spc_type=Product%20Development&p3_proposal_title=%3Cb%3ETemp%20prod%20dev%20-2%3C%2Fb%3E&p0_proposal_id=1188&p3_page_nav=&clear=3&session=503891274056129&cs=1lVgxb8qcUQd0_jM0fHE6UJ9kWnzU5UCyIAT_g5w9Tm1E3TQkQRLoEMljIJnjbXFN_-VQ0Vjy-rIJW-uyZUD6NA:5559
+l @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+setTimeout
+(anonymous) @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+fire @ desktop_all.min.js?v=26.1.5:5
+c @ desktop_all.min.js?v=26.1.5:5
+fireWith @ desktop_all.min.js?v=26.1.5:5
+ready @ desktop_all.min.js?v=26.1.5:5
+Q @ desktop_all.min.js?v=26.1.5:5
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+pivot-table_11_09_26.min.js:46 [ForecastActuals] request {url: '/api/GIS/PIR/forecastsActualsComparision', headers: {…}}
+pivot-table_11_09_26.min.js:46 [ForecastActuals] response {apiStatus: 'S', apiMessage: 'Success', data: {…}}
+All_spc_shared_exec_on_load_1.min.js:1 [loadSectionsFromDB] Sections received: 8
+All_spc_shared_exec_on_load_1.min.js:1 [loadSectionsFromDB] Loaded section_id: 9737 → editor-9737
+All_spc_shared_exec_on_load_1.min.js:1 [loadSectionsFromDB] Loaded section_id: 9738 → editor-9738
+All_spc_shared_exec_on_load_1.min.js:1 [loadSectionsFromDB] Loaded section_id: 9739 → editor-9739
+All_spc_shared_exec_on_load_1.min.js:1 [loadSectionsFromDB] Loaded section_id: 9740 → editor-9740
+All_spc_shared_exec_on_load_1.min.js:1 [loadSectionsFromDB] Loaded section_id: 9741 → editor-9741
+All_spc_shared_exec_on_load_1.min.js:1 [loadSectionsFromDB] Loaded section_id: 9742 → editor-9742
+All_spc_shared_exec_on_load_1.min.js:1 [loadSectionsFromDB] Loaded section_id: 9743 → editor-9743
+All_spc_shared_exec_on_load_1.min.js:1 [loadSectionsFromDB] Loaded section_id: 9744 → editor-9744
+All_spc_shared_function_global_1.min.js:1 [DirtyTracker] Snapshot captured — 42 fields. Keys: (42) ['spc_proposal_id', 'spc_proposal_title', 'spc_region', 'summary_field_3', 'spc_country_code', 'summary_field_5', 'spc_entity', 'summary_field_7', 'spc_business_area', 'summary_field_9', 'spc_bu', 'summary_field_11', 'spc_invest-cat', 'summary_field_13', 'spc_ism', 'spc_pcs', 'summary_field_16', 'spc_pc', 'spc_local_currency', 'spc_executive_sponsor', 'summary_field_20', 'spc_opco_sponsor', 'summary_field_22', 'spc_project_lead', 'summary_field_24', 'spc_finance_lead', 'summary_field_26', 'spc_investment_total', 'spc_return_savings', 'spc_budget_relief', 'summary_field_30', 'spc_status_timetable', 'spc_start_date', 'spc_go_live_date', 'quill_editor-9737', 'quill_editor-9738', 'quill_editor-9739', 'quill_editor-9740', 'quill_editor-9741', 'quill_editor-9742', 'quill_editor-9743', 'quill_editor-9744']
+All_spc_shared_exec_on_load_1.min.js:1 [DirtyTracker] Snapshot captured after loadSectionsFromDB
+pivot-table_22_09_26.js:154 [getFinancialData] status: 200
+pivot-table_22_09_26.js:154 [getFinancialData] data array length: 1 {fin_eval_header_id: 1257, proposal_id: 1188, proposal_title: 'Temp prod dev -2', proposal_code: 'NA-PD-2026-1188', proposal_status: 'DRAFT', …}
+pivot-table_22_09_26.js:154 [getFinancialData] transformApiData result: 7 groups, 3 years
+pivot-table_22_09_26.js:154 [account-codes] section code: CAPITAL_INVESTMENT → GET /api/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=CAPITAL_INVESTMENT
+pivot-table_22_09_26.js:154 [account-codes] section code: REVENUE → GET /api/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=REVENUE
+pivot-table_22_09_26.js:154 [account-codes] section code: OPEX → GET /api/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=OPEX
+pivot-table_11_09_26.min.js:46 [UnmappedTrx] request {url: '/api/GIS/PIR/unmappedTrx', headers: {…}}
+pivot-table_11_09_26.min.js:46 [UnmappedTrx] response {items: Array(0), hasMore: false, limit: 25, offset: 0, count: 0, …}
+pivot-table_22_09_26.js:154 [account-codes] CAPITAL_INVESTMENT: 80 codes (80) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+pivot-table_22_09_26.js:154 [account-codes] REVENUE: 38 codes (38) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+pivot-table_22_09_26.js:154 [account-codes] OPEX: 519 codes (519) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, …]
+pivot-table_11_09_26.min.js:46 [SectionIds] section_name → fin_eval_section_id {capital investment: 14575, revenue: 14576, opex costs: 14577, returns analysis: 14578, balance sheet: 14579, …}
+All_spc_shared_exec_on_load_1.min.js:1 [Preview] apexafterrefresh fired
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region t-Region--hideHeader t-Region--noUI t-Region--scrollBody js-apex-region" id=​"preview_kpi_rgn" role=​"region" aria-label=​"Preview KPI Region">​…​</div>​
+Prod_Dev_Code.js:445 [P3 KPI] -----------------------------------------------
+Prod_Dev_Code.js:445 [P3 KPI] Rendering 1 NPV element(s)
+Prod_Dev_Code.js:445 [P3 KPI] Currency: USD
+Prod_Dev_Code.js:445 [P3 KPI] Scale: K
+Prod_Dev_Code.js:445 [P3 KPI] [#0] raw K: -690
+Prod_Dev_Code.js:445 [P3 KPI] [#0] Before: $ (690) K | After: $(690)K | Raw K: -690 | Source: USD | Target: USD | Converted: -690 | Divisor: 1 | Scaled: -690
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:445 [P3 KPI] -----------------------------------------------
+Prod_Dev_Code.js:445 [P3 KPI] -----------------------------------------------
+Prod_Dev_Code.js:445 [P3 KPI] Rendering 1 NPV element(s)
+Prod_Dev_Code.js:445 [P3 KPI] Currency: USD
+Prod_Dev_Code.js:445 [P3 KPI] Scale: K
+Prod_Dev_Code.js:445 [P3 KPI] [#0] raw K: -690
+Prod_Dev_Code.js:445 [P3 KPI] [#0] Before: $(690)K | After: $(690)K | Raw K: -690 | Source: USD | Target: USD | Converted: -690 | Divisor: 1 | Scaled: -690
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:445 [P3 KPI] -----------------------------------------------
+Prod_Dev_Code.js:445 [P3 KPI] APEX region refresh detected: <div class=​"t-Region t-Region--hideHeader t-Region--noUI t-Region--scrollBody margin-bottom-sm js-apex-region" id=​"summary_kpi" role=​"region" aria-label=​"Summary KPI" data-also-id=​"summary-region">​…​</div>​
+Prod_Dev_Code.js:445 [P3 KPI] -----------------------------------------------
+Prod_Dev_Code.js:445 [P3 KPI] Rendering 2 NPV element(s)
+Prod_Dev_Code.js:445 [P3 KPI] Currency: USD
+Prod_Dev_Code.js:445 [P3 KPI] Scale: K
+Prod_Dev_Code.js:445 [P3 KPI] [#0] raw K: -690
+Prod_Dev_Code.js:445 [P3 KPI] [#0] Before: $ (690) K | After: $(690)K | Raw K: -690 | Source: USD | Target: USD | Converted: -690 | Divisor: 1 | Scaled: -690
+Prod_Dev_Code.js:445 [P3 KPI] [#1] raw K: -690
+Prod_Dev_Code.js:445 [P3 KPI] [#1] Before: $(690)K | After: $(690)K | Raw K: -690 | Source: USD | Target: USD | Converted: -690 | Divisor: 1 | Scaled: -690
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:445 [P3 KPI] -----------------------------------------------
+Prod_Dev_Code.js:445 [P3 KPI] -----------------------------------------------
+Prod_Dev_Code.js:445 [P3 KPI] Rendering 2 NPV element(s)
+Prod_Dev_Code.js:445 [P3 KPI] Currency: USD
+Prod_Dev_Code.js:445 [P3 KPI] Scale: K
+Prod_Dev_Code.js:445 [P3 KPI] [#0] raw K: -690
+Prod_Dev_Code.js:445 [P3 KPI] [#0] Before: $(690)K | After: $(690)K | Raw K: -690 | Source: USD | Target: USD | Converted: -690 | Divisor: 1 | Scaled: -690
+Prod_Dev_Code.js:445 [P3 KPI] [#1] raw K: -690
+Prod_Dev_Code.js:445 [P3 KPI] [#1] Before: $(690)K | After: $(690)K | Raw K: -690 | Source: USD | Target: USD | Converted: -690 | Divisor: 1 | Scaled: -690
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_investment_total -> prev-investment | Raw K: 1380 | Scale: K | Display: $ 1,380 K
+Prod_Dev_Code.js:445 [P3 KPI] Linked financial pair: spc_return_savings -> prev-return-savings | Raw K: 0 | Scale: K | Display: $ 0 K
+Prod_Dev_Code.js:445 [P3 KPI] -----------------------------------------------
