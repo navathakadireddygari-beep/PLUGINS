@@ -74,8 +74,10 @@ function init(hostId: string, config: AppConfig): void {
   // widget; anything else → unmount the old one before mounting fresh.
   if (mount.root) {
     if (mount.container === container && container.isConnected && mount.key === mountKey(config)) {
+      console.log("[InvestmentReport] init() skipped — widget already mounted for", mountKey(config));
       return;
     }
+    console.log("[InvestmentReport] init() remounting:", mount.key, "→", mountKey(config));
     mount.root.unmount();
     mount.root = null;
     mount.container = null;
@@ -83,6 +85,7 @@ function init(hostId: string, config: AppConfig): void {
   }
 
   /* Create a fresh React root and render */
+  console.log("[InvestmentReport] init() mounting for", mountKey(config));
   mount.root = ReactDOM.createRoot(container);
   mount.container = container;
   mount.key = mountKey(config);

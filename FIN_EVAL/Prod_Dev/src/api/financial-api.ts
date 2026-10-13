@@ -530,13 +530,18 @@ const inflightFinancialGets = new Map<string, Promise<{ table: PivotTableData; r
 
 export function getFinancialData(
   cfg: AppConfig,
-  opts: { force?: boolean } = {},
+  opts: { force?: boolean; reason?: string } = {},
 ): Promise<{ table: PivotTableData; rawHeader: ApiHeader }> {
   const url = buildFinancialUrl(cfg);
   if (!opts.force) {
     const inflight = inflightFinancialGets.get(url);
-    if (inflight) return inflight;
+    if (inflight) {
+      console.log(`[getFinancialData] reused in-flight GET — trigger: ${opts.reason ?? "unknown"}`);
+      return inflight;
+    }
   }
+  // Names what asked for this GET, so duplicate calls in APEX can be traced.
+  console.log(`[getFinancialData] new GET — trigger: ${opts.reason ?? "unknown"}`);
   const request = fetchFinancialData(cfg, url).finally(() => {
     if (inflightFinancialGets.get(url) === request) inflightFinancialGets.delete(url);
   });

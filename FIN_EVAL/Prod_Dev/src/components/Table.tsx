@@ -517,13 +517,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
   }, []);
 
   /* ── GET ─────────────────────────────────────────────────────── */
-  const loadData = useCallback(async (): Promise<{ table: PivotTableData; rawHeader: ApiHeader } | null> => {
+  const loadData = useCallback(async (reason = "unknown"): Promise<{ table: PivotTableData; rawHeader: ApiHeader } | null> => {
     setLoading(true);
     setFetchError(null);
     setSaveError(null);
     try {
       const cfg = getAppConfig();
-      const result = await getFinancialData(cfg);
+      const result = await getFinancialData(cfg, { reason });
       setData(result.table);
       setRawHeader(result.rawHeader);
       dbYearsRef.current = new Set(result.table.years);
@@ -537,7 +537,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return null;
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData("initial mount"); }, [loadData]);
 
   // Fetch the live FX rate once local_currency is known/changes. Skipped
   // entirely for USD-only proposals. Result is cached in state; loading/
@@ -575,10 +575,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // Finds the matching group in fresh data by sectionId / sectionType / name,
   // patches only that group in state (preserving expanded state for all others),
   // then triggers the scroll. Used by the event listener and mount effect.
-  const refreshSection = useCallback(async (targetId: string): Promise<void> => {
+  const refreshSection = useCallback(async (targetId: string, reason = "unknown"): Promise<void> => {
     try {
       const cfg    = getAppConfig();
-      const result = await getFinancialData(cfg);
+      const result = await getFinancialData(cfg, { reason: `${reason} (section ${targetId})` });
       const numId  = parseInt(targetId, 10);
       const fresh  = result.table.groups.find((g) =>
         (Number.isFinite(numId) && g.sectionId === numId) ||
@@ -613,7 +613,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     if (w.__finEvalScrollTarget) {
       const target = w.__finEvalScrollTarget;
       delete w.__finEvalScrollTarget;
-      void refreshSection(target);
+      void refreshSection(target, "mount: APEX scroll target");
     }
   }, [refreshSection]);
 
@@ -625,9 +625,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
       const sid = detail?.sectionId != null ? String(detail.sectionId).trim() : null;
       console.log("[Table] tool:refresh_financial_evaluation received, sectionId =", sid);
       if (sid && sid !== "null") {
-        void refreshSection(sid);
+        void refreshSection(sid, "window event tool:refresh_financial_evaluation");
       } else {
-        void loadData();
+        void loadData("window event tool:refresh_financial_evaluation");
       }
     };
     window.addEventListener("tool:refresh_financial_evaluation", handler);
@@ -729,7 +729,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       // reload does. We only carry over each section's expanded/collapsed
       // state so the view doesn't jump.
       try {
-        const refetched = await getFinancialData(cfg, { force: true });
+        const refetched = await getFinancialData(cfg, { force: true, reason: "re-fetch after save" });
         console.log("[saveDraft] re-fetch groups:", refetched.table.groups.length,
           "lines:", refetched.table.groups.reduce((s, g) => s + g.values.length, 0));
 
@@ -781,8 +781,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
   bridgeHandlersRef.current = { loadData, refreshSection, saveDraft };
   useEffect(() => {
     const { loadData, refreshSection, saveDraft } = {
-      loadData:       () => bridgeHandlersRef.current.loadData(),
-      refreshSection: (id: string) => bridgeHandlersRef.current.refreshSection(id),
+      loadData:       (reason: string) => bridgeHandlersRef.current.loadData(reason),
+      refreshSection: (id: string, reason: string) => bridgeHandlersRef.current.refreshSection(id, reason),
       saveDraft:      () => bridgeHandlersRef.current.saveDraft(),
     };
     const unsubFinEval = subscribeAllActions("fin-eval", (env) => {
@@ -792,13 +792,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
       if (action === "fin-eval:refresh") {
         const sid = payload?.sectionId != null ? String(payload.sectionId).trim() : null;
-        if (sid && sid !== "null") void refreshSection(sid);
-        else void loadData();
+        if (sid && sid !== "null") void refreshSection(sid, "bridge fin-eval:refresh");
+        else void loadData("bridge fin-eval:refresh");
       } else if (action === "fin-eval:save") {
         void saveDraft();
       } else if (action === "fin-eval:scroll-to-section") {
         const sectionType = payload?.sectionType as string | undefined;
-        if (sectionType) void refreshSection(sectionType);
+        if (sectionType) void refreshSection(sectionType, "bridge fin-eval:scroll-to-section");
       }
     });
 
@@ -809,8 +809,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
       if (action === "tool:refresh_financial_evaluation") {
         const sid = payload?.sectionId != null ? String(payload.sectionId).trim() : null;
-        if (sid && sid !== "null") void refreshSection(sid);
-        else void loadData();
+        if (sid && sid !== "null") void refreshSection(sid, "bridge editor tool:refresh_financial_evaluation");
+        else void loadData("bridge editor tool:refresh_financial_evaluation");
       }
     });
 
@@ -976,7 +976,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   if (fetchError) return (
     <div style={{ padding: 40, maxWidth: 480, margin: "40px auto" }}>
       <div style={{ padding: "14px 18px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, color: "#dc2626", fontSize: 13, marginBottom: 14 }}><strong>Error:</strong> {fetchError}</div>
-      <button type="button" onClick={loadData} style={{ padding: "8px 18px", background: BRAND, color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Retry</button>
+      <button type="button" onClick={() => loadData("retry button")} style={{ padding: "8px 18px", background: BRAND, color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Retry</button>
     </div>
   );
 
