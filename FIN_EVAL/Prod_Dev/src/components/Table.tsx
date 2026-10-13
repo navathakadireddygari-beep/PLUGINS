@@ -35,7 +35,15 @@ const DARK_HEADER  = "#2d3748";
 // P&L sub-sections are indented by this much; the gutter stays white so the
 // section bar, delete icon and line items all start at the indented edge.
 const SUB_INDENT   = 16;
-const subGutter = (on: boolean): CSSProperties => (on ? { boxShadow: `inset ${SUB_INDENT}px 0 0 #fff` } : {});
+// Width of the leading delete-icon column (first <col> in the colgroup).
+const ICON_COL     = 36;
+// First cell of a sub-section row: paints the indent gutter white and draws
+// the row's bottom rule only to the right of it, so no grid line runs
+// through the empty gutter. `bg` is the cell's own fill (if any).
+const subGutter = (on: boolean, bg = "transparent", line = "#e5e7eb"): CSSProperties => (on ? {
+  borderBottom: "none",
+  background: `linear-gradient(#fff, #fff) left top / ${SUB_INDENT}px 100% no-repeat, linear-gradient(${line}, ${line}) right bottom / calc(100% - ${SUB_INDENT}px) 1px no-repeat, ${bg}`,
+} : {});
 const DARK_TOGGLE  = "#1e2433";
 
 const CURRENCY_LABELS: Record<string, string> = {
@@ -930,6 +938,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   const sectionTree = orderWithSubSections(data?.groups ?? []);
   const isSubSection = (g: Group): boolean => isPnlChildGroup(g, sectionTree.pnl);
+  // Shown on the collapsed P&L header so hidden sub-sections aren't missed.
+  const pnlSubCount = sectionTree.ordered.filter(isSubSection).length;
 
   /* ── Loading / error gates ──────────────────────────────────── */
   if (loading) return (
@@ -1505,7 +1515,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       <td colSpan={5 + numYears + 1} style={{ padding: isSubSection(group) ? `6px 0 0 ${SUB_INDENT}px` : "10px 14px", fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: 0.5, textTransform: "uppercase" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, ...(isSubSection(group) ? { background: DARK_HEADER, padding: "10px 14px" } : {}) }}>
                           <ChevronDown size={16} style={{ flexShrink: 0 }} />
-                          <span style={{ flex: 1 }}>{sectionDisplayName(group)}</span>
+                          <span style={{ flex: 1 }}>{sectionDisplayName(group)}{group.id === sectionTree.pnl?.id && pnlSubCount > 0 && (<span style={{ marginLeft: 10, fontSize: 10, fontWeight: 600, letterSpacing: 0, textTransform: "none", opacity: 0.75 }}>+{pnlSubCount} sub-section{pnlSubCount === 1 ? "" : "s"}</span>)}</span>
                           {!isReadonly && group.isCustom === "Y" && group.isMandatory !== "Y" && (
                             <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, name: group.name, kind: "section" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", display: "flex", padding: 2 }} title="Delete section">
                               <Trash2 size={14} />
@@ -1519,8 +1529,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {/* Per-section column sub-header */}
                   {group.expanded && (
                     <tr style={{ background: "#e5e7eb", height: 35 }}>
-                      <th style={TH({ width: 28, background: "#e5e7eb", ...subGutter(isSubSection(group)) })} />
-                      <th colSpan={group.isAccountRequired !== "Y" ? 2 : 1} style={TH({ textAlign: "left", width: colWidths.lineItem, position: "relative", background: "#e5e7eb", paddingLeft: isSubSection(group) ? 8 + SUB_INDENT : 8 })}>
+                      <th style={TH({ width: 28, background: "#e5e7eb", ...subGutter(isSubSection(group), "#e5e7eb", "#d1d5db") })} />
+                      <th colSpan={group.isAccountRequired !== "Y" ? 2 : 1} style={TH({ textAlign: "left", width: colWidths.lineItem, position: "relative", background: "#e5e7eb", paddingLeft: isSubSection(group) ? 12 + SUB_INDENT : 8 })}>
                         LINE ITEM
                         <div onMouseDown={(e) => startResize("lineItem", e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", background: "transparent" }} />
                       </th>
@@ -1706,7 +1716,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
                     const renderCalcRow = (value: ValueRow) => (
                       <tr key={value.id} style={{ background: "#f3f4f6" }}>
-                        <td colSpan={group.isAccountRequired === "Y" ? 2 : 3} style={{ ...TD, padding: sub ? `8px 12px 8px ${12 + SUB_INDENT}px` : "8px 12px", ...subGutter(sub), fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
+                        <td colSpan={group.isAccountRequired === "Y" ? 2 : 3} style={{ ...TD, padding: sub ? `8px 12px 8px ${ICON_COL + 12 + SUB_INDENT}px` : "8px 12px", ...subGutter(sub), fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
                         {group.isAccountRequired === "Y" && (
                           <td style={{ ...TD, padding: "8px 12px", fontSize: 12, color: "#6b7280" }}>{deriveReadonlyAccount(value) || "—"}</td>
                         )}
@@ -1726,7 +1736,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     return (<>
                       {(hasOngoing ? regularEditable : editable).map((v, i) => renderEditable(v, i))}
                       {!isReadonly && group.isNewLineRequired !== "N" && (
-                        <tr key="add-btn"><td colSpan={5 + numYears + 1} style={{ padding: sub ? `6px 10px 6px ${10 + SUB_INDENT}px` : "6px 10px", ...subGutter(sub), borderBottom: "1px solid #e5e7eb" }}><button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 11, background: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", cursor: "pointer", color: "#000", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, height: 15 }}>+ Add {sectionDisplayName(group)} Line</button></td></tr>
+                        <tr key="add-btn"><td colSpan={5 + numYears + 1} style={{ padding: sub ? `6px 10px 6px ${ICON_COL + 12 + SUB_INDENT - 8}px` : "6px 10px", borderBottom: "1px solid #e5e7eb", ...subGutter(sub) }}><button type="button" onClick={() => addValueRow(group.id)} style={{ fontSize: 11, background: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", cursor: "pointer", color: "#000", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, height: 15 }}>+ Add {sectionDisplayName(group)} Line</button></td></tr>
                       )}
                       {hasOngoing ? (<>
                         {calcInitial.map(renderCalcRow)}
@@ -1734,7 +1744,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {calcRest.map(renderCalcRow)}
                       </>) : calc.map((value: ValueRow) => (
                         <tr key={value.id} style={{ background: "#f3f4f6" }}>
-                          <td colSpan={group.isAccountRequired === "Y" ? 2 : 3} style={{ ...TD, padding: sub ? `10px 14px 10px ${14 + SUB_INDENT}px` : "10px 14px", ...subGutter(sub), fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
+                          <td colSpan={group.isAccountRequired === "Y" ? 2 : 3} style={{ ...TD, padding: sub ? `10px 14px 10px ${ICON_COL + 12 + SUB_INDENT}px` : "10px 14px", ...subGutter(sub), fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
                           {group.isAccountRequired === "Y" && (
                             <td style={{ ...TD, padding: "10px 14px", fontSize: 12, color: "#6b7280" }}>{deriveReadonlyAccount(value) || "—"}</td>
                           )}
