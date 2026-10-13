@@ -28,6 +28,9 @@ export type ValueRow = {
   isCalculated?:    string;
   isMandatory?:     string;
   isCustom?:        string;
+  // Per-line asset fields — only editable on Capital Investment lines.
+  amortizationPeriod?:  number | null;
+  datePlacedInService?: string | null;
   displayOrder?:    number;
   status?:          string;
   languageCode?:    string;
@@ -42,6 +45,7 @@ export type Group = {
   values:              ValueRow[];
   sectionId?:          number;
   sectionType?:        string;
+  parentSectionId?:    number;
   isCustom?:           string;
   isMandatory?:        string;
   isNewLineRequired?:  string;
@@ -81,6 +85,8 @@ export type ApiLine = {
   is_read_only?:              string;
   is_custom?:                 string;
   account:                    string | null;
+  amortization_period?:       number | null;
+  date_placed_in_service?:    string | null;
   display_order:              number;
   year_values:                Record<string, YearEntry>;
   target_go_live_date?:       string | null;
@@ -303,6 +309,8 @@ export function transformApiData(
             yearValues,
             rowTotal:       totalEntry != null ? Number(totalEntry) : undefined,
             accountId:      line.account         ?? undefined,
+            amortizationPeriod:  line.amortization_period != null && Number.isFinite(Number(line.amortization_period)) ? Number(line.amortization_period) : null,
+            datePlacedInService: line.date_placed_in_service ?? null,
             lineType:       line.line_type        ?? "",
             lineId:         line.fin_eval_line_id ?? undefined,
             sectionId:      line.fin_eval_section_id ?? undefined,
@@ -327,6 +335,7 @@ export function transformApiData(
         values,
         sectionId:    section.fin_eval_section_id ?? undefined,
         sectionType:  section.section_type   ?? "CUSTOM",
+        parentSectionId: section.parent_fin_eval_section_id ?? undefined,
         isCustom:           section.is_custom             ?? "N",
         isMandatory:        section.is_mandatory          ?? "N",
         isNewLineRequired:  section.is_new_line_required  ?? "Y",
@@ -394,6 +403,8 @@ export function buildPutPayload(
         is_calculated:       value.isCalculated   ?? "N",
         is_custom:           value.isCustom       ?? "Y",
         account:             value.accountId      ?? null,
+        amortization_period:    value.amortizationPeriod  ?? null,
+        date_placed_in_service: value.datePlacedInService || null,
         display_order:       value.displayOrder   ?? lineIdx + 1,
         year_values,
         status:              value.status       ?? "ACTIVE",
@@ -504,6 +515,8 @@ export function buildStagingPutPayload(tableData: PivotTableData, rawHeader: Api
         isReadOnly:       yn(rawLine?.is_read_only, "N"),
         isCustom:         yn(value.isCustom ?? rawLine?.is_custom, "Y"),
         account:          value.accountId ?? rawLine?.account ?? null,
+        amortizationPeriod:  value.amortizationPeriod ?? null,
+        datePlacedInService: value.datePlacedInService || null,
         displayOrder:     value.displayOrder ?? rawLine?.display_order ?? (lineIdx + 1) * 10,
         yearValues,
         targetGoLiveDate: rawLine?.target_go_live_date ?? null,
@@ -695,6 +708,8 @@ function mapStagingLine(l: Record<string, unknown>): ApiLine {
     is_read_only:        (l.isReadOnly as string) ?? "N",
     is_custom:           (l.isCustom as string) ?? "Y",
     account:             (l.account as string) ?? null,
+    amortization_period:    num(l.amortizationPeriod),
+    date_placed_in_service: (l.datePlacedInService as string | null) ?? null,
     display_order:       num(l.displayOrder) ?? 0,
     year_values:         (l.yearValues as Record<string, YearEntry>) ?? {},
     target_go_live_date: (l.targetGoLiveDate as string | null) ?? null,
@@ -1042,6 +1057,8 @@ function buildLineInsertBody(
     is_calculated:       value.isCalculated   ?? "N",
     is_custom:           value.isCustom       ?? "Y",
     account:             value.accountId      ?? null,
+    amortization_period:    value.amortizationPeriod  ?? null,
+    date_placed_in_service: value.datePlacedInService || null,
     display_order:       value.displayOrder   ?? lineIdx,
     year_values,
     status:              value.status       ?? "ACTIVE",
