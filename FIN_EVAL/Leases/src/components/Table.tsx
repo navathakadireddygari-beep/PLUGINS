@@ -27,7 +27,7 @@ import {
   NUMBER_FORMATS, DEFAULT_NUMBER_FORMAT, formatNumber, formatScaledValue, type NumberFormatKey,
   DATE_FORMATS, DEFAULT_DATE_FORMAT, type DateFormatKey,
 } from "../lib/format";
-import { publishAction, subscribeAction } from "../lib/app-bridge";
+import { publishAction, publishToBridge, subscribeAction } from "../lib/app-bridge";
 import { FIN_EVAL_SUBSCRIBER_ID } from "../lib/app-bridge-events.fin-eval";
 
 const BRAND        = "#A5005A";
@@ -530,6 +530,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
           || (method === "POST" ? "Financial evaluation created successfully." : "Financial evaluation saved successfully."),
       });
       publishAction({ source: FIN_EVAL_SUBSCRIBER_ID, target: "apex", action: "tool:fin_eval_saved", payload: { proposalId: cfg.proposal_id } });
+      publishToBridge({ type: "PLUGIN_MSG", source: "editor", target: "chatbot", action: "fin-eval:saved", payload: { proposalId: cfg.proposal_id, method } });
       // Silent re-fetch — update state in place without showing the loading spinner.
       try {
         const refetched = await getFinancialData(cfg);

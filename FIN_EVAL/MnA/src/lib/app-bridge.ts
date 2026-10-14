@@ -58,9 +58,46 @@ export const emitCurrencyChanged = (currency: string): void =>
     proposalId: getProposalId(),
   });
 
-/** A save completed successfully. */
-export const emitSaved = (): void =>
-  dispatch(HOST_EVENTS.saved, { proposalId: getProposalId() });
+/**
+ * Envelope published on the host's `window.AppBridge` — the same bus the other
+ * FinEval plugins use to talk to sibling plugins such as the chatbot.
+ */
+interface BridgeMessage {
+  type: string;
+  source?: string;
+  target?: string;
+  action?: string;
+  payload?: unknown;
+}
+
+declare global {
+  interface Window {
+    AppBridge?: { publish: (msg: BridgeMessage) => void };
+  }
+}
+
+/** Publish on the AppBridge. Silent no-op without a host bridge (standalone / dev). */
+export const publishToBridge = (msg: BridgeMessage): void => {
+  if (typeof window === "undefined") return;
+  window.AppBridge?.publish(msg);
+};
+
+/**
+ * A save completed successfully. Tells the host page (`tool:fin_eval_saved`)
+ * and the chatbot (`fin-eval:saved` over the AppBridge), as Product
+ * Development does. M&A always saves with a PUT.
+ */
+export const emitSaved = (): void => {
+  const proposalId = getProposalId();
+  dispatch(HOST_EVENTS.saved, { proposalId });
+  publishToBridge({
+    type: "PLUGIN_MSG",
+    source: "editor",
+    target: "chatbot",
+    action: "fin-eval:saved",
+    payload: { proposalId, method: "PUT" },
+  });
+};
 
 /** A line was deleted successfully. */
 export const emitDeleted = (): void =>
