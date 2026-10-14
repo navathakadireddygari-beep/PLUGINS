@@ -1143,7 +1143,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   </button>
                 ))}
               </div>
-              {infoIcon("currency", `Local Currency is ${local}. All values are displayed in ${display}.`)}
+              {infoIcon("currency", `Local Currency is ${local} — all values are displayed in ${display}. Change Local Currency in Proposal Section to enable a USD/local toggle.`)}
 
               {/* Divider */}
               <div style={{ width: 1, height: 24, background: "#e5e7eb" }} />
@@ -1157,7 +1157,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   </button>
                 ))}
               </div>
-              {infoIcon("scale", "Switch the denomination for all financial values. K = thousands (default, matches source data), M = millions.")}
+              {infoIcon("scale", "Switch the denomination for all financial values. Values arrive in thousands: K = thousands (as-is), M = millions (÷1,000).")}
 
               {/* Divider */}
               <div style={{ width: 1, height: 24, background: "#e5e7eb" }} />

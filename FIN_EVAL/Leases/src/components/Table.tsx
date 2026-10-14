@@ -1343,7 +1343,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 <div style={stripGroup({ flexWrap: "nowrap" })}>
                   {/* Currency label + toggle + info */}
                   <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, letterSpacing: 0.3, flexShrink: 0 }}>CURRENCY</span>
-                  {infoIcon("currency", `Local Currency is ${local || "USD"}. All values are displayed in ${display}.`)}
+                  {infoIcon("currency", `Local Currency is ${local || "USD"} — all values are displayed in ${display}. Change Local Currency in Proposal Section to enable a USD/local toggle.`)}
                   <div style={{ display: "flex", border: "1px solid #e5e7eb", borderRadius: 6, overflow: "hidden" }}>
                     {currencies.map((cur, i) => (
                       <button key={cur} type="button" onClick={() => handleCurrencyChange(cur)} style={toggleBtn(display === cur, i === 0)}>
@@ -1363,7 +1363,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       </button>
                     ))}
                   </div>
-                  {infoIcon("scale", "Switch the denomination for all financial values. K = thousands (default, matches source data), M = millions.")}
+                  {infoIcon("scale", "Switch the denomination for all financial values. Values arrive in thousands: K = thousands (as-is), M = millions (÷1,000).")}
                 </div>
 
                 <div style={stripGroup({ flexWrap: "nowrap" })}>
