@@ -11,7 +11,13 @@ import {
   type RowIdentity,
 } from "@/lib/row-rules";
 import Toast, { type ToastState } from "@/components/Toast";
-import { emitDeleted, emitSaved, onHostRefresh } from "@/lib/app-bridge";
+import {
+  FIN_EVAL_SUBSCRIBER_ID,
+  emitDeleted,
+  emitSaved,
+  onHostRefresh,
+  subscribeAllActions,
+} from "@/lib/app-bridge";
 import {
   SpreadsheetProvider,
   type CellPos,
@@ -455,6 +461,8 @@ const Table: React.FC = () => {
    * populated evaluation is well below the fold.
    */
   const [pendingScroll, setPendingScroll] = useState<string | null>(null);
+  /** Section type a bridge `fin-eval:scroll-to-section` asked to bring into view. */
+  const [bridgeScrollTarget, setBridgeScrollTarget] = useState<string | null>(null);
 
   // Global currency / FX / scale state + shared formatters (single source of
   // truth — the primary controls live in the Header). This component only reads
@@ -916,6 +924,84 @@ const Table: React.FC = () => {
     registerSave(template?.raw ? onSave : null);
   });
   useEffect(() => () => registerSave(null), [registerSave]);
+
+  // AppBridge event listeners, same contract as Product Development.
+  // "fin-eval" — commands from sibling plugins using our typed action names.
+  // "editor"   — legacy target used by the chatbot (tool:refresh_financial_evaluation).
+  // The window `tool:refresh_financial_evaluation` listener above is untouched.
+  // M&A has no per-section fetch, so a refresh always re-fetches the whole
+  // evaluation (silently, like every other re-fetch here).
+  // Handlers are read through a ref so we subscribe ONCE: onSave changes on
+  // every render, and re-subscribing each time could let the bridge replay its
+  // last message to the new subscriber (another GET).
+  const bridgeHandlersRef = useRef({ reload, onSave, isReadonly });
+  bridgeHandlersRef.current = { reload, onSave, isReadonly };
+  useEffect(() => {
+    const unsubFinEval = subscribeAllActions(FIN_EVAL_SUBSCRIBER_ID, (env) => {
+      const action = env.action;
+      const payload = env.payload as Record<string, unknown> | null | undefined;
+      console.log("[fin-eval] bridge action received:", action, payload);
+
+      if (action === "fin-eval:refresh") {
+        bridgeHandlersRef.current.reload(true);
+      } else if (action === "fin-eval:save") {
+        // The header disables Save in view-only mode; a bridge command must
+        // not slip past that.
+        if (!bridgeHandlersRef.current.isReadonly) bridgeHandlersRef.current.onSave();
+      } else if (action === "fin-eval:scroll-to-section") {
+        const sectionType = payload?.sectionType as string | undefined;
+        if (sectionType) {
+          bridgeHandlersRef.current.reload(true);
+          setBridgeScrollTarget(sectionType);
+        }
+      }
+    });
+
+    const unsubEditor = subscribeAllActions("editor", (env) => {
+      const action = env.action;
+      const payload = env.payload as Record<string, unknown> | null | undefined;
+      console.log("[fin-eval/editor] bridge action received:", action, payload);
+
+      if (action === "tool:refresh_financial_evaluation") {
+        bridgeHandlersRef.current.reload(true);
+      }
+    });
+
+    return () => {
+      unsubFinEval();
+      unsubEditor();
+    };
+  }, []);
+
+  /**
+   * Scroll to the section a `fin-eval:scroll-to-section` command named, by its
+   * `section_type`. Polls (6s) so it still lands when the grid is inside an
+   * APEX tab that is hidden until the tab switch finishes.
+   */
+  useEffect(() => {
+    if (!bridgeScrollTarget) return;
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const tryScroll = (): void => {
+      const el = document.querySelector<HTMLElement>(
+        `[data-section-type="${CSS.escape(bridgeScrollTarget)}"]`,
+      );
+      if ((!el || el.offsetParent === null) && attempts < 60) {
+        attempts++;
+        timer = setTimeout(tryScroll, 100);
+        return;
+      }
+      if (el) {
+        el.style.scrollMarginTop = "80px";
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      setBridgeScrollTarget(null);
+    };
+    tryScroll();
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [bridgeScrollTarget]);
 
   // A failed delete has no error slot of its own, so it reports through the
   // header's status line alongside save failures.

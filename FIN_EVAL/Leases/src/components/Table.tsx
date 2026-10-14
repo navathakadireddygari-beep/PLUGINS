@@ -27,7 +27,7 @@ import {
   NUMBER_FORMATS, DEFAULT_NUMBER_FORMAT, formatNumber, formatScaledValue, type NumberFormatKey,
   DATE_FORMATS, DEFAULT_DATE_FORMAT, type DateFormatKey,
 } from "../lib/format";
-import { publishAction, publishToBridge, subscribeAction } from "../lib/app-bridge";
+import { publishAction, publishToBridge, subscribeAllActions } from "../lib/app-bridge";
 import { FIN_EVAL_SUBSCRIBER_ID } from "../lib/app-bridge-events.fin-eval";
 
 const BRAND        = "#A5005A";
@@ -431,20 +431,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
     }
   }, [refreshSection]);
 
-  // External refresh trigger — handles the no-remount path.
-  //   publishAction({ source: ..., target: "fin-eval", action: "tool:refresh_financial_evaluation", payload: { sectionId } });
-  useEffect(() => {
-    return subscribeAction(FIN_EVAL_SUBSCRIBER_ID, "tool:refresh_financial_evaluation", (payload) => {
-      const sid = payload?.sectionId != null ? String(payload.sectionId).trim() : null;
-      console.log("[Table] tool:refresh_financial_evaluation received, sectionId =", sid);
-      if (sid && sid !== "null") {
-        void refreshSection(sid);
-      } else {
-        void loadData();
-      }
-    });
-  }, [loadData, refreshSection]);
-
   // After loadData() resolves and data updates, scroll to the target section.
   // scrollTarget may be a numeric DB section ID ("5799") or a section type
   // string ("CAPITAL_INVESTMENT") — try all three match strategies.
@@ -529,6 +515,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
         message: ((response as any).apiMessage || response.api_message || "")
           || (method === "POST" ? "Financial evaluation created successfully." : "Financial evaluation saved successfully."),
       });
+      const saveEvent = new CustomEvent("tool:fin_eval_saved", { detail: { proposalId: cfg.proposal_id } });
+      console.log("[fin_eval] dispatching tool:fin_eval_saved", saveEvent.detail);
+      window.dispatchEvent(saveEvent);
       publishAction({ source: FIN_EVAL_SUBSCRIBER_ID, target: "apex", action: "tool:fin_eval_saved", payload: { proposalId: cfg.proposal_id } });
       publishToBridge({ type: "PLUGIN_MSG", source: "editor", target: "chatbot", action: "fin-eval:saved", payload: { proposalId: cfg.proposal_id, method } });
       // Silent re-fetch — update state in place without showing the loading spinner.
@@ -548,6 +537,50 @@ export default function PivotTableWithAPI(): React.ReactElement {
       setSavingDraft(false);
     }
   }, [data, rawHeader, isReadonly]);
+
+  // AppBridge event listeners.
+  // "fin-eval" — commands from sibling plugins using our typed action names
+  //              (plus the original tool:refresh_financial_evaluation).
+  // "editor"   — legacy target used by the chatbot (tool:refresh_financial_evaluation).
+  // Handlers are read through a ref so we subscribe ONCE: saveDraft changes on
+  // every data edit, and re-subscribing each time could let the bridge replay
+  // its last message to the new subscriber (another GET).
+  const bridgeHandlersRef = useRef({ loadData, refreshSection, saveDraft });
+  bridgeHandlersRef.current = { loadData, refreshSection, saveDraft };
+  useEffect(() => {
+    const loadAll    = () => void bridgeHandlersRef.current.loadData();
+    const refreshOne = (id: string) => void bridgeHandlersRef.current.refreshSection(id);
+    const refreshByPayload = (payload: Record<string, unknown> | null | undefined) => {
+      const sid = payload?.sectionId != null ? String(payload.sectionId).trim() : null;
+      if (sid && sid !== "null") refreshOne(sid);
+      else loadAll();
+    };
+
+    const unsubFinEval = subscribeAllActions(FIN_EVAL_SUBSCRIBER_ID, (env) => {
+      const action  = env.action as string;
+      const payload = env.payload as Record<string, unknown> | null | undefined;
+      console.log("[fin-eval] bridge action received:", action, payload);
+
+      if (action === "fin-eval:refresh" || action === "tool:refresh_financial_evaluation") {
+        refreshByPayload(payload);
+      } else if (action === "fin-eval:save") {
+        void bridgeHandlersRef.current.saveDraft();
+      } else if (action === "fin-eval:scroll-to-section") {
+        const sectionType = payload?.sectionType as string | undefined;
+        if (sectionType) refreshOne(sectionType);
+      }
+    });
+
+    const unsubEditor = subscribeAllActions("editor", (env) => {
+      const action  = env.action as string;
+      const payload = env.payload as Record<string, unknown> | null | undefined;
+      console.log("[fin-eval/editor] bridge action received:", action, payload);
+
+      if (action === "tool:refresh_financial_evaluation") refreshByPayload(payload);
+    });
+
+    return () => { unsubFinEval(); unsubEditor(); };
+  }, []);
 
   /* ── Side-effects ───────────────────────────────────────────── */
   useEffect(() => {

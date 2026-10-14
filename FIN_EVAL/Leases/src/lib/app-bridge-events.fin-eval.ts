@@ -25,6 +25,14 @@ declare module "./app-bridge-events" {
     "tool:fin_eval_date_format_changed": { dateFormat: DateFormatKey; proposalId: number | null }
     "tool:fin_eval_number_format_changed": { numberFormat: NumberFormatKey; proposalId: number | null }
     "tool:refresh_financial_evaluation": { sectionId: string | number | null }
+    // Same contract as Product Development (fin-eval-bridge.d.ts there).
+    // Inbound (other plugins → fin-eval):
+    "fin-eval:refresh":           { sectionId?: string | number | null }
+    "fin-eval:save":              Record<string, never>
+    "fin-eval:scroll-to-section": { sectionType: string }
+    // Outbound (fin-eval → other plugins):
+    "fin-eval:loaded":            { proposalId?: string | number | null }
+    "fin-eval:saved":             { proposalId?: string | number | null; method: "POST" | "PUT" }
   }
 }
 
