@@ -277,6 +277,10 @@ const orderWithSubSections = (groups: Group[]): { ordered: Group[]; pnl?: Group 
 // Capital Investment lines; every other section shows them disabled.
 const isCapitalInvestmentGroup = (g: Group): boolean =>
   tok(g.sectionType) === "CAPITALINVESTMENT" || tok(g.name) === "CAPITALINVESTMENT";
+// Those two columns are only rendered for Capital Investment. Every other
+// section gives their 2 grid columns to Account (or to Line Item when the
+// section has no Account column).
+const assetSpan = (g: Group): number => (isCapitalInvestmentGroup(g) ? 0 : 2);
 
 // Balance Sheet and user-added custom sections never show a cross-year TOTAL.
 const isNoTotalGroup = (g: Group): boolean =>
@@ -932,7 +936,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const fmtCellDate = (iso: string): string => (iso ? formatDate(iso, dateFormat) : "");
   const dateFormatHint: string = dateFormat;
 
-  const renderAssetCells = (group: Group, value: ValueRow, padding: string): React.ReactElement => {
+  const renderAssetCells = (group: Group, value: ValueRow, padding: string): React.ReactElement | null => {
+    if (!isCapitalInvestmentGroup(group)) return null;
     const enabled = !isReadonly && isCapitalInvestmentGroup(group) && value.isCalculated !== "Y" && value.isLineReadOnly !== "Y";
     const amort   = value.amortizationPeriod ?? "";
     const placed  = value.datePlacedInService ?? "";
@@ -1573,18 +1578,20 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {group.expanded && (
                     <tr style={{ background: "#e5e7eb", height: 35 }}>
                       <th style={TH({ width: 28, background: "#e5e7eb", ...subGutter(isSubSection(group), "#e5e7eb", "#d1d5db") })} />
-                      <th colSpan={group.isAccountRequired !== "Y" ? 2 : 1} style={TH({ textAlign: "left", width: colWidths.lineItem, position: "relative", background: "#e5e7eb", paddingLeft: isSubSection(group) ? 12 + SUB_INDENT : 8 })}>
+                      <th colSpan={group.isAccountRequired !== "Y" ? 2 + assetSpan(group) : 1} style={TH({ textAlign: "left", width: colWidths.lineItem, position: "relative", background: "#e5e7eb", paddingLeft: isSubSection(group) ? 12 + SUB_INDENT : 8 })}>
                         LINE ITEM
                         <div onMouseDown={(e) => startResize("lineItem", e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", background: "transparent" }} />
                       </th>
                       {group.isAccountRequired === "Y" && (
-                        <th style={TH({ textAlign: "left", width: colWidths.account, position: "relative", background: "#e5e7eb" })}>
+                        <th colSpan={1 + assetSpan(group)} style={TH({ textAlign: "left", width: colWidths.account, position: "relative", background: "#e5e7eb" })}>
                           ACCOUNT <span style={{ color: "#ef4444" }}>*</span>
                           <div onMouseDown={(e) => startResize("account", e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", background: "transparent" }} />
                         </th>
                       )}
-                      <th style={TH({ textAlign: "left", background: "#e5e7eb" })}>AMORTIZATION PERIOD (MONTHS)</th>
-                      <th style={TH({ textAlign: "left", background: "#e5e7eb" })}>DATE PLACED IN SERVICE</th>
+                      {isCapitalInvestmentGroup(group) && (<>
+                        <th style={TH({ textAlign: "left", background: "#e5e7eb" })}>AMORTIZATION PERIOD (MONTHS)</th>
+                        <th style={TH({ textAlign: "left", background: "#e5e7eb" })}>DATE PLACED IN SERVICE</th>
+                      </>)}
                       {data.years.map((year: number, yi: number) => (
                         <th key={year} style={TH({ textAlign: "right", whiteSpace: "nowrap", position: "relative", background: "#e5e7eb" })}
                           onMouseMove={(e) => { if (hoverTimer.current) clearTimeout(hoverTimer.current); const r = e.currentTarget.getBoundingClientRect(); setHoveredColIdx(e.clientX - r.left > r.width * 0.8 ? yi : null); }}
@@ -1661,7 +1668,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, vId: value.id, name: value.name, kind: "line" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={12} /></button>
                             )}
                           </td>
-                          <td colSpan={group.isAccountRequired !== "Y" ? 2 : 1} style={{ ...TD, padding: sub ? `4px 12px 4px ${12 + SUB_INDENT}px` : "4px 12px", position: "relative", overflow: "hidden" }} title={value.name}>
+                          <td colSpan={group.isAccountRequired !== "Y" ? 2 + assetSpan(group) : 1} style={{ ...TD, padding: sub ? `4px 12px 4px ${12 + SUB_INDENT}px` : "4px 12px", position: "relative", overflow: "hidden" }} title={value.name}>
                             <input type="text"
                               value={isAC ? autocompleteSearch : value.name}
                               onChange={(e) => { if (value.isCustom === "N") return; updateValueName(group.id, value.id, e.target.value); if (isAC) setAutocompleteSearch(e.target.value); }}
@@ -1674,7 +1681,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             />
                           </td>
                           {group.isAccountRequired === "Y" && (
-                          <td style={{ ...TD, padding: "4px 12px", overflow: "visible" }}>
+                          <td colSpan={1 + assetSpan(group)} style={{ ...TD, padding: "4px 12px", overflow: "visible" }}>
                             {(isReadonly || value.isLineReadOnly === "Y")
                               ? <div style={{ fontSize: 12, color: "#6b7280", padding: "4px 6px", background: "#f3f4f6", borderRadius: 4, height: 28, display: "flex", alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{deriveReadonlyAccount(value) || "—"}</div>
                               : <AccountCodeSelect
@@ -1759,9 +1766,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
                     const renderCalcRow = (value: ValueRow) => (
                       <tr key={value.id} style={{ background: "#f3f4f6" }}>
-                        <td colSpan={group.isAccountRequired === "Y" ? 2 : 3} style={{ ...TD, padding: sub ? `8px 12px 8px ${ICON_COL + 12 + SUB_INDENT}px` : "8px 12px", ...subGutter(sub), fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
+                        <td colSpan={group.isAccountRequired === "Y" ? 2 : 3 + assetSpan(group)} style={{ ...TD, padding: sub ? `8px 12px 8px ${ICON_COL + 12 + SUB_INDENT}px` : "8px 12px", ...subGutter(sub), fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
                         {group.isAccountRequired === "Y" && (
-                          <td style={{ ...TD, padding: "8px 12px", fontSize: 12, color: "#6b7280" }}>{deriveReadonlyAccount(value) || "—"}</td>
+                          <td colSpan={1 + assetSpan(group)} style={{ ...TD, padding: "8px 12px", fontSize: 12, color: "#6b7280" }}>{deriveReadonlyAccount(value) || "—"}</td>
                         )}
                         {renderAssetCells(group, value, "4px 8px")}
                         {data.years.map((year: number) => {
@@ -1787,9 +1794,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {calcRest.map(renderCalcRow)}
                       </>) : calc.map((value: ValueRow) => (
                         <tr key={value.id} style={{ background: "#f3f4f6" }}>
-                          <td colSpan={group.isAccountRequired === "Y" ? 2 : 3} style={{ ...TD, padding: sub ? `10px 14px 10px ${ICON_COL + 12 + SUB_INDENT}px` : "10px 14px", ...subGutter(sub), fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
+                          <td colSpan={group.isAccountRequired === "Y" ? 2 : 3 + assetSpan(group)} style={{ ...TD, padding: sub ? `10px 14px 10px ${ICON_COL + 12 + SUB_INDENT}px` : "10px 14px", ...subGutter(sub), fontSize: 12, fontWeight: 700, color: "#111" }}>{value.name}</td>
                           {group.isAccountRequired === "Y" && (
-                            <td style={{ ...TD, padding: "10px 14px", fontSize: 12, color: "#6b7280" }}>{deriveReadonlyAccount(value) || "—"}</td>
+                            <td colSpan={1 + assetSpan(group)} style={{ ...TD, padding: "10px 14px", fontSize: 12, color: "#6b7280" }}>{deriveReadonlyAccount(value) || "—"}</td>
                           )}
                           {renderAssetCells(group, value, "4px 8px")}
                           {data.years.map((year: number) => {
