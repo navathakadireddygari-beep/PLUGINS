@@ -780,7 +780,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const isPercentRow = (value: ValueRow): boolean => {
     const name = (value.name || "").trim();
     const ident = `${value.lineIdentifier || ""} ${value.lineType || ""}`.toUpperCase();
-    return name.endsWith("%") || /PCT|PERCENT|MARGIN_?%/.test(ident);
+    return name.includes("%") || /PCT|PERCENT|MARGIN_?%/.test(ident);
   };
 
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like percent rows.

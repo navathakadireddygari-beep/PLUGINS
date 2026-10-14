@@ -924,6 +924,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const isPercentRow = (v: ValueRow): boolean =>
     matchesAny(v, PERCENT_DISPLAY_IDS) || /%/.test(v.name ?? "");
 
+  // Rows shown as-is, with no fx / K-M-B scale: Tax Rate %, and any line whose
+  // name contains "%" (EBIT Margin %, custom % rows, …).
+  const isUnscaledRow = (v: ValueRow): boolean => isTaxRateRow(v) || /%/.test(v.name ?? "");
+
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like Tax Rate %.
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
 
@@ -1688,7 +1692,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           {renderAssetCells(group, value, "4px 8px")}
                           {data.years.map((year: number, yi: number) => {
                             const val = value.yearValues[year] ?? 0;
-                            const rawRow = isTaxRateRow(value) || isNonFinancialRow(value) || groupIsCustomSection;
+                            const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupIsCustomSection;
                             const pctRow = isPercentRow(value);
                             return (
                               <td key={year} style={{ ...TD, padding: "4px 12px" }}>
@@ -1734,7 +1738,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             })}
                           {(isNoTotalRow(value) || groupNoTotal)
                             ? <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={groupNoTotal ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>
-                            : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={(isTaxRateRow(value) || isNonFinancialRow(value) || groupIsCustomSection) ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>; })()
+                            : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={(isUnscaledRow(value) || isNonFinancialRow(value) || groupIsCustomSection) ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>; })()
                           }
                         </tr>
                       );
@@ -1754,7 +1758,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {renderAssetCells(group, value, "4px 8px")}
                         {data.years.map((year: number) => {
                           const val = value.yearValues[year] ?? 0;
-                          const rawRow = isTaxRateRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection;
+                          const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection;
                           return (
                             <td key={year} style={{ ...TD, padding: "8px 12px" }}>
                               <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(val) : displayFmt(val)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} />
@@ -1763,7 +1767,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         })}
                         {(isNoTotalRow(value) || groupNoTotal)
                           ? <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={groupNoTotal ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} /></td>
-                          : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isTaxRateRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
+                          : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
                         }
                       </tr>
                     );
@@ -1785,7 +1789,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           {renderAssetCells(group, value, "4px 8px")}
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
-                            const rawRow = isTaxRateRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection;
+                            const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection;
                             return (
                               <td key={year} style={{ ...TD, padding: "10px 14px" }}>
                                 <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(val) : displayFmt(val)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} />
@@ -1794,7 +1798,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           })}
                           {(isNoTotalRow(value) || groupNoTotal)
                             ? <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={groupNoTotal ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} /></td>
-                            : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isTaxRateRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
+                            : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
                           }
                         </tr>
                       ))}
