@@ -88,18 +88,15 @@ export const isTaxRateRow = (row: RowIdentity): boolean =>
   matchesAny(row, TAX_RATE_IDS);
 
 /**
- * A custom row can declare itself a percentage by putting "%" at the START or
- * END of its name ("% EBIT Margin", "Post Tax Return %") — that is how the unit
- * is written on a label.
+ * Any row whose name contains a "%" anywhere is treated as a percentage — no
+ * currency conversion, no K/M/B scale. Same rule as the other SPC plugins.
  *
- * A "%" in the MIDDLE is prose, not a unit: "NPV @ 23% Discount Rate" is an
- * amount of money. Matching it loosely made that NPV component skip currency
- * and scale formatting entirely.
+ * Note: this deliberately includes a "%" in the MIDDLE of a name. A money row
+ * labelled e.g. "NPV @ 23% Discount Rate" would therefore also show unscaled;
+ * keep "%" out of money-row labels.
  */
-const nameLooksLikePercent = (name: string | null | undefined): boolean => {
-  const t = (name ?? "").trim();
-  return t.startsWith("%") || t.endsWith("%");
-};
+const nameLooksLikePercent = (name: string | null | undefined): boolean =>
+  (name ?? "").includes("%");
 
 /** Any percentage row, including a custom one whose name carries a "%". */
 export const isPercentRow = (row: RowIdentity): boolean =>

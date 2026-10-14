@@ -2,7 +2,7 @@
  * Percentage cells carry the "%" — the unit belongs in the cell, not only in
  * the row label.
  *
- * Rows whose label starts or ends with "%" ("% EBIT Margin", "Standalone EBIT
+ * Rows whose label contains "%" anywhere ("% EBIT Margin", "Standalone EBIT
  * Margin %"), plus the ones matched by line_type (POST_TAX_RETURN, TAX_RATE),
  * used to print their stored value raw: a margin the engine computes to four
  * decimals rendered as "41.5584" beside a label reading "% EBIT Margin".
@@ -44,9 +44,9 @@ for (const name of [
 // ...and by line_type, for the ones whose label carries no "%".
 eq('"Post tax return" by line_type',
    isPercentRow({ name: "Post tax return", lineType: "POST_TAX_RETURN" }), true);
-// Money rows must NOT be caught — "%" mid-label is prose, not a unit.
-eq('"NPV @ 10% Discount Rate" is NOT a percentage',
-   isPercentRow({ name: "NPV @ 10% Discount Rate" }), false);
+// Any "%" in the name marks a percentage row (rule shared across SPC plugins).
+eq('"NPV @ 10% Discount Rate" counts as a percentage',
+   isPercentRow({ name: "NPV @ 10% Discount Rate" }), true);
 eq('"Standalone Revenues" is NOT a percentage',
    isPercentRow({ name: "Standalone Revenues" }), false);
 

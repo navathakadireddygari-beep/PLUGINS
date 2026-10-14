@@ -9,8 +9,8 @@ const rows = [
   { name: "Revenue", lineType: "REVENUE_TOTAL", want: false },
   { name: "EBIT", lineType: "EBIT", want: false },
   { name: "Total Costs", lineType: "COSTS_TOTAL", want: false },
-  // NPV components carry no lineType - only a label. This one is MONEY.
-  { name: "NPV @ 23% Discount Rate", lineType: null, want: false },
+  // Any "%" in the name marks a percentage row (rule shared across SPC plugins).
+  { name: "NPV @ 23% Discount Rate", lineType: null, want: true },
   { name: "PV of Yrs 0-7", lineType: null, want: false },
   { name: "Net Purchase Price", lineType: null, want: false },
 ];
