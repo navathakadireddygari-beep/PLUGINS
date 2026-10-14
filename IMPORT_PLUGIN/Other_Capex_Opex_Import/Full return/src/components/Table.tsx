@@ -931,15 +931,17 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like Tax Rate %.
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
 
-  // Raw formatter: no fx, no scale — used for pure percentage rows like Tax Rate %
+  // Raw formatter: no fx, no scale — used for percentage (% in the name) and
+  // NON_FINANCIAL rows. Fixed 2 decimals, fully independent of the K/M/B toggle:
+  // tying the decimals to the scale made "EBIT Margin %" read 23 at K but
+  // 23.45 at B, i.e. it still looked scaled.
   const rawFmt = (n: number): string => {
     if (!n) return "—";
     const abs = Math.abs(n);
-    const decimals = decimalsForScale(displayScale);
     // A non-zero value that rounds to zero at the shown decimals (e.g. 0.001 at 2dp)
     // must still read as empty, same as a true zero — not "0.00".
-    if (Number(abs.toFixed(decimals)) === 0) return "—";
-    const formatted = formatNumber(abs, numberFormat, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    if (Number(abs.toFixed(2)) === 0) return "—";
+    const formatted = formatNumber(abs, numberFormat);
     return n < 0 ? `(${formatted})` : formatted;
   };
 
@@ -1702,12 +1704,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                   value={editingCell?.gId === group.id && editingCell?.vId === value.id && editingCell?.year === year
                                     ? editingCell.raw
                                     : val === 0 ? "" : rawRow
-                                      ? parseFloat(val.toFixed(decimalsForScale(displayScale)))
+                                      ? parseFloat(val.toFixed(3))
                                       : parseFloat(applyScale(val * fxMultiplier, displayScale).toFixed(decimalsForScale(displayScale)))}
                                   placeholder="—"
                                   onFocus={() => {
                                     const displayed = val === 0 ? "" : rawRow
-                                      ? String(parseFloat(val.toFixed(decimalsForScale(displayScale))))
+                                      ? String(parseFloat(val.toFixed(3)))
                                       : String(parseFloat(applyScale(val * fxMultiplier, displayScale).toFixed(decimalsForScale(displayScale))));
                                     setEditingCell({ gId: group.id, vId: value.id, year, raw: displayed });
                                   }}

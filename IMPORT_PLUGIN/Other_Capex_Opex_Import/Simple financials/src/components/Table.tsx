@@ -899,7 +899,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
 
   // Raw formatter: no fx, no scale — used for pure percentage rows like Tax Rate %
-  const rawFmt = (n: number): string => formatSignedAmount(n, numberFormat, decimalsForScale(displayScale));
+  // Percentage (% in the name) / Tax Rate rows: default decimals, independent of
+  // the K/M/B toggle (same as the FinEval plugin) — tying decimals to the scale
+  // made "EBIT Margin %" read 23 at K but 23.45 at B.
+  const rawFmt = (n: number): string => formatSignedAmount(n, numberFormat);
 
   // NON_FINANCIAL values always show as a plain whole number — unlike Tax Rate %,
   // their decimal count must NOT shift with the K/M/B scale toggle either.
@@ -1637,7 +1640,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                   placeholder="—"
                                   onFocus={() => {
                                     const displayed = val === 0 ? "" : rawRow
-                                      ? String(parseFloat(val.toFixed(decimalsForScale(displayScale))))
+                                      ? String(parseFloat(val.toFixed(3)))
                                       : String(parseFloat(((val * fxMultiplier) / SCALE_DIVISOR[displayScale]).toFixed(decimalsForScale(displayScale))));
                                     setEditingCell({ gId: group.id, vId: value.id, year, raw: displayed });
                                   }}
