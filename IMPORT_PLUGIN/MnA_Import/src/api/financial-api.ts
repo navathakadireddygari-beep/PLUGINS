@@ -342,6 +342,13 @@ const npvKey = (index: number): string => `n${index}`;
 const toPercent = (value: number | null | undefined): string =>
   value === null || value === undefined ? "" : String(value);
 
+/** Server CAGR as a number; null when absent, blank or not numeric. */
+const toCagrPercent = (v: number | string | null | undefined): number | null => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
 const tintOf = (isCalculated: string): RowTint =>
   isCalculated === "Y" ? "blue" : "yellow";
 
@@ -383,7 +390,9 @@ const mapLine = (
     // `buildFinancialEvaluationPayload` writes `line_type ?? line_item_code`.
     lineType: line.line_type ?? line.line_item_code ?? null,
     lineIdentifier: line.line_identifier ?? null,
-    cagrPercent: line.cagr_percent ?? null,
+    // The staging GET sends `cagrPercent` as a string ("11.1812"); the
+    // formatter only takes numbers, so coerce it or the cell renders blank.
+    cagrPercent: toCagrPercent(line.cagr_percent),
     // Editable ONLY when the backend says the line is not calculated. A
     // calculated line is owned by the server — its value is recomputed on
     // save, so letting it be typed into just discards the input. `is_calculated`
