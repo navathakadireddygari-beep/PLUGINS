@@ -262,8 +262,14 @@ const tok = (s: string | undefined | null): string =>
 // nested beneath it as sub-sections and collapse along with it. A section is
 // a P&L child when the API links it via its parent id, or by name/type.
 const isPnlGroup = (g: Group): boolean =>
-  ["PL", "PANDL", "PROFITANDLOSS"].includes(tok(g.name)) || tok(g.sectionType) === "PLINVESTMENTOPEX";
-const PNL_CHILD_TOKENS = new Set(["OPERATINGEXPENSE", "OPERATINGEXPENSES", "RETURNANALYSIS", "RETURNSANALYSIS"]);
+  ["PL", "PANDL", "PROFITANDLOSS", "REVENUE"].includes(tok(g.name)) ||
+  tok(g.sectionType) === "PLINVESTMENTOPEX" || tok(g.sectionType) === "REVENUE";
+// Operating Expense (Full Return) and OPEX Costs (Prod Dev template naming)
+// both nest under P&L, along with Returns Analysis.
+const PNL_CHILD_TOKENS = new Set([
+  "OPERATINGEXPENSE", "OPERATINGEXPENSES", "OPEXCOST", "OPEXCOSTS",
+  "RETURNANALYSIS", "RETURNSANALYSIS",
+]);
 const isPnlChildGroup = (g: Group, pnl: Group | undefined): boolean =>
   !!pnl && g.id !== pnl.id && (
     (g.parentSectionId != null && g.parentSectionId === pnl.sectionId) ||
@@ -558,7 +564,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   useEffect(() => {
     if (!data) return;
     data.groups.forEach((g) => {
-      if (g.sectionType && g.values.some((v) => v.accountId)) {
+      if (g.sectionType && !isPnlGroup(g) && g.values.some((v) => v.accountId)) {
         loadAccountCodesForSection(g.sectionType);
       }
     });
@@ -1702,7 +1708,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           <td colSpan={1 + assetSpan(group)} style={{ ...TD, padding: "4px 12px", overflow: "visible" }}>
                             {isReadonly
                               ? <div style={{ fontSize: 12, color: "#6b7280", padding: "4px 6px", background: "#f3f4f6", borderRadius: 4, height: 28, display: "flex", alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value.accountId || "—"}</div>
-                              : isReturnsCostSavings
+                              // P&L / Revenue lines (and Returns cost savings) take a free-text
+                              // account instead of the account-code dropdown.
+                              : (isReturnsCostSavings || isPnlGroup(group))
                                 ? <input
                                     type="text"
                                     value={value.accountId ?? ""}
