@@ -42,7 +42,6 @@ import useDeleteFinEvalSection from "@/hooks/useDeleteFinEvalSection";
 import { useSaveModel } from "@/context/SaveModelContext";
 import { applyMaNpvBlock, recalcMaGrids } from "@/lib/ma-recalc";
 import { DARK_HEADER } from "@/components/strip-styles";
-import { cagrOf } from "@/lib/ma-formulas";
 import { formatNumber, formatPercent } from "@/lib/number-format";
 import { actualsCountOf } from "@/lib/fiscal-years";
 import { collectGridRows, type NewSectionDraft } from "@/lib/save-collect";
@@ -114,7 +113,7 @@ type Row = {
   isMandatory?: boolean;
   /** Non-custom template rows should not show delete icon. */
   isCustom?: boolean;
-  /** Server-computed CAGR (`cagr_percent`); falls back to the client calc when absent. */
+  /** Server-computed CAGR (`cagr_percent`); shown as "—" when absent. */
   cagrPercent?: number | null;
 };
 
@@ -1149,18 +1148,6 @@ const Table: React.FC = () => {
     return shown === "" ? "—" : shown;
   };
 
-  /**
-   * CAGR for one row, across the visible columns (S11).
-   *
-   * Computed on the STORED base values, never the displayed ones — a growth
-   * rate is scale- and currency-independent, so formatting first would be both
-   * wasted work and a rounding trap. Percentage rows have no meaningful
-   * cross-year compound, so they render "-", as the reference does.
-   *
-   * `write_cagr` deliberately carries no `is_calculated` test, so this applies
-   * to input rows (standalone revenues, standalone costs) as well as computed
-   * ones.
-   */
   /* ----- section grouping ----- */
   /**
    * A grid can render several API sections back to back (Revenue, Total Costs
@@ -1403,26 +1390,17 @@ const Table: React.FC = () => {
     );
   };
 
-  const cagrText = (row: Row, cols: number[]): string => {
+  const cagrText = (row: Row): string => {
     if (isNoTotalRow(identityOf(row)) || isPercentRow(identityOf(row))) {
       return "—";
     }
-    // The server's own `cagr_percent` wins when present; rows it never covers
-    // (e.g. ones added on screen this session) fall back to the client calc.
+    // Only the server's `cagr_percent` is shown; a null means no CAGR, so the
+    // client never derives one from the year values.
+    // CAGR is M&A-only (Prod Dev has no such column), so it keeps its "%".
     if (row.cagrPercent !== undefined && row.cagrPercent !== null) {
       return formatPercent(row.cagrPercent, numberFormat);
     }
-    const series = cols.map((i) => {
-      const v = row.values[i];
-      if (v === undefined || v === null) return null;
-      const text = typeof v === "string" ? v : String(v);
-      if (text.trim() === "") return null;
-      const parsed = Number(text);
-      return Number.isFinite(parsed) ? parsed : null;
-    });
-    const result = cagrOf(series);
-    // CAGR is M&A-only (Prod Dev has no such column), so it keeps its "%".
-    return result === null ? "—" : formatPercent(result, numberFormat);
+    return "—";
   };
 
   /** Editor seed for one row — percentage and NON_FINANCIAL rows are seeded unconverted. */
@@ -1643,7 +1621,7 @@ const Table: React.FC = () => {
                     gridId={gridId}
                     row={rowIdx}
                     col={cagrCol}
-                    value={cagrText(row, cols)}
+                    value={cagrText(row)}
                     readOnly
                     calculated
                     skipNav={false}
