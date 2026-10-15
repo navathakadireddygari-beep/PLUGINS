@@ -33,6 +33,7 @@ import {
   writeClipboard,
 } from "@/lib/spreadsheet";
 import useFinancialEvaluation from "@/hooks/useFinancialEvaluation";
+import { useImportInfo } from "@/context/ImportInfoContext";
 import useSaveFinancialEvaluation from "@/hooks/useSaveFinancialEvaluation";
 import useDeleteFinEvalLine from "@/hooks/useDeleteFinEvalLine";
 import useDeleteFinEvalSection from "@/hooks/useDeleteFinEvalSection";
@@ -692,6 +693,14 @@ const Table: React.FC = () => {
     error: loadError,
     reload,
   } = useFinancialEvaluation();
+  // Hand the last-imported file to <Header>'s "Financial model source" bar.
+  const { setImportInfo } = useImportInfo();
+  useEffect(() => {
+    setImportInfo({
+      fileName: template?.lastImportedFileName ?? null,
+      importedAt: template?.lastImportedDate ?? null,
+    });
+  }, [template?.lastImportedFileName, template?.lastImportedDate, setImportInfo]);
 
   // The host APEX page can ask the widget to re-fetch after it changed
   // something the evaluation depends on.

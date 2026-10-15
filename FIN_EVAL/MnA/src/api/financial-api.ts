@@ -267,6 +267,9 @@ export interface FinancialEvaluationModel {
   exchangeRate: number | null;
   /** Owning proposal's workflow status; drives the view-only rule. */
   proposalStatus: string | null;
+  /** Last imported financial-model file + import time; null when none. */
+  lastImportedFileName: string | null;
+  lastImportedDate: string | null;
   keyInputs: FinEvalKeyInputRow[];
   /** Consideration lines (Cash / Deferred / Contingent). */
   con: FinEvalGridRow[];
@@ -497,6 +500,8 @@ export const mapFinancialEvaluation = (
         ? items.exchange_rate
         : null,
     proposalStatus: items.proposal_status ?? null,
+    lastImportedFileName: items.last_imported_file_name?.trim() || null,
+    lastImportedDate: items.last_imported_date?.trim() || null,
     keyInputs,
     npv,
     raw: items,

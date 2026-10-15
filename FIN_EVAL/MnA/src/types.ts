@@ -118,6 +118,10 @@ export interface FinancialEvaluationResponse {
    * `isProposalStatusReadonly`. Absent on template-only fetches.
    */
   proposal_status?: string | null;
+  /** Name of the last financial-model file imported for this proposal. */
+  last_imported_file_name?: string | null;
+  /** When that file was imported (ISO timestamp). */
+  last_imported_date?: string | null;
   proposal_id: number | null;
   proposal_title: string | null;
   local_currency: string | null;
