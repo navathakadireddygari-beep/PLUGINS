@@ -1641,7 +1641,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           })() : (
                             <td style={{ ...TD, padding: "4px 12px", color: "#9ca3af", fontSize: 12 }}>—</td>
                           ))}
-                          {group.isGoLiveReq === "Y" ? (
+                          {/* Show the line's own target_go_live_date whenever the backend sent
+                              one — in every section, not only is_go_live_req = "Y" ones (the
+                              API stamps the date on lines of all sections). */}
+                          {value.targetGoLiveDate ? (
                             <td style={{ ...TD, padding: "4px 12px", color: "#475569", fontSize: 12 }}>
                               {fmtGoLiveDate(value.targetGoLiveDate) || "—"}
                             </td>
