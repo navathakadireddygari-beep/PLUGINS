@@ -467,7 +467,7 @@ export function buildFinEvaluationStagingPutPayload(
   const sections = tableData.groups.map((group, grpIdx) => {
     const lines = group.values.map((value, lineIdx) => {
       // Mirror the per-line year-entry shape the GET returned.
-      const nonFinancial = (value.lineIdentifier ?? "").toUpperCase() === "NON_FINANCIAL";
+      const nonFinancial = (value.lineIdentifier ?? "").toUpperCase().replace(/[^A-Z]/g, "") === "NONFINANCIAL"; // NON_FINANCIAL / NONFINANCIAL / "Non Financial"
       const entry = (amt: number | null): object => nonFinancial
         ? { spc_projected_amount: amt, actual: null }
         : { spc_projected_amount: amt, ytd_budgeted_forecast: null, ytd_actuals: null, variance: null };
