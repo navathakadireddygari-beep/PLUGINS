@@ -110,6 +110,7 @@ export type HurdleCheck = {
 };
 
 export type ApiHeader = {
+  planned_go_live_date?:      string | null;
   fin_eval_header_id:        number;
   proposal_id:               number;
   proposal_title:            string;

@@ -91,6 +91,7 @@ export type HurdleCheck = {
 // exactly as the API sent them (null stays null) and passed straight back on
 // the Validate PUT.
 export type ApiHeader = {
+  planned_go_live_date?:       string | null;
   fin_eval_header_id:          number;
   proposal_id:                 number;
   proposal_title:              string;
@@ -175,6 +176,7 @@ export type StagingHeader = {
   amortisationPeriodYears?:   NumLike;
   amortizationPeriod?:        NumLike;
   datePlacedInService?:       string | null;
+  plannedGoLiveDate?:         string | null;
   npv?:                       NumLike;
   irrPercent?:                string | null;
   paybackPeriodYears?:        NumLike;
@@ -373,6 +375,7 @@ function transformStagingData(
     amortisation_period_years:   header.amortisationPeriodYears ?? null,
     amortization_period:         header.amortizationPeriod      ?? null,
     date_placed_in_service:      header.datePlacedInService     ?? null,
+    planned_go_live_date:        header.plannedGoLiveDate       ?? null,
     npv:                         numOrNull(header.npv),
     irr_percent:                 header.irrPercent ?? null,
     payback_period_years:        numOrNull(header.paybackPeriodYears),

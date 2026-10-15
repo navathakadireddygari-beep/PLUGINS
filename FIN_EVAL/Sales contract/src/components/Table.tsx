@@ -1641,12 +1641,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           })() : (
                             <td style={{ ...TD, padding: "4px 12px", color: "#9ca3af", fontSize: 12 }}>—</td>
                           ))}
-                          {/* Show the line's own target_go_live_date whenever the backend sent
-                              one — in every section, not only is_go_live_req = "Y" ones (the
-                              API stamps the date on lines of all sections). */}
-                          {value.targetGoLiveDate ? (
+                          {/* Only sections flagged is_go_live_req = "Y" show a date; every
+                              other section shows "—" like any empty cell. A line without its
+                              own target_go_live_date (e.g. one just added, not yet saved) falls
+                              back to the proposal's planned_go_live_date. */}
+                          {group.isGoLiveReq === "Y" ? (
                             <td style={{ ...TD, padding: "4px 12px", color: "#475569", fontSize: 12 }}>
-                              {fmtGoLiveDate(value.targetGoLiveDate) || "—"}
+                              {fmtGoLiveDate(value.targetGoLiveDate || rawHeader?.planned_go_live_date || undefined) || "—"}
                             </td>
                           ) : (
                             <td style={{ ...TD, padding: "4px 12px", color: "#9ca3af", fontSize: 12 }}>—</td>
