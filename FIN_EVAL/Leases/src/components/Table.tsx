@@ -5,6 +5,7 @@ import { getAppConfig } from "../config/app-config";
 import {
   getFinancialData,
   getCurrencyExchangeRate,
+  computeDisplayMultiplier,
   saveFinancialData,
   clearCachedToken,
   isServerDrivenSection,
@@ -612,78 +613,45 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return () => document.removeEventListener("mousedown", h);
   }, [openYearMenuIdx]);
 
-    /* ── FX multiplier for display currency conversion ────────────── */
-  // DB stores all editable values in USD. The UI displays values in the
-  // current display currency by multiplying USD by the backend-provided
-  // USD→display exchange factor (`usd_fbr`).
-  const localCcy = (rawHeader?.local_currency || "").toUpperCase();
-  const displayCcy = (rawHeader?.display_currency || localCcy || "USD").toUpperCase();
-  const fxLabelCurrency = displayCcy === "USD" && localCcy && localCcy !== "USD" ? localCcy : displayCcy;
-  const [fxMultiplier, setFxMultiplier] = useState<number>(1);
-  const [fxLabelRate, setFxLabelRate] = useState<number>(1);
+  // Live USD→local FX rate (usd_fbr), fetched once per local_currency.
+  // Skipped entirely for USD-only proposals. Loading / error states drive
+  // the FX display in the currency strip. Matches prod-dev.
+  const [fxRate,    setFxRate]    = useState<number | null>(null);
   const [fxLoading, setFxLoading] = useState<boolean>(false);
-  const [fxError,   setFxError]   = useState<boolean>(false);
-
+  const [fxError,   setFxError]   = useState<string | null>(null);
+  const localCurrencyForFx = (rawHeader?.local_currency || "").toUpperCase();
   useEffect(() => {
-    if (!rawHeader) return;
-
-    let active = true;
+    if (!localCurrencyForFx || localCurrencyForFx === "USD") {
+      setFxRate(null);
+      setFxError(null);
+      setFxLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setFxLoading(true);
+    setFxError(null);
     const cfg = getAppConfig();
-    // exchange_rate comes back null on live proposals, so there is usually no
-    // stored rate to fall back on — track that separately from the 1:1 default
-    // so a failed lookup is reported instead of silently showing 1:1.
-    const hasStoredRate = !!rawHeader.exchange_rate;
-    const fallback = hasStoredRate ? (1 / rawHeader.exchange_rate) : 1;
+    getCurrencyExchangeRate(cfg, localCurrencyForFx)
+      .then((rate) => { if (!cancelled) setFxRate(rate); })
+      .catch((e) => {
+        console.error("[currency-exchange] failed to load usd_fbr for", localCurrencyForFx, e);
+        if (!cancelled) setFxError(e instanceof Error ? e.message : "Failed to load exchange rate.");
+      })
+      .finally(() => { if (!cancelled) setFxLoading(false); });
+    return () => { cancelled = true; };
+  }, [localCurrencyForFx]);
 
-    if (displayCcy === "USD") {
-      setFxMultiplier(1);
-    } else {
-      setFxLoading(true);
-      setFxError(false);
-      // When local currency is selected, displayCcy will equal local currency.
-      // Pass that currency to the backend and let the helper derive year_period from sysdate.
-      getCurrencyExchangeRate(cfg, displayCcy)
-        .then((rate) => {
-          if (!active) return;
-          setFxMultiplier(rate || fallback || 1);
-          if (fxLabelCurrency === displayCcy) setFxLabelRate(rate || fallback || 1);
-          setFxError(false);
-        })
-        .catch((e) => {
-          console.error("[currency-exchange] failed to load usd_fbr for", displayCcy, e);
-          if (!active) return;
-          setFxMultiplier(fallback || 1);
-          if (fxLabelCurrency === displayCcy) setFxLabelRate(fallback || 1);
-          setFxError(!hasStoredRate);
-        })
-        .finally(() => { if (active) setFxLoading(false); });
-    }
-
-    if (fxLabelCurrency === "USD") {
-      setFxLabelRate(1);
-    } else if (fxLabelCurrency !== displayCcy) {
-      setFxLoading(true);
-      getCurrencyExchangeRate(cfg, fxLabelCurrency)
-        .then((rate) => {
-          if (!active) return;
-          setFxLabelRate(rate || fallback || 1);
-          setFxError(false);
-        })
-        .catch((e) => {
-          console.error("[currency-exchange] failed to load usd_fbr for", fxLabelCurrency, e);
-          if (!active) return;
-          setFxLabelRate(fallback || 1);
-          setFxError(!hasStoredRate);
-        })
-        .finally(() => { if (active) setFxLoading(false); });
-    }
-
-    return () => { active = false; };
-    // NOTE: `rawHeader` itself is deliberately NOT a dependency — its identity
-    // changes on every edit, which re-fired the exchange-rate request on each
-    // keystroke.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayCcy, fxLabelCurrency, rawHeader?.exchange_rate]);
+  /* ── FX multiplier for display currency conversion ────────────── */
+  // All values are stored in USD in the database. fxRate (usd_fbr) means
+  // "1 USD = fxRate <local currency>" — multiply (not divide) to convert a
+  // stored USD value to local display. USD display → no conversion (×1).
+  // Save path divides by fxMultiplier to convert back to USD for storage.
+  const fxMultiplier: number = (() => {
+    if (!rawHeader) return 1;
+    const local   = (rawHeader.local_currency   || "USD").toUpperCase();
+    const display = (rawHeader.display_currency || local).toUpperCase();
+    return computeDisplayMultiplier(display, local, fxRate);
+  })();
 
   const formatFxLabel = (rate: number): string => {
     const decimals = rate >= 100 ? 2 : rate >= 10 ? 3 : 4;
@@ -1439,15 +1407,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#f8fafc" }}>
                     {fxLoading ? (
                       <span style={{ fontSize: 11, color: "#111827", whiteSpace: "nowrap" }}>Loading rate…</span>
-                    ) : fxError ? (
+                    ) : fxError || fxRate == null ? (
                       <span style={{ fontSize: 11, color: "#b91c1c", whiteSpace: "nowrap" }}>Rate unavailable — using 1:1</span>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
                         <span style={{ fontSize: 11, color: "#111827", whiteSpace: "nowrap" }}>
-                          1 {fxLabelCurrency} = <strong>{formatFxLabel(fxLabelRate ? 1 / fxLabelRate : 1)}</strong> USD
+                          1 {local} = <strong>{formatFxLabel(1 / fxRate)}</strong> USD
                         </span>
                         <span style={{ fontSize: 11, color: "#111827", whiteSpace: "nowrap" }}>
-                          1 USD = <strong>{formatFxLabel(fxLabelRate)}</strong> {fxLabelCurrency}
+                          1 USD = <strong>{formatFxLabel(fxRate)}</strong> {local}
                         </span>
                       </div>
                     )}

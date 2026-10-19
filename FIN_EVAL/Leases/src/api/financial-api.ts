@@ -515,6 +515,28 @@ export async function getAccountCodes(cfg: AppConfig, sectionType: string): Prom
     }))
     .filter((ac) => ac.account_code !== "");
 }
+/* ─────────────────────────── FX helper ──────────────────────────── */
+// All stored financial values are in USD. `usdFbr` is the live-fetched rate
+// meaning "1 USD = usdFbr <local currency>". The display multiplier converts
+// a stored USD value to the currently selected display currency:
+//   display === USD              → ×1 (no conversion)
+//   display === local (non-USD)  → × usdFbr
+// When the rate hasn't loaded yet (or failed), fall back to ×1 rather than
+// guessing a number.
+export function computeDisplayMultiplier(
+  display: string,
+  local: string,
+  usdFbr: number | null | undefined,
+): number {
+  const displayCode = (display || "USD").toUpperCase();
+  const localCode    = (local   || "USD").toUpperCase();
+  if (displayCode === "USD") return 1;
+  if (displayCode === localCode && usdFbr != null && Number.isFinite(usdFbr) && usdFbr > 0) {
+    return usdFbr;
+  }
+  return 1;
+}
+
 export async function getCurrencyExchangeRate(
   cfg: AppConfig,
   currency: string,

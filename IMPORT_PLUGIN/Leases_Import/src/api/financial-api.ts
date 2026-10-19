@@ -352,26 +352,43 @@ export function clearCachedToken(): void {
   cachedToken = null;
 }
 
-/* ─────────────────────────── Currency exchange rate ─────────────── */
-export type CurrencyExchangeRate = {
-  entity_code?:  string;
-  year_period?:  number;
-  currency?:     string;
-  usd_fbr?:      number | null;
-  usd_ibr?:      number | null;
-  usd_nyfbr?:    number | null;
-  usd_nyibr?:    number | null;
-  usd_ar?:       number | null;
-  gbp_ar?:       number | null;
-};
+/* ─────────────────────────── FX helper ──────────────────────────── */
+// All stored financial values are in USD. `usdFbr` is the live-fetched rate
+// meaning "1 USD = usdFbr <local currency>". The display multiplier converts
+// a stored USD value to the currently selected display currency:
+//   display === USD              → ×1 (no conversion)
+//   display === local (non-USD)  → × usdFbr
+// When the rate hasn't loaded yet (or failed), fall back to ×1 rather than
+// guessing a number.
+export function computeDisplayMultiplier(
+  display: string,
+  local: string,
+  usdFbr: number | null | undefined,
+): number {
+  const displayCode = (display || "USD").toUpperCase();
+  const localCode    = (local   || "USD").toUpperCase();
+  if (displayCode === "USD") return 1;
+  if (displayCode === localCode && usdFbr != null && Number.isFinite(usdFbr) && usdFbr > 0) {
+    return usdFbr;
+  }
+  return 1;
+}
 
-export async function getCurrencyExchangeRate(
-  cfg:        AppConfig,
-  currency:   string,
-  yearPeriod: string
-): Promise<CurrencyExchangeRate | null> {
+/* ─────────────────────────── Currency exchange rate ─────────────── */
+/**
+ * POST {api_endpoint}/GIS/proposalAuthoring/currencyExchangeRates
+ *   Body:     { year_period: "YYYYMM" (sysdate), currency }
+ *   Response: { apiStatus, apiMessage, data: { usd_fbr, ... } }
+ *
+ * `usd_fbr` means "1 USD = usd_fbr <currency>". Callers should treat a
+ * thrown error / missing rate as "no live rate available" and fall back to
+ * a ×1 multiplier.
+ */
+export async function getCurrencyExchangeRate(cfg: AppConfig, currency: string): Promise<number> {
   const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/currencyExchangeRates`;
+  const now   = new Date();
+  const year_period = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   const res = await fetch(url, {
     method: "POST",
@@ -380,7 +397,7 @@ export async function getCurrencyExchangeRate(
       Accept:         "application/json",
       ...authHeaders(cfg, token),
     },
-    body: JSON.stringify({ year_period: yearPeriod, currency }),
+    body: JSON.stringify({ year_period, currency: currency.toUpperCase() }),
   });
 
   if (!res.ok) {
@@ -388,8 +405,19 @@ export async function getCurrencyExchangeRate(
     throw new Error(msg);
   }
 
-  const json = await res.json() as { data?: CurrencyExchangeRate };
-  return json?.data ?? null;
+  const raw = await res.json() as Record<string, unknown>;
+  const apiStatus = (raw.apiStatus || raw.api_status || "") as string;
+  if (apiStatus && apiStatus !== "S" && apiStatus !== "SUCCESS") {
+    const apiMsg = (raw.apiMessage || raw.api_message || "") as string;
+    throw new Error(apiMsg || "Failed to load exchange rate.");
+  }
+
+  const data = raw.data as Record<string, unknown> | undefined;
+  const rate = data?.usd_fbr;
+  if (typeof rate !== "number" || !Number.isFinite(rate) || rate <= 0) {
+    throw new Error("Exchange rate unavailable.");
+  }
+  return rate;
 }
 
 /* ─────────────────────────── Account codes ──────────────────────── */

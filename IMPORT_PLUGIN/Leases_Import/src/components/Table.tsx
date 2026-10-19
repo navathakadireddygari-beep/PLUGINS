@@ -10,6 +10,7 @@ import {
   isServerDrivenSection,
   getAccountCodes,
   getCurrencyExchangeRate,
+  computeDisplayMultiplier,
   type AccountCode,
   type ApiHeader,
   type Group,
@@ -165,7 +166,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [displayScale,  setDisplayScale]  = useState<ScaleKey>(DEFAULT_SCALE);
   const [numberFormat,  setNumberFormat]  = useState<NumberFormatKey>(DEFAULT_NUMBER_FORMAT);
   const [dateFormat,    setDateFormat]    = useState<DateFormatKey>(DEFAULT_DATE_FORMAT);
-  const [gbpUsdRate,    setGbpUsdRate]    = useState<number | null>(null);
+  // Live USD→local FX rate (usd_fbr), fetched once per local_currency.
+  const [fxRate,        setFxRate]        = useState<number | null>(null);
+  const [fxLoading,     setFxLoading]     = useState<boolean>(false);
+  const [fxError,       setFxError]       = useState<string | null>(null);
 
   const [savingDraft,  setSavingDraft]  = useState<boolean>(false);
   const [validating,   setValidating]   = useState<boolean>(false);
@@ -319,15 +323,30 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  /* ── GBP → USD exchange rate (currencyExchangeRates API) ───────── */
+  // Fetch the live FX rate once local_currency is known/changes. Skipped
+  // entirely for USD-only proposals. Result is cached in state; loading/
+  // error states drive the FX display in the currency strip.
+  const localCurrencyForFx = (rawHeader?.local_currency || "").toUpperCase();
   useEffect(() => {
+    if (!localCurrencyForFx || localCurrencyForFx === "USD") {
+      setFxRate(null);
+      setFxError(null);
+      setFxLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setFxLoading(true);
+    setFxError(null);
     const cfg = getAppConfig();
-    const now = new Date();
-    const yearPeriod = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
-    getCurrencyExchangeRate(cfg, "GBP", yearPeriod)
-      .then((rate) => setGbpUsdRate(rate?.usd_fbr ?? null))
-      .catch((e) => console.error("[currency-exchange-rate] failed", e));
-  }, []);
+    getCurrencyExchangeRate(cfg, localCurrencyForFx)
+      .then((rate) => { if (!cancelled) setFxRate(rate); })
+      .catch((e) => {
+        console.error("[currency-exchange-rate] failed for", localCurrencyForFx, e);
+        if (!cancelled) setFxError(e instanceof Error ? e.message : "Failed to load exchange rate.");
+      })
+      .finally(() => { if (!cancelled) setFxLoading(false); });
+    return () => { cancelled = true; };
+  }, [localCurrencyForFx]);
 
   // Pre-load account codes for any section that already has saved account values
   useEffect(() => {
@@ -590,15 +609,20 @@ export default function PivotTableWithAPI(): React.ReactElement {
   }, [activeLov]);
 
   /* ── FX multiplier for display currency conversion ────────────── */
-  // DB always stores USD. To display in CAD: multiply by (1 / rate).
-  // rate is stored as "1 CAD = X USD" (e.g. 0.735 → 1 USD ≈ 1.36 CAD).
-  const fxRate       = rawHeader?.exchange_rate ?? 0.7350;
-  const displayCcy   = (rawHeader?.display_currency || rawHeader?.local_currency || "USD").toUpperCase();
-  const fxMultiplier = displayCcy === "CAD" ? (1 / fxRate) : 1;
+  // All values are stored in USD in the database. fxRate (usd_fbr) means
+  // "1 USD = fxRate <local currency>" — multiply (not divide) to convert a
+  // stored USD value to local display. USD display → no conversion (×1).
+  // Save path divides by fxMultiplier to convert back to USD for storage.
+  const fxMultiplier: number = (() => {
+    if (!rawHeader) return 1;
+    const local   = (rawHeader.local_currency   || "USD").toUpperCase();
+    const display = (rawHeader.display_currency || local).toUpperCase();
+    return computeDisplayMultiplier(display, local, fxRate);
+  })();
 
   // NON_FINANCIAL lines (e.g. custom counts/metrics) are stored and shown as-is — no K/M/B scale, no FX.
   const isNonFinancialRow = (v?: { lineIdentifier?: string }): boolean =>
-    (v?.lineIdentifier ?? "").toUpperCase() === "NON_FINANCIAL";
+    tok(v?.lineIdentifier) === "NONFINANCIAL"; // NON_FINANCIAL / NONFINANCIAL / "Non Financial"
   // Row-level "show as-is" rule: NON_FINANCIAL lines, and any line whose name
   // contains "%" (percentages) — no K/M/B scale, no FX. The section-level rule
   // (isSectionNonFinancial) stays NON_FINANCIAL-only.
@@ -1093,9 +1117,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
         {/* Currency/scale strip */}
         {rawHeader && (() => {
-          const local: string = "GBP";
+          const local     = (rawHeader.local_currency   || "USD").toUpperCase();
           const display   = (rawHeader.display_currency || local).toUpperCase();
-          const currencies = local && local !== "USD" ? [local, "USD"] : ["USD"];
+          const currencies = local === "USD" ? ["USD"] : [local, "USD"];
 
           const handleCurrencyChange = (cur: string) => {
             setRawHeader((p) => p ? { ...p, display_currency: cur } : p);
@@ -1190,11 +1214,33 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 {DATE_FORMATS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
               </select>
 
-              {/* FX rate reference display — only relevant when converting local ↔ USD */}
-              {display !== local && (
-                <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", fontSize: 11, color: "#374151", lineHeight: 1.5 }}>
-                  <span>1 {local} = {(gbpUsdRate ?? fxRate).toFixed(4)} USD</span>
-                  <span>1 USD = {(gbpUsdRate ?? fxRate ? 1 / (gbpUsdRate ?? fxRate) : 0).toFixed(4)} {local}</span>
+              {/* FX display — only for non-USD local currency */}
+              {local !== "USD" && (
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <span style={{
+                    width: 20, height: 20, borderRadius: 999,
+                    background: "#fff", color: "#000", border: "1.5px solid #000",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9, fontWeight: 800, flexShrink: 0,
+                  }}>
+                    FX
+                  </span>
+                  {fxLoading ? (
+                    <span style={{ fontSize: 11, color: "rgb(17, 24, 39)", whiteSpace: "nowrap" }}>Loading rate…</span>
+                  ) : fxError || fxRate == null ? (
+                    <span style={{ fontSize: 11, color: "#b91c1c", whiteSpace: "nowrap" }}>
+                      Rate unavailable — using 1:1
+                    </span>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.25 }}>
+                      <span style={{ fontSize: 11, color: "rgb(17, 24, 39)", whiteSpace: "nowrap" }}>
+                        1 {local} = <span style={{ fontWeight: 700 }}>{(1 / fxRate).toFixed(4)}</span> USD
+                      </span>
+                      <span style={{ fontSize: 11, color: "rgb(17, 24, 39)", whiteSpace: "nowrap" }}>
+                        1 USD = <span style={{ fontWeight: 700 }}>{fxRate.toFixed(4)}</span> {local}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
