@@ -1689,7 +1689,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                          {isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
+                          {sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
                         </td>
                       </tr>
                     ) : (
@@ -1711,7 +1711,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                          {isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
+                          {sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
                         </td>
                       </tr>
                     )}
@@ -1774,7 +1774,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               </td>
                             );
                           }); })()}
-                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: t < 0 ? "#DC2626" : "#1f2937" }}>{displayFmt(t, isUnscaledRow(value))}</td>; })()}
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: t < 0 ? "#DC2626" : "#1f2937" }}>{isNonFinancialRow(value) ? "" : displayFmt(t, isUnscaledRow(value))}</td>; })()}
                         </tr>
                       );
                     })}
@@ -1821,7 +1821,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {(() => {
                           const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
                           const col = isNetTab ? netColor(t) : (t < 0 ? "#DC2626" : "#1f2937");
-                          return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{isNetTab ? netFmt(t) : displayFmt(t, rowBypassScale)}</td>;
+                          return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{sectionBypassScale || isNonFinancialRow(value) ? "" : isNetTab ? netFmt(t) : displayFmt(t, rowBypassScale)}</td>;
                         })()}
                       </tr>
                       );

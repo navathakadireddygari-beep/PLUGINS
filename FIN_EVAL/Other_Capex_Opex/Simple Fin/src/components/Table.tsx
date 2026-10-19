@@ -859,6 +859,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like Tax Rate %.
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
 
+  // A section whose every editable line is NON_FINANCIAL (e.g. Additional
+  // Metrics) has no meaningful cross-year TOTAL — its TOTAL column is empty.
+  const isAllNonFinancialGroup = (g: Group): boolean => {
+    const editable = g.values.filter((v) => v.isCalculated !== "Y");
+    return editable.length > 0 && editable.every(isNonFinancialRow);
+  };
+
   // Raw formatter: no fx, no scale — used for pure percentage rows like Tax Rate %
   const rawFmt = (n: number): string => formatSignedAmount(n, numberFormat);
 
@@ -1542,7 +1549,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           )}
                         </th>
                       ))}
-                      <th style={TH({ textAlign: "right", whiteSpace: "nowrap", width: 90, background: "#e5e7eb" })}>TOTAL</th>
+                      <th style={TH({ textAlign: "right", whiteSpace: "nowrap", width: 90, background: "#e5e7eb" })}>{isAllNonFinancialGroup(group) ? "" : "TOTAL"}</th>
                     </tr>
                   )}
 
@@ -1566,8 +1573,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               </td>
                             );
                           })}
-                          {isNoTotalRow(value)
-                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: bold ? 700 : 400, color: "#111827" }}>-</td>
+                          {(isNoTotalRow(value) || isNonFinancialRow(value) || isAllNonFinancialGroup(group))
+                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: bold ? 700 : 400, color: "#111827" }}>{isNoTotalRow(value) ? "-" : ""}</td>
                             : (() => {
                                 const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
                                 const text = isNonFinancialRow(value) ? rawFmtNonFinancial(t) : isUnscaledRow(value) ? rawFmt(t) : displayFmt(t);
@@ -1674,8 +1681,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               </td>
                               );
                             })}
-                          {isNoTotalRow(value)
-                            ? <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 12, fontWeight: 600, color: "#1f2937" }}>—</td>
+                          {(isNoTotalRow(value) || isNonFinancialRow(value) || isAllNonFinancialGroup(group))
+                            ? <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 12, fontWeight: 600, color: "#1f2937" }}>{isNoTotalRow(value) ? "—" : ""}</td>
                             : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 12, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937" }}>{isNonFinancialRow(value) ? rawFmtNonFinancial(t) : isUnscaledRow(value) ? rawFmt(t) : displayFmt(t)}</td>; })()
                           }
                         </tr>
@@ -1712,8 +1719,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           const text = rawRow ? (nonFinRow ? rawFmtNonFinancial(val) : rawFmt(val)) : displayFmt(val);
                           return (<td key={year} style={{ ...TD, padding: "8px 12px" }}>{roValueCell(text, { fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" })}</td>);
                         })}
-                        {isNoTotalRow(value)
-                          ? <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>—</td>
+                        {(isNoTotalRow(value) || isNonFinancialRow(value) || isAllNonFinancialGroup(group))
+                          ? <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>{isNoTotalRow(value) ? "—" : ""}</td>
                           : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const nonFinRow = isNonFinancialRow(value) || groupAllNonFinancial; const rawRow = isUnscaledRow(value) || nonFinRow; return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 12, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{rawRow ? (nonFinRow ? rawFmtNonFinancial(t) : rawFmt(t)) : displayFmt(t)}</td>; })()
                         }
                       </tr>
@@ -1738,8 +1745,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             const text = rawRow ? (nonFinRow ? rawFmtNonFinancial(val) : rawFmt(val)) : displayFmt(val);
                             return (<td key={year} style={{ ...TD, padding: "10px 14px" }}>{roValueCell(text, { fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" })}</td>);
                           })}
-                          {isNoTotalRow(value)
-                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>—</td>
+                          {(isNoTotalRow(value) || isNonFinancialRow(value) || isAllNonFinancialGroup(group))
+                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>{isNoTotalRow(value) ? "—" : ""}</td>
                             : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const nonFinRow = isNonFinancialRow(value) || groupAllNonFinancial; const rawRow = isUnscaledRow(value) || nonFinRow; return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{rawRow ? (nonFinRow ? rawFmtNonFinancial(t) : rawFmt(t)) : displayFmt(t)}</td>; })()
                           }
                         </tr>
