@@ -18,6 +18,7 @@ import {
   type PivotTableData,
   type ValueRow,
   type YearValues,
+  computeDisplayMultiplier,
 } from "../api/financial-api";
 import { deleteLine, deleteSection } from "../api/delete-api";
 import KpiPanel from "./KpiPanel";
@@ -400,20 +401,19 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const sentinelRef  = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  /* ── Local-currency/USD exchange rate for the FX rate strip ─────
-     Only relevant when the display currency differs from the local
-     currency (e.g. viewing GBP-local figures converted to USD) — when
-     they match (including the USD/USD default) there's nothing to
-     convert, so skip the call entirely and hide the FX strip. */
+  /* ── Live USD→local exchange rate (usd_fbr) ──────────────────────
+     Fetched once per local_currency (skipped for USD) — it drives both the
+     table/KPI conversion and the FX rate strip. */
+  const localCurrencyForFx = (rawHeader?.local_currency || "").toUpperCase();
   useEffect(() => {
-    const local   = (rawHeader?.local_currency   || "USD").toUpperCase();
-    const display = (rawHeader?.display_currency || local).toUpperCase();
-    if (!rawHeader || display === local) { setFxRate(null); return; }
+    if (!localCurrencyForFx || localCurrencyForFx === "USD") { setFxRate(null); return; }
+    let cancelled = false;
     const cfg = getAppConfig();
-    getCurrencyExchangeRate(cfg, local)
-      .then((rate) => setFxRate(rate?.usd_fbr ?? null))
-      .catch((e) => console.error("[fx-rate] failed to load exchange rate:", e));
-  }, [rawHeader?.local_currency, rawHeader?.display_currency]);
+    getCurrencyExchangeRate(cfg, localCurrencyForFx)
+      .then((rate) => { if (!cancelled) setFxRate(rate?.usd_fbr ?? null); })
+      .catch((e) => { console.error("[fx-rate] failed to load exchange rate:", e); if (!cancelled) setFxRate(null); });
+    return () => { cancelled = true; };
+  }, [localCurrencyForFx]);
 
   /* ── Sticky header: walk DOM to find APEX scroll container, listen directly ── */
   useEffect(() => {
@@ -883,15 +883,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ── FX multiplier for display currency conversion ────────────── */
   // All values are stored in USD in the database.
-  // exchange_rate is stored as "1 CAD = X USD" (e.g. 0.735).
-  // USD display → no conversion (×1).
-  // CAD display → USD × (1/rate) = CAD (e.g. 3000 USD × 1/0.735 = 4082 CAD).
+  // fxRate (usd_fbr) means "1 USD = fxRate <local currency>" — multiply (not
+  // divide) to convert a stored USD value to local display. USD display → ×1.
   // Save path divides by fxMultiplier to convert back to USD for storage.
   const fxMultiplier: number = (() => {
     if (!rawHeader) return 1;
-    const display = (rawHeader.display_currency || rawHeader.local_currency || "USD").toUpperCase();
-    const rate    = rawHeader.exchange_rate || 0.7350;
-    return display === "CAD" ? (1 / rate) : 1;
+    const local   = (rawHeader.local_currency   || "USD").toUpperCase();
+    const display = (rawHeader.display_currency || local).toUpperCase();
+    return computeDisplayMultiplier(display, local, fxRate);
   })();
 
   // Checks lineIdentifier, lineType, AND display name — one of them will match
@@ -1448,8 +1447,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 ))}
               </select>
 
-              {/* FX rate reference display — only relevant when converting local ↔ USD */}
-              {display !== local && (
+              {/* FX rate reference display — only for non-USD local currency */}
+              {local !== "USD" && (
                 <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", fontSize: 11, color: "#374151", lineHeight: 1.5 }}>
                   <span>1 {local} = {fxRate ? (1 / fxRate).toFixed(4) : "—"} USD</span>
                   <span>1 USD = {fxRate != null ? fxRate.toFixed(4) : "—"} {local}</span>

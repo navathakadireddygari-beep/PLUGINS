@@ -19,6 +19,7 @@ import {
   type ValueRow,
   type YearValues,
   type ValidationIssue,
+  computeDisplayMultiplier,
 } from "../api/financial-api";
 import { deleteLine, deleteSection } from "../api/delete-api";
 import Toast, { type ToastState } from "./Toast";
@@ -470,20 +471,21 @@ export default function PivotTableWithAPI(): React.ReactElement {
     loadData();
   }, [loadData]);
 
-  // Fetch the live local→USD rate only when a conversion is actually in
-  // effect (display currency differs from local currency) — when they
-  // match (e.g. both USD) there's nothing to convert, so the FX strip stays hidden.
-  const localCurrency  = (rawHeader?.local_currency   || "USD").toUpperCase();
-  const displayCurrency = (rawHeader?.display_currency || localCurrency).toUpperCase();
+  // Live USD→local rate (usd_fbr = "1 USD = X local"), fetched once per
+  // local_currency (skipped for USD). Drives the table/KPI conversion and
+  // the FX strip.
+  const localCurrency = (rawHeader?.local_currency || "").toUpperCase();
   useEffect(() => {
-    if (!rawHeader || localCurrency === displayCurrency) { setLiveFxRate(null); return; }
+    if (!localCurrency || localCurrency === "USD") { setLiveFxRate(null); return; }
+    let cancelled = false;
     const cfg = getAppConfig();
     const now = new Date();
     const yearPeriod = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
     getCurrencyExchangeRate(cfg, yearPeriod, localCurrency)
-      .then(setLiveFxRate)
-      .catch((e) => console.error("[currency-exchange-rate] failed", e));
-  }, [rawHeader, localCurrency, displayCurrency]);
+      .then((rate) => { if (!cancelled) setLiveFxRate(rate); })
+      .catch((e) => { console.error("[currency-exchange-rate] failed", e); if (!cancelled) setLiveFxRate(null); });
+    return () => { cancelled = true; };
+  }, [localCurrency]);
 
   // Pre-load account codes for any section that already has saved account values
   useEffect(() => {
@@ -839,15 +841,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ── FX multiplier for display currency conversion ────────────── */
   // All values are stored in USD in the database.
-  // exchange_rate is stored as "1 CAD = X USD" (e.g. 0.735).
-  // USD display → no conversion (×1).
-  // CAD display → USD × (1/rate) = CAD (e.g. 3000 USD × 1/0.735 = 4082 CAD).
+  // fxRate (usd_fbr) means "1 USD = fxRate <local currency>" — multiply (not
+  // divide) to convert a stored USD value to local display. USD display → ×1.
   // Save path divides by fxMultiplier to convert back to USD for storage.
   const fxMultiplier: number = (() => {
     if (!rawHeader) return 1;
-    const display = (rawHeader.display_currency || rawHeader.local_currency || "USD").toUpperCase();
-    const rate    = rawHeader.exchange_rate || 0.7350;
-    return display === "CAD" ? (1 / rate) : 1;
+    const local   = (rawHeader.local_currency   || "USD").toUpperCase();
+    const display = (rawHeader.display_currency || local).toUpperCase();
+    return computeDisplayMultiplier(display, local, liveFxRate);
   })();
 
   // Checks lineIdentifier, lineType, AND display name — one of them will match
@@ -1242,7 +1243,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
           const local     = (rawHeader.local_currency || "USD").toUpperCase();
           const display   = (rawHeader.display_currency || local).toUpperCase();
           const currencies = local === "USD" ? ["USD"] : [local, "USD"];
-          const showFxRate = local !== display && liveFxRate != null;
+          const showFxRate = local !== "USD" && liveFxRate != null;
           const fxRate     = liveFxRate ?? 0;
 
           const handleCurrencyChange = (cur: string) => {
@@ -1364,8 +1365,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
               {/* FX rate indicator — only when a conversion is actually in effect */}
               {showFxRate && (
                 <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", fontSize: 11, color: "#374151", lineHeight: 1.5 }}>
-                  <span>1 {local} = {fxRate.toFixed(4)} USD</span>
-                  <span>1 USD = {(fxRate ? 1 / fxRate : 0).toFixed(4)} {local}</span>
+                  <span>1 {local} = {(fxRate ? 1 / fxRate : 0).toFixed(4)} USD</span>
+                  <span>1 USD = {fxRate.toFixed(4)} {local}</span>
                 </div>
               )}
             </div>
@@ -1407,7 +1408,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       )}
 
       {rawHeader && (
-        <KpiPanel rawHeader={rawHeader} displayScale={displayScale} numberFormat={numberFormat} />
+        <KpiPanel rawHeader={rawHeader} displayScale={displayScale} numberFormat={numberFormat} fxMultiplier={fxMultiplier} />
       )}
 
       {/* ── Table toolbar ── */}

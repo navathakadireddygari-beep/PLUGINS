@@ -16,6 +16,7 @@ import {
   type PivotTableData,
   type ValueRow,
   type YearValues,
+  computeDisplayMultiplier,
 } from "../api/financial-api";
 import { deleteLine, deleteSection } from "../api/delete-api";
 import { getCurrencyExchangeRate } from "../api/exchange-rate-api";
@@ -876,15 +877,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ── FX multiplier for display currency conversion ────────────── */
   // All values are stored in USD in the database.
-  // exchange_rate is stored as "1 CAD = X USD" (e.g. 0.735).
-  // USD display → no conversion (×1).
-  // CAD display → USD × (1/rate) = CAD (e.g. 3000 USD × 1/0.735 = 4082 CAD).
+  // fxRate (usd_fbr) means "1 USD = fxRate <local currency>" — multiply (not
+  // divide) to convert a stored USD value to local display. USD display → ×1.
   // Save path divides by fxMultiplier to convert back to USD for storage.
   const fxMultiplier: number = (() => {
     if (!rawHeader) return 1;
-    const display = (rawHeader.display_currency || rawHeader.local_currency || "USD").toUpperCase();
-    const rate    = rawHeader.exchange_rate || 0.7350;
-    return display === "CAD" ? (1 / rate) : 1;
+    const local   = (rawHeader.local_currency   || "USD").toUpperCase();
+    const display = (rawHeader.display_currency || local).toUpperCase();
+    return computeDisplayMultiplier(display, local, fxRate);
   })();
 
   // Checks lineIdentifier, lineType, AND display name — one of them will match

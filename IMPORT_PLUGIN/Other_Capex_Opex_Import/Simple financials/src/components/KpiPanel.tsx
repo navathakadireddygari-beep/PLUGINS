@@ -6,6 +6,8 @@ type Props = {
   rawHeader: ApiHeader;
   displayScale: ScaleCode;
   numberFormat: NumberFormatCode;
+  // USD → display-currency multiplier, computed by the table from the live rate.
+  fxMultiplier: number;
 };
 
 const cardShell: React.CSSProperties = {
@@ -49,10 +51,8 @@ const fmtAmount = (
 const fmtYears = (n: number | null | undefined): string =>
   n == null ? "-" : `${n} Year${n === 1 ? "" : "s"}`;
 
-export default function KpiPanel({ rawHeader, displayScale, numberFormat }: Props): React.ReactElement {
-  const display = (rawHeader.display_currency || rawHeader.local_currency || "USD").toUpperCase();
-  const rate = rawHeader.exchange_rate || 0.7350;
-  const kpiFxMultiplier = display === "CAD" ? (1 / rate) : 1;
+export default function KpiPanel({ rawHeader, displayScale, numberFormat, fxMultiplier }: Props): React.ReactElement {
+  const kpiFxMultiplier = fxMultiplier;
 
   const totalInvestment = fmtAmount(rawHeader.investment, displayScale, kpiFxMultiplier, numberFormat);
   const annualCost = fmtAmount(
