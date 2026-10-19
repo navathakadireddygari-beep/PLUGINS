@@ -291,13 +291,22 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const hoverTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── Account codes — fetch on demand when user opens the dropdown ── */
+  // Stable callback (no state deps): it used to depend on accountCodesBySection,
+  // so every section's response changed its identity and re-ran the pre-load
+  // effect below, re-requesting sections whose codes were still in flight.
+  // The ref records what was already requested; getAccountCodes also caches.
+  const requestedAccountTypesRef = useRef<Set<string>>(new Set());
   const loadAccountCodesForSection = useCallback((sectionType: string) => {
-    if (!sectionType || accountCodesBySection[sectionType]) return;
+    if (!sectionType || requestedAccountTypesRef.current.has(sectionType)) return;
+    requestedAccountTypesRef.current.add(sectionType);
     const cfg = getAppConfig();
     getAccountCodes(cfg, sectionType)
       .then((codes) => setAccountCodesBySection((prev) => ({ ...prev, [sectionType]: codes })))
-      .catch((e) => console.error("[account-codes] failed for", sectionType, e));
-  }, [accountCodesBySection]);
+      .catch((e) => {
+        requestedAccountTypesRef.current.delete(sectionType); // allow a retry on next focus
+        console.error("[account-codes] failed for", sectionType, e);
+      });
+  }, []);
 
   /* ── GET ─────────────────────────────────────────────────────── */
   const loadData = useCallback(async (): Promise<{ table: PivotTableData; rawHeader: ApiHeader } | null> => {
@@ -510,7 +519,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       publishAction({ source: FIN_EVAL_SUBSCRIBER_ID, target: "apex", action: "tool:fin_eval_saved", payload: { proposalId: cfg.proposal_id } });
       // Silent re-fetch — update state in place without showing the loading spinner.
       try {
-        const refetched = await getFinEvaluationStaging(cfg);
+        const refetched = await getFinEvaluationStaging(cfg, { force: true });
         setData(refetched.table);
         setRawHeader(refetched.rawHeader);
         setValidationErrors(refetched.errors ?? []);
@@ -549,7 +558,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       });
       publishAction({ source: FIN_EVAL_SUBSCRIBER_ID, target: "apex", action: "tool:fin_eval_saved", payload: { proposalId: cfg.proposal_id } });
       try {
-        const refetched = await getFinEvaluationStaging(cfg);
+        const refetched = await getFinEvaluationStaging(cfg, { force: true });
         setData(refetched.table);
         setRawHeader(refetched.rawHeader);
         setValidationErrors(refetched.errors ?? []);

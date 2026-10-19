@@ -223,7 +223,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [loading,     setLoading]     = useState<boolean>(true);
   const [fetchError,  setFetchError]  = useState<string | null>(null);
 
-  const [accountCodesBySection, setAccountCodesBySection] = useState<Record<string, AccountCode[]>>({});
+  const [, setAccountCodesBySection] = useState<Record<string, AccountCode[]>>({});
   const [displayScale,  setDisplayScale]  = useState<ScaleKey>(DEFAULT_SCALE);
   const [numberFormat,  setNumberFormat]  = useState<NumberFormatKey>(DEFAULT_NUMBER_FORMAT);
   const [dateFormat,    setDateFormat]    = useState<DateFormatKey>(DEFAULT_DATE_FORMAT);
@@ -344,13 +344,22 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const hoverTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── Account codes — fetch on demand when user opens the dropdown ── */
+  // Stable callback (no state deps): it used to depend on accountCodesBySection,
+  // so every section's response changed its identity and re-ran the pre-load
+  // effect below, re-requesting sections whose codes were still in flight.
+  // The ref records what was already requested; getAccountCodes also caches.
+  const requestedAccountTypesRef = useRef<Set<string>>(new Set());
   const loadAccountCodesForSection = useCallback((sectionType: string) => {
-    if (!sectionType || accountCodesBySection[sectionType]) return;
+    if (!sectionType || requestedAccountTypesRef.current.has(sectionType)) return;
+    requestedAccountTypesRef.current.add(sectionType);
     const cfg = getAppConfig();
     getAccountCodes(cfg, sectionType)
       .then((codes) => setAccountCodesBySection((prev) => ({ ...prev, [sectionType]: codes })))
-      .catch((e) => console.error("[account-codes] failed for", sectionType, e));
-  }, [accountCodesBySection]);
+      .catch((e) => {
+        requestedAccountTypesRef.current.delete(sectionType); // allow a retry on next focus
+        console.error("[account-codes] failed for", sectionType, e);
+      });
+  }, []);
 
   /* ── GET ─────────────────────────────────────────────────────── */
   const loadData = useCallback(async (): Promise<{ table: PivotTableData; rawHeader: ApiHeader } | null> => {
@@ -523,7 +532,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       publishToBridge({ type: "PLUGIN_MSG", source: "editor", target: "chatbot", action: "fin-eval:saved", payload: { proposalId: cfg.proposal_id, method } });
       // Silent re-fetch — update state in place without showing the loading spinner.
       try {
-        const refetched = await getFinancialData(cfg);
+        const refetched = await getFinancialData(cfg, { force: true });
         setData(refetched.table);
         setRawHeader(refetched.rawHeader);
       } catch (e) {

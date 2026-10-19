@@ -339,12 +339,23 @@ async function extractApiError(res: Response, fallback: string): Promise<string>
 // Simple in-module cache — one token per page session is enough for the
 // Financial table widget; refreshing on auth failures is handled by callers.
 let cachedToken: string | null = null;
+// In-flight auth request, shared by concurrent callers (initial GET, account
+// codes, FX rate all start together) so only one token call is made.
+let tokenPromise: Promise<string> | null = null;
 
 async function getBearerToken(cfg: AppConfig): Promise<string> {
   if (cachedToken) return cachedToken;
-  const resp = await fetchAuthToken(cfg);
-  cachedToken = extractToken(resp);
-  return cachedToken;
+  if (tokenPromise) return tokenPromise;
+  tokenPromise = (async () => {
+    try {
+      const resp = await fetchAuthToken(cfg);
+      cachedToken = extractToken(resp);
+      return cachedToken;
+    } finally {
+      tokenPromise = null;
+    }
+  })();
+  return tokenPromise;
 }
 
 /** Reset the cached token (e.g. on 401 response). */
@@ -426,7 +437,21 @@ export type AccountCode = {
   account_name: string;
 };
 
-export async function getAccountCodes(cfg: AppConfig, sectionType: string): Promise<AccountCode[]> {
+// Account codes don't change during a page session — cache one request per
+// section type (the promise itself, so concurrent callers share it). A failed
+// request is evicted so the next dropdown open can retry.
+const accountCodesCache = new Map<string, Promise<AccountCode[]>>();
+
+export function getAccountCodes(cfg: AppConfig, sectionType: string): Promise<AccountCode[]> {
+  const cached = accountCodesCache.get(sectionType);
+  if (cached) return cached;
+  const request = fetchAccountCodes(cfg, sectionType);
+  accountCodesCache.set(sectionType, request);
+  request.catch(() => accountCodesCache.delete(sectionType));
+  return request;
+}
+
+async function fetchAccountCodes(cfg: AppConfig, sectionType: string): Promise<AccountCode[]> {
   const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=${encodeURIComponent(sectionType)}`;
 
@@ -743,13 +768,38 @@ export type SaveResponse = {
  * Fetches the staged (not-yet-migrated) financial evaluation for this file.
  * Response envelope: { apiStatus, apiMessage, data: { file, header, orphanLines } }.
  */
-export async function getFinEvaluationStaging(
-  cfg: AppConfig
+// Identical GETs fired at the same moment (mount + APEX refresh event +
+// AppBridge message) share one in-flight request instead of hitting ORDS
+// several times. `force` skips sharing — used right after a save/validate,
+// where an older in-flight GET would return pre-save data.
+const inflightStagingGets = new Map<string, Promise<{ table: PivotTableData; rawHeader: ApiHeader; errors: ValidationIssue[] }>>();
+
+export function getFinEvaluationStaging(
+  cfg: AppConfig,
+  opts: { force?: boolean } = {},
 ): Promise<{ table: PivotTableData; rawHeader: ApiHeader; errors: ValidationIssue[] }> {
-  const url   = buildFinEvaluationStagingUrl(cfg);
+  const url = buildFinEvaluationStagingUrl(cfg);
+  if (!opts.force) {
+    const inflight = inflightStagingGets.get(url);
+    if (inflight) return inflight;
+  }
+  const request = fetchFinEvaluationStaging(cfg, url).finally(() => {
+    if (inflightStagingGets.get(url) === request) inflightStagingGets.delete(url);
+  });
+  inflightStagingGets.set(url, request);
+  return request;
+}
+
+async function fetchFinEvaluationStaging(
+  cfg: AppConfig,
+  url: string,
+): Promise<{ table: PivotTableData; rawHeader: ApiHeader; errors: ValidationIssue[] }> {
   const token = await getBearerToken(cfg);
   //console.log("[getFinEvaluationStaging] GET", url);
   const res = await fetch(url, {
+    // Always go to the server: without this the browser revalidates repeat
+    // GETs of the same URL against its HTTP cache (the 304s in the network tab).
+    cache: "no-store",
     headers: {
       Accept: "application/json",
       ...authHeaders(cfg, token),
