@@ -569,7 +569,21 @@ export type AccountCode = {
 
 // GET {api_endpoint}/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes
 //      ?account_category_type=<sectionType>
-export async function getAccountCodes(cfg: AppConfig, sectionType: string): Promise<AccountCode[]> {
+// Account codes don't change during a page session — cache one request per
+// section type (the promise itself, so concurrent callers share it). A failed
+// request is evicted so the next dropdown open can retry.
+const accountCodesCache = new Map<string, Promise<AccountCode[]>>();
+
+export function getAccountCodes(cfg: AppConfig, sectionType: string): Promise<AccountCode[]> {
+  const cached = accountCodesCache.get(sectionType);
+  if (cached) return cached;
+  const request = fetchAccountCodes(cfg, sectionType);
+  accountCodesCache.set(sectionType, request);
+  request.catch(() => accountCodesCache.delete(sectionType));
+  return request;
+}
+
+async function fetchAccountCodes(cfg: AppConfig, sectionType: string): Promise<AccountCode[]> {
   const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=${encodeURIComponent(sectionType)}`;
 
@@ -599,13 +613,40 @@ export async function getAccountCodes(cfg: AppConfig, sectionType: string): Prom
 }
 
 /* ─────────────────────────── Staging GET ────────────────────────── */
-export async function getFinEvaluationStaging(
-  cfg: AppConfig
-): Promise<{ table: PivotTableData; rawHeader: ApiHeader; errors: ValidationIssue[] }> {
-  const url   = buildFinEvaluationStagingUrl(cfg);
+type StagingResult = { table: PivotTableData; rawHeader: ApiHeader; errors: ValidationIssue[] };
+
+// Identical GETs fired at the same moment (mount + APEX refresh event +
+// AppBridge message) share one in-flight request instead of hitting ORDS
+// several times. `force` skips sharing — used right after Validate / Save
+// Model, where an older in-flight GET would return pre-save data.
+const inflightFinancialGets = new Map<string, Promise<StagingResult>>();
+
+export function getFinEvaluationStaging(
+  cfg: AppConfig,
+  opts: { force?: boolean } = {},
+): Promise<StagingResult> {
+  const url = buildFinEvaluationStagingUrl(cfg);
+  if (!opts.force) {
+    const inflight = inflightFinancialGets.get(url);
+    if (inflight) return inflight;
+  }
+  const request = fetchFinEvaluationStaging(cfg, url).finally(() => {
+    if (inflightFinancialGets.get(url) === request) inflightFinancialGets.delete(url);
+  });
+  inflightFinancialGets.set(url, request);
+  return request;
+}
+
+async function fetchFinEvaluationStaging(
+  cfg: AppConfig,
+  url: string,
+): Promise<StagingResult> {
   const token = await getBearerToken(cfg);
   console.log("[getFinEvaluationStaging] GET", url);
   const res = await fetch(url, {
+    // Always go to the server: without this the browser revalidates repeat
+    // GETs of the same URL against its HTTP cache (the 304s in the network tab).
+    cache: "no-store",
     headers: {
       Accept:        "application/json",
       Authorization: `Bearer ${token}`,

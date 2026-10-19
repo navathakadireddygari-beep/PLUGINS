@@ -305,13 +305,22 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const hoverTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── Account codes — fetch on demand when user opens the dropdown ── */
+  // Stable callback (no state deps): it used to depend on accountCodesBySection,
+  // so every section's response changed its identity and re-ran the pre-load
+  // effect below, re-requesting sections whose codes were still in flight.
+  // The ref records what was already requested; getAccountCodes also caches.
+  const requestedAccountTypesRef = useRef<Set<string>>(new Set());
   const loadAccountCodesForSection = useCallback((sectionType: string) => {
-    if (!sectionType || accountCodesBySection[sectionType]) return;
+    if (!sectionType || requestedAccountTypesRef.current.has(sectionType)) return;
+    requestedAccountTypesRef.current.add(sectionType);
     const cfg = getAppConfig();
     getAccountCodes(cfg, sectionType)
       .then((codes) => setAccountCodesBySection((prev) => ({ ...prev, [sectionType]: codes })))
-      .catch((e) => console.error("[account-codes] failed for", sectionType, e));
-  }, [accountCodesBySection]);
+      .catch((e) => {
+        requestedAccountTypesRef.current.delete(sectionType); // allow a retry on next focus
+        console.error("[account-codes] failed for", sectionType, e);
+      });
+  }, []);
 
   /* ── GET ─────────────────────────────────────────────────────── */
   const loadData = useCallback(async (): Promise<{ table: PivotTableData; rawHeader: ApiHeader } | null> => {
@@ -523,7 +532,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const refetchStaging = useCallback(async (label: string): Promise<void> => {
     try {
       const cfg = getAppConfig();
-      const refetched = await getFinEvaluationStaging(cfg);
+      const refetched = await getFinEvaluationStaging(cfg, { force: true });
       console.log(`[${label}] re-fetch groups:`, refetched.table.groups.length,
         "lines:", refetched.table.groups.reduce((s, g) => s + g.values.length, 0));
 
@@ -671,8 +680,18 @@ export default function PivotTableWithAPI(): React.ReactElement {
      chatbot targets ("editor"). One handler switches on the action. This
      runs alongside — and independently of — the window CustomEvent
      wiring above. Degrades to a silent no-op when window.AppBridge is
-     absent (standalone / dev). */
+     absent (standalone / dev).
+     Handlers are read through a ref so we subscribe ONCE: saveDraft changes on
+     every data edit, and re-subscribing each time could let the bridge replay
+     its last message to the new subscriber (another GET). */
+  const bridgeHandlersRef = useRef({ loadData, refreshSection, saveDraft });
+  bridgeHandlersRef.current = { loadData, refreshSection, saveDraft };
   useEffect(() => {
+    const { loadData, refreshSection, saveDraft } = {
+      loadData:       () => bridgeHandlersRef.current.loadData(),
+      refreshSection: (id: string) => bridgeHandlersRef.current.refreshSection(id),
+      saveDraft:      () => bridgeHandlersRef.current.saveDraft(),
+    };
     const handle = (env: { action: string | symbol | number; payload: unknown }): void => {
       const action  = String(env.action);
       const payload = (env.payload ?? {}) as { sectionId?: string | number | null; sectionType?: string };
@@ -700,7 +719,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     const unsubFinEval = subscribeAllActions("fin-eval", handle);
     const unsubEditor  = subscribeAllActions("editor", handle);
     return () => { unsubFinEval(); unsubEditor(); };
-  }, [loadData, refreshSection, saveDraft]);
+  }, []);
 
   /* ── Side-effects ───────────────────────────────────────────── */
   useEffect(() => {
