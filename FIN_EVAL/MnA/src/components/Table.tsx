@@ -1051,8 +1051,9 @@ const Table: React.FC = () => {
       emitSaved();
       // Silent, matching the reference project's post-save re-fetch: the grid
       // keeps the numbers on screen and swaps them for the server's when they
-      // arrive, rather than blanking to a spinner after every save.
-      reload(true);
+      // arrive, rather than blanking to a spinner after every save. Forced, so
+      // it can't share a GET that started before the save.
+      reload(true, true);
     }
   }, [saved, reload]);
 

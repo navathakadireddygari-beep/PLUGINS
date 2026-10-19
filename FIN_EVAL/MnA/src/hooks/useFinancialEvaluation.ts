@@ -2,8 +2,8 @@
  * Loads the financial evaluation template once on mount.
  *
  * There is no data-fetching library in this app, so this is a plain
- * effect + state hook. The request is aborted on unmount, which also makes it
- * safe under React StrictMode's double-invoke.
+ * effect + state hook. The request is abandoned on unmount (its result is
+ * ignored), which also makes it safe under React StrictMode's double-invoke.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,8 +23,11 @@ export interface UseFinancialEvaluationResult {
    * post-save "silent re-fetch": the grid keeps showing the numbers the user is
    * looking at and they are swapped for the server's when they arrive, instead
    * of the whole screen blanking to a spinner after every save.
+   *
+   * `force` sends a fresh GET instead of sharing one already in flight — for
+   * the re-fetch right after a save, which must not get pre-save data.
    */
-  reload: (silent?: boolean) => void;
+  reload: (silent?: boolean, force?: boolean) => void;
 }
 
 export const useFinancialEvaluation = (
@@ -44,14 +47,20 @@ export const useFinancialEvaluation = (
   // Read by the effect below without being a dependency of it — a state flag
   // would re-run the fetch when it changed.
   const silentRef = useRef(false);
+  // Same, for `force`. Kept until the fetch below takes it, so a plain reload
+  // landing in the same render can't cancel a post-save force.
+  const forceRef = useRef(false);
 
-  const reload = useCallback((silent = false) => {
+  const reload = useCallback((silent = false, force = false) => {
     silentRef.current = silent;
+    if (force) forceRef.current = true;
     setReloadToken((n) => n + 1);
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
+    const force = forceRef.current;
+    forceRef.current = false;
     if (!silentRef.current) setLoading(true);
     setError(null);
 
@@ -59,6 +68,7 @@ export const useFinancialEvaluation = (
       proposalId,
       spcTypeId,
       templateTypeId,
+      force,
       signal: controller.signal,
     })
       .then((model) => {

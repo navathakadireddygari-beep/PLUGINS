@@ -21,7 +21,7 @@ import {
   DEFAULT_SCALE,
   type MoneySettings,
 } from "@/lib";
-import { getItems, putItems } from "@/lib/axios";
+import { getItems, putItems, sharedGet } from "@/lib/axios";
 import { getAppConfig, type AppConfig } from "@/config/app-config";
 import type {
   FinancialEvaluationResponse,
@@ -516,12 +516,16 @@ export const mapFinancialEvaluation = (
  * when a proposal exists, otherwise the SPC/template it starts from (see
  * `buildFinancialEvaluationParams`). Any id passed here overrides that one
  * value and takes part in the same precedence.
+ *
+ * An identical GET already in flight is shared rather than sent again (see
+ * `sharedGet`); `force` sends a fresh one — the re-fetch right after a save.
  */
 export const fetchFinancialEvaluation = async (
   options: {
     proposalId?: string | number;
     spcTypeId?: string | number;
     templateTypeId?: string | number;
+    force?: boolean;
     signal?: AbortSignal;
   } = {},
 ): Promise<FinancialEvaluationModel> => {
@@ -537,10 +541,13 @@ export const fetchFinancialEvaluation = async (
         ? Number(options.templateTypeId)
         : cfg.template_type_id,
   });
-  const items = await getItems<FinancialEvaluationResponse>(
-    FINANCIAL_EVALUATION_PATH,
-    params,
-    options.signal,
+  const items = await sharedGet(
+    `${FINANCIAL_EVALUATION_PATH}?${new URLSearchParams(
+      Object.entries(params).map(([k, v]) => [k, String(v)]),
+    )}`,
+    () =>
+      getItems<FinancialEvaluationResponse>(FINANCIAL_EVALUATION_PATH, params),
+    { force: options.force, signal: options.signal },
   );
   // The currency pair drives the whole toggle/FX strip, and it is the one part
   // of the payload that is invisible when it is missing (the strip just falls

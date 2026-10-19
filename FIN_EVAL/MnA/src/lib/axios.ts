@@ -83,6 +83,52 @@ const toApiError = (error: unknown, path: string): ApiError => {
 };
 
 /**
+ * Identical GETs fired at the same moment (mount + APEX refresh event +
+ * AppBridge message) share one in-flight request instead of hitting ORDS
+ * several times. `key` names the request (path + params). `force` skips
+ * sharing — used right after a save, where an older in-flight GET would
+ * return pre-save data; the forced request is then the one later callers
+ * share.
+ *
+ * The shared request is not tied to any one caller's `signal`: one caller
+ * aborting (e.g. the load hook re-running) must not cancel it for the others.
+ * An aborted caller just stops waiting — its promise rejects — and the
+ * request itself runs to completion.
+ */
+const inflightGets = new Map<string, Promise<unknown>>();
+
+export const sharedGet = <T>(
+  key: string,
+  request: () => Promise<T>,
+  opts: { force?: boolean; signal?: AbortSignal } = {},
+): Promise<T> => {
+  let shared = opts.force
+    ? undefined
+    : (inflightGets.get(key) as Promise<T> | undefined);
+  if (!shared) {
+    const created = request().finally(() => {
+      if (inflightGets.get(key) === created) inflightGets.delete(key);
+    });
+    inflightGets.set(key, created);
+    shared = created;
+  }
+
+  const { signal } = opts;
+  if (!signal) return shared;
+  if (signal.aborted) {
+    return Promise.reject(new ApiError(`Request to ${key} aborted`));
+  }
+  const result = shared;
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new ApiError(`Request to ${key} aborted`));
+    signal.addEventListener("abort", onAbort, { once: true });
+    result
+      .then(resolve, reject)
+      .finally(() => signal.removeEventListener("abort", onAbort));
+  });
+};
+
+/**
  * GET a GIS endpoint and unwrap `data.items`, throwing `ApiError` on a
  * transport failure or a non-"S" `apiStatus`.
  */

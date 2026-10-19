@@ -25,7 +25,7 @@
  */
 
 import { AxiosError } from "axios";
-import { apiClient, ApiError } from "@/lib/axios";
+import { apiClient, ApiError, sharedGet } from "@/lib/axios";
 import { getAppConfig } from "@/config/app-config";
 import {
   mapFinancialEvaluation,
@@ -411,16 +411,29 @@ export const mapStagingEnvelope = (envelope: StagingEnvelope): StagingModel => {
   };
 };
 
-/** GET the staged evaluation for the configured (or given) file. */
+/**
+ * GET the staged evaluation for the configured (or given) file.
+ *
+ * An identical GET already in flight is shared rather than sent again (see
+ * `sharedGet`); `force` sends a fresh one — the re-fetch right after a save.
+ */
 export const fetchFinEvaluationStaging = async (
-  options: { fileId?: number | null; signal?: AbortSignal } = {},
+  options: {
+    fileId?: number | null;
+    force?: boolean;
+    signal?: AbortSignal;
+  } = {},
 ): Promise<StagingModel> => {
   const fileId = requireFileId(options.fileId);
   let body: StagingEnvelope;
   try {
-    ({ data: body } = await apiClient.get<StagingEnvelope>(
-      FIN_EVALUATION_STAGING_PATH,
-      { params: { file_id: fileId }, signal: options.signal },
+    ({ data: body } = await sharedGet(
+      `${FIN_EVALUATION_STAGING_PATH}?file_id=${fileId}`,
+      () =>
+        apiClient.get<StagingEnvelope>(FIN_EVALUATION_STAGING_PATH, {
+          params: { file_id: fileId },
+        }),
+      { force: options.force, signal: options.signal },
     ));
   } catch (error) {
     throw toApiError(error, "Failed to load the staged financial evaluation");
