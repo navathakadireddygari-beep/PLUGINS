@@ -87,12 +87,6 @@ type ParsedRow = { name: string; values: number[] };
 const tok = (s: string | undefined | null): string =>
   (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-// Balance Sheet and new (custom) sections never show a cross-year TOTAL — the
-// TOTAL cell stays empty, same as Prod Dev Import / Other Capex Full return.
-const isNoTotalGroup = (g: Group): boolean =>
-  g.isCustom === "Y" || tok(g.sectionType) === "CUSTOM" ||
-  tok(g.sectionType) === "BALANCESHEET" || tok(g.name) === "BALANCESHEET";
-
 /* Front-end subtotal / total recompute.
    For each section: calculated lines (isCalculated === "Y") get their year
    values set to the per-year sum of editable (isCalculated !== "Y") lines.
@@ -811,6 +805,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like percent rows.
   const isNonFinancialRow = (value: ValueRow): boolean =>
     (value.lineIdentifier ?? "").toUpperCase().replace(/[^A-Z]/g, "") === "NONFINANCIAL"; // NON_FINANCIAL / NONFINANCIAL / "Non Financial"
+
+  // A section whose every editable line is NON_FINANCIAL (e.g. Additional
+  // Metrics) has no meaningful cross-year TOTAL — its TOTAL column is empty.
+  const isAllNonFinancialGroup = (g: Group): boolean => {
+    const editable = g.values.filter((v) => v.isCalculated !== "Y");
+    return editable.length > 0 && editable.every(isNonFinancialRow);
+  };
 
   const displayPercent = (n: number): string => {
     if (!n) return "—";
@@ -1695,7 +1696,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           )}
                         </th>
                       ))}
-                      <th style={TH({ textAlign: "right", whiteSpace: "nowrap", width: 90, background: "#e5e7eb" })}>{isNoTotalGroup(group) ? "" : "TOTAL"}</th>
+                      <th style={TH({ textAlign: "right", whiteSpace: "nowrap", width: 90, background: "#e5e7eb" })}>{isAllNonFinancialGroup(group) ? "" : "TOTAL"}</th>
                     </tr>
                   )}
 
@@ -1843,7 +1844,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               <input type="text"
                                 className="spc-nav-cell"
                                 readOnly
-                                value={isNoTotalGroup(group) ? "" : displayRow(value, t)}
+                                value={isNonFinancialRow(value) ? "" : displayRow(value, t)}
                                 onClick={(e) => e.stopPropagation()}
                                 onKeyDown={handleCellNav}
                                 style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28 }}
@@ -1868,7 +1869,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           const val = value.yearValues[year] ?? 0;
                           return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{displayRow(value, val, groupAllNonFinancial)}</td>);
                         })}
-                        {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{isNoTotalGroup(group) ? "" : displayRow(value, t, groupAllNonFinancial)}</td>; })()}
+                        {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{groupAllNonFinancial || isNonFinancialRow(value) ? "" : displayRow(value, t, groupAllNonFinancial)}</td>; })()}
                       </tr>
                     );
 
@@ -1888,7 +1889,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             const val = value.yearValues[year] ?? 0;
                             return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{displayRow(value, val, groupAllNonFinancial)}</td>);
                           })}
-                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{isNoTotalGroup(group) ? "" : displayRow(value, t, groupAllNonFinancial)}</td>; })()}
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{groupAllNonFinancial || isNonFinancialRow(value) ? "" : displayRow(value, t, groupAllNonFinancial)}</td>; })()}
                         </tr>
                       ))}
                     </>);

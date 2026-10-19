@@ -91,12 +91,6 @@ type ParsedRow = { name: string; values: number[] };
 const tok = (s: string | undefined | null): string =>
   (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-// Balance Sheet and new (custom) sections never show a cross-year TOTAL — the
-// TOTAL cell stays empty, same as Prod Dev Import / Other Capex Full return.
-const isNoTotalGroup = (g: Group): boolean =>
-  g.isCustom === "Y" || tok(g.sectionType) === "CUSTOM" ||
-  tok(g.sectionType) === "BALANCESHEET" || tok(g.name) === "BALANCESHEET";
-
 /* Front-end subtotal / total recompute.
    For each section: calculated lines (isCalculated === "Y") get their year
    values set to the per-year sum of editable (isCalculated !== "Y") lines.
@@ -1414,7 +1408,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                          {isNoTotalGroup(group) ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
+                          {sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
                         </td>
                       </tr>
                     ) : (
@@ -1429,7 +1423,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                          {isNoTotalGroup(group) ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
+                          {sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
                         </td>
                       </tr>
                     )}
@@ -1480,7 +1474,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               </td>
                             );
                           }); })()}
-                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: t < 0 ? "#DC2626" : "#1f2937" }}>{isNoTotalGroup(group) ? "" : displayFmt(t, isUnscaledRow(value))}</td>; })()}
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: t < 0 ? "#DC2626" : "#1f2937" }}>{isNonFinancialRow(value) ? "" : displayFmt(t, isUnscaledRow(value))}</td>; })()}
                         </tr>
                       );
                     })}
@@ -1527,7 +1521,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {(() => {
                           const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
                           const col = isNetTab ? netColor(t) : (t < 0 ? "#DC2626" : "#1f2937");
-                          return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{isNoTotalGroup(group) ? "" : isNetTab ? netFmt(t) : displayFmt(t, rowBypassScale)}</td>;
+                          return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{sectionBypassScale || isNonFinancialRow(value) ? "" : isNetTab ? netFmt(t) : displayFmt(t, rowBypassScale)}</td>;
                         })()}
                       </tr>
                       );
@@ -1762,7 +1756,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               </td>
                               );
                             }); })()}
-                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937" }}>{isNoTotalGroup(group) ? "" : displayFmt(t, isUnscaledRow(value))}</td>; })()}
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937" }}>{isNonFinancialRow(value) ? "" : displayFmt(t, isUnscaledRow(value))}</td>; })()}
                         </tr>
                       );
                     };
