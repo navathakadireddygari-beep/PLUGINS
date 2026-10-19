@@ -972,7 +972,9 @@ const Table: React.FC = () => {
       console.log("[fin-eval/editor] bridge action received:", action, payload);
 
       if (action === "tool:refresh_financial_evaluation") {
-        bridgeHandlersRef.current.reload(true);
+        // The chatbot fires this after changing the data, so never share a
+        // GET that started before its change.
+        bridgeHandlersRef.current.reload(true, true);
       }
     });
 
