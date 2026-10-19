@@ -829,7 +829,7 @@ const applyYearValues = (
     next.total = {
       ...(source.total ?? emptyYearValue()),
       spc_projected_amount:
-        backendTotal !== null && backendTotal !== undefined && backendTotal !== ""
+        backendTotal !== null && backendTotal !== undefined
           ? Number(backendTotal)
           : hasTotal
             ? total
