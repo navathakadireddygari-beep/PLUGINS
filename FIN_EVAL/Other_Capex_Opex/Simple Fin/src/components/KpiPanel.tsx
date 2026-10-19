@@ -60,7 +60,7 @@ const fmtAmount = (
 const fmtYears = (n: number | null | undefined): string =>
   n == null ? "-" : `${n} Year${n === 1 ? "" : "s"}`;
 
-export default function KpiPanel({ rawHeader, displayScale, numberFormat }: Props): React.ReactElement {
+function KpiPanel({ rawHeader, displayScale, numberFormat }: Props): React.ReactElement {
   const local = (rawHeader.local_currency || "").trim().toUpperCase();
   const display = (rawHeader.display_currency || rawHeader.local_currency || "USD").toUpperCase();
   // exchange_rate (usd_fbr): 1 USD = exchange_rate local — multiply USD by it to get local.
@@ -102,3 +102,6 @@ export default function KpiPanel({ rawHeader, displayScale, numberFormat }: Prop
     </div>
   );
 }
+
+// Re-renders only when its props change, not on every table keystroke.
+export default React.memo(KpiPanel);

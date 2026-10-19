@@ -38,6 +38,15 @@ export type ValueRow = {
   errorMessage?:      string | null;
 };
 
+/* TOTAL column value for a line. A line that came from the API (id "val-…")
+   shows the backend's year_values.total as-is (undefined → blank) — editing
+   its cells never recomputes it; the backend recalculates on save/validate.
+   A line added in this session (blank / pasted rows, id from generateId) has
+   no backend total yet, so the front-end sums that row's own years. */
+export const isLocalLine = (v: ValueRow): boolean => !v.id.startsWith("val-");
+export const lineTotal = (v: ValueRow, years: number[]): number | undefined =>
+  isLocalLine(v) ? years.reduce((s, y) => s + (v.yearValues[y] || 0), 0) : v.rowTotal;
+
 export type Group = {
   id:                  string;
   name:                string;
@@ -200,13 +209,6 @@ export function buildFinancialUrl(cfg: AppConfig): string {
   return `${base}?file_id=${cfg.file_id}`;
 }
 
-export function buildFinancialPutUrl(cfg: AppConfig, rawHeader: ApiHeader): string {
-  if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__");
-  const proposalId = cfg.proposal_id ?? rawHeader.proposal_id;
-  if (!proposalId) throw new Error("Cannot save: no proposal_id available.");
-  return `${cfg.api_endpoint}/GIS/proposalAuthoring/${proposalId}/financialEvaluation`;
-}
-
 /* ─────────────────────────── Empty defaults ─────────────────────── */
 // Used when the backend returns no data so the UI can still render the
 // toolbar and let the user build a proposal from scratch.
@@ -355,95 +357,11 @@ export function transformApiData(
   };
 }
 
-/* ─────────────────────────── FX helper ──────────────────────────── */
-// Converts a value from local currency to USD for API storage.
-// Always targets USD regardless of the display currency selected in the UI.
-// exchange_rate is the USD→local rate (e.g. 1 USD = 1.35 CAD → rate=1.35).
-export function computeFxMultiplier(header: ApiHeader): number {
-  const local = (header.local_currency || "USD").toUpperCase();
-  const rate  = header.exchange_rate || 0.7350;
-  if (local === "USD") return 1;       // already USD — no conversion needed
-  if (local === "CAD") return 1 / rate; // CAD → USD: divide by USD→CAD rate
-  return 1 / rate;                      // generic fallback for other currencies
-}
-
-// Tax Rate % is a pure percentage — exempt from all currency and scale conversions.
-const TAX_RATE_IDS = new Set(["TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT"]);
-export function isTaxRateId(id: string | undefined | null): boolean {
-  return TAX_RATE_IDS.has((id || "").toUpperCase().replace(/[^A-Z0-9]/g, ""));
-}
-
-/* ─────────────────────────── PUT payload builder ────────────────── */
-export function buildPutPayload(
-  tableData: PivotTableData,
-  rawHeader: ApiHeader,
-  appUser: string
-): object {
-  const toFyKey = (year: number): string =>
-    (tableData.columnLabels[year] || `FY${String(year).slice(2)}`).toLowerCase();
-
-  // State values are always in USD — send as-is, no fx conversion needed.
-
-  const sections = tableData.groups.map((group, grpIdx) => {
-    const lines = group.values.map((value, lineIdx) => {
-      const year_values: Record<string, object> = {};
-      tableData.years.forEach((y) => {
-        const amt = value.yearValues[y] ? value.yearValues[y] : null;
-        year_values[toFyKey(y)] = { spc_projected_amount: amt, actual: null };
-      });
-      const totalAmt = tableData.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
-      year_values["total"] = { spc_projected_amount: totalAmt || null, actual: null };
-
-      return {
-        fin_eval_line_id:    value.lineId    ?? null,
-        fin_eval_section_id: value.sectionId ?? group.sectionId ?? null,
-        line_type:           value.lineType  || "CUSTOM",
-        line_item_name:      value.name,
-        line_identifier:     (value.lineIdentifier ?? "FINANCIAL").toUpperCase(),
-        is_calculated:       value.isCalculated   ?? "N",
-        is_custom:           value.isCustom       ?? "Y",
-        account:             value.accountId      ?? null,
-        amortization_period:    value.amortizationPeriod  ?? null,
-        date_placed_in_service: value.datePlacedInService || null,
-        display_order:       value.displayOrder   ?? lineIdx + 1,
-        year_values,
-        status:              value.status       ?? "ACTIVE",
-        language_code:       value.languageCode ?? "EN",
-      };
-    });
-
-    return {
-      fin_eval_section_id: group.sectionId    ?? null,
-      section_name:        group.name,
-      section_type:        group.sectionType  ?? "CUSTOM",
-      is_custom:           group.isCustom     ?? "Y",
-      display_order:       group.displayOrder ?? grpIdx + 1,
-      status:              group.status       ?? "ACTIVE",
-      language_code:       group.languageCode ?? "EN",
-      lines,
-    };
-  });
-
-  return {
-    fin_eval_header_id:        rawHeader.fin_eval_header_id || null,
-    user_email:                appUser,
-    display_currency:          rawHeader.display_currency,
-    hurdle_rate_percent:       rawHeader.hurdle_rate_percent,
-    discount_rate_percent:     rawHeader.discount_rate_percent,
-    share_repurchase_percent:  rawHeader.share_repurchase_percent,
-    amortisation_period_years: rawHeader.amortisation_period_years,
-    date_placed_in_service:    rawHeader.date_placed_in_service,
-    performance_metrics:       rawHeader.performance_metrics,
-    sections,
-  };
-}
-
 /* ─────────────── Staging PUT payload builder (camelCase) ─────────
    finEvaluationStaging PUT takes the same camelCase shape its GET
    returns — everything nested under a single `header` object:
      { header: { …, sections: [ { …, lines: [ { …, yearValues } ] } ] } }
-   Sending the snake_case financialEvaluation body (buildPutPayload)
-   here makes the backend parse an empty header and answer
+   Sending the snake_case financialEvaluation body here makes the backend parse an empty header and answer
    "The uploaded file content is empty or missing". */
 
 // Normalises a Y/N flag, falling back when the value is absent/garbage.
@@ -499,7 +417,9 @@ export function buildStagingPutPayload(tableData: PivotTableData, rawHeader: Api
 
       const prevTotal = rawLine?.year_values?.["total"];
       yearValues["total"] = {
-        spc_projected_amount:  total,
+        // Backend lines send their backend total as-is; only a line added in
+        // this session (no backend total yet) sends the front-end row sum.
+        spc_projected_amount:  isLocalLine(value) ? total : (value.rowTotal || null),
         ytd_budgeted_forecast: prevTotal?.ytd_budgeted_forecast ?? null,
         ytd_actuals:           prevTotal?.ytd_actuals           ?? null,
         variance:              prevTotal?.variance              ?? null,
@@ -582,7 +502,7 @@ async function extractApiError(res: Response, fallback: string): Promise<string>
 let cachedToken: string | null = null;
 let tokenPromise: Promise<string> | null = null;
 
-async function getBearerToken(cfg: AppConfig): Promise<string> {
+export async function getBearerToken(cfg: AppConfig): Promise<string> {
   if (cachedToken) return cachedToken;
   // Dedupe concurrent callers (e.g. StrictMode's double-invoked effects)
   // so only one auth request is ever in flight at a time.
@@ -598,6 +518,29 @@ async function getBearerToken(cfg: AppConfig): Promise<string> {
 /** Reset the cached token (e.g. on 401 response). */
 export function clearCachedToken(): void {
   cachedToken = null;
+}
+
+/**
+ * fetch() with the shared bearer token. A 401 means the token expired or is
+ * invalid, and the server rejected the request before doing anything, so the
+ * token is refreshed and the request is sent once more. `init` builds the
+ * request for a given token (called again for the retry).
+ */
+export async function authFetch(
+  cfg:  AppConfig,
+  url:  string,
+  init: (token: string) => RequestInit,
+): Promise<Response> {
+  let res = await fetch(url, init(await getBearerToken(cfg)));
+  if (res.status === 401) {
+    clearCachedToken();
+    // If a fresh token can't be fetched either (e.g. the APEX session itself
+    // expired), keep the original 401 so callers show the same error as before.
+    let token: string;
+    try { token = await getBearerToken(cfg); } catch { return res; }
+    res = await fetch(url, init(token));
+  }
+  return res;
 }
 
 /* ─────────────────────── Currency exchange rate ─────────────────── */
@@ -618,12 +561,11 @@ export type CurrencyExchangeRate = {
 // Response: { apiStatus, apiMessage, data: { usd_fbr, ... } }
 // usd_fbr is the USD→currency rate (e.g. 1 USD = usd_fbr GBP).
 export async function getCurrencyExchangeRate(cfg: AppConfig, currency: string, yearPeriod?: string): Promise<CurrencyExchangeRate | null> {
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/currencyExchangeRates`;
   const now   = new Date();
   const year_period = yearPeriod ?? `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -633,7 +575,7 @@ export async function getCurrencyExchangeRate(cfg: AppConfig, currency: string, 
       role:           cfg.app_roles,
     },
     body: JSON.stringify({ year_period, currency }),
-  });
+  }));
 
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
@@ -671,14 +613,13 @@ export function getAccountCodes(cfg: AppConfig, sectionCode: string): Promise<Ac
 }
 
 async function fetchAccountCodes(cfg: AppConfig, sectionCode: string): Promise<AccountCode[]> {
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=${encodeURIComponent(sectionCode)}`;
 
   console.log("[account-codes] section code:", sectionCode, "→ GET", url);
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-  });
+  }));
 
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
@@ -707,7 +648,7 @@ async function fetchAccountCodes(cfg: AppConfig, sectionCode: string): Promise<A
    unlike the old financialEvaluation endpoint's snake_case
    data.items. These helpers map the new wire shape onto the existing
    ApiHeader/ApiSection/ApiLine types so transformApiData and the rest
-   of the app (buildPutPayload, Table.tsx, KpiPanel.tsx) are untouched. */
+   of the app (Table.tsx, KpiPanel.tsx) are untouched. */
 const num = (v: unknown): number | null => (v == null || v === "" ? null : Number(v));
 
 function mapStagingLine(l: Record<string, unknown>): ApiLine {
@@ -829,9 +770,8 @@ async function fetchFinancialData(
   cfg: AppConfig,
   url: string,
 ): Promise<{ table: PivotTableData; rawHeader: ApiHeader }> {
-  const token = await getBearerToken(cfg);
   console.log("[getFinancialData] GET", url);
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     // Always go to the server: without this the browser revalidates repeat
     // GETs of the same URL against its HTTP cache (the 304s in the network tab).
     cache: "no-store",
@@ -841,7 +781,7 @@ async function fetchFinancialData(
       user_email:    cfg.app_user,
       role:          cfg.app_roles,
     },
-  });
+  }));
   console.log("[getFinancialData] status:", res.status);
   if (!res.ok) {
     const msg = await extractApiError(res, `Failed to load financial data (${res.status}).`);
@@ -877,68 +817,6 @@ export type SaveResponse = {
   [k: string]:  unknown;
 };
 
-async function sendJson(
-  method:  "POST" | "PUT",
-  cfg:     AppConfig,
-  url:     string,
-  payload: object,
-): Promise<SaveResponse> {
-  const token = await getBearerToken(cfg);
-  console.log(`[financial-api] → ${method}`, url);
-  console.log(`[financial-api] → ${method} body:`, JSON.stringify(payload, null, 2));
-
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      Accept:         "application/json",
-      Authorization:  `Bearer ${token}`,
-      user_email:     cfg.app_user,
-      role:           cfg.app_roles,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const text = await res.text().catch(() => "");
-  let json: SaveResponse = {};
-  try { json = text ? JSON.parse(text) : {}; } catch { /* non-JSON */ }
-
-  //console.log(`[financial-api] ← ${method} response`, res.status, json || text);
-
-  const apiMsg = (json as any).apiMessage || json.api_message || text || res.statusText;
-  const apiStatus = (json as any).apiStatus || json.api_status || "";
-
-  if (!res.ok) {
-    throw new Error(apiMsg || `Save failed (${res.status}).`);
-  }
-  if (apiStatus && apiStatus !== "S" && apiStatus !== "SUCCESS") {
-    throw new Error(apiMsg || "Save failed on server.");
-  }
-  return json;
-}
-
-/**
- * Save the proposal.
- *
- * The front-end ALWAYS uses PUT — the initial POST (creating the header)
- * is handled inside APEX, so by the time this widget saves, the header
- * already exists. The full table (all sections + all lines) is sent in
- * the body via buildPutPayload.
- *
- * Callers should reload data afterwards so newly-created section/line ids
- * come back into local state.
- */
-export async function saveFinancialData(
-  cfg: AppConfig,
-  data: PivotTableData,
-  rawHeader: ApiHeader
-): Promise<{ method: "POST" | "PUT"; response: SaveResponse }> {
-  const url     = buildFinancialPutUrl(cfg, rawHeader);
-  const payload = buildPutPayload(data, rawHeader, cfg.app_user);
-  const response = await sendJson("PUT", cfg, url, payload);
-  return { method: "PUT", response };
-}
-
 /**
  * Validate the proposal.
  *
@@ -954,14 +832,13 @@ export async function importFinancialData(
 ): Promise<SaveResponse> {
   if (!cfg.file_id) throw new Error("Cannot validate — no file_id available for this proposal.");
 
-  const token   = await getBearerToken(cfg);
   const url     = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluationStaging/${cfg.file_id}`;
   const payload = buildStagingPutPayload(data, rawHeader);
 
   console.log("[financial-api] → PUT", url);
   console.log("[financial-api] → PUT body:", JSON.stringify(payload, null, 2));
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -972,7 +849,7 @@ export async function importFinancialData(
       role:           cfg.app_roles,
     },
     body: JSON.stringify(payload),
-  });
+  }));
 
   const text = await res.text().catch(() => "");
   let json: SaveResponse = {};
@@ -993,12 +870,11 @@ export async function importFinancialData(
  * No request body — headers only.
  */
 export async function migrateFinEvalStaging(cfg: AppConfig, fileId: number): Promise<SaveResponse> {
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvalStagingMigrate/${fileId}`;
 
   console.log("[financial-api] → POST", url);
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "POST",
     headers: {
       Accept:        "application/json",
@@ -1006,7 +882,7 @@ export async function migrateFinEvalStaging(cfg: AppConfig, fileId: number): Pro
       user_email:    cfg.app_user,
       role:          cfg.app_roles,
     },
-  });
+  }));
 
   const text = await res.text().catch(() => "");
   let json: SaveResponse = {};
@@ -1020,155 +896,3 @@ export async function migrateFinEvalStaging(cfg: AppConfig, fileId: number): Pro
   return json;
 }
 
-/* ─────────────────────────── Server-driven sections ─────────────── */
-/** section_type OR section_name tokens (uppercase, non-alphanumerics
-    stripped) whose calculated rows are owned by the backend — the
-    front-end must not recompute calculated rows or row totals for them. */
-const SERVER_DRIVEN_TOKENS: ReadonlySet<string> = new Set([
-  "CASHFLOW",
-  "RETURNANALYSIS",
-  "RETURNSANALYSIS",
-  "RETURNONANALYSIS",
-]);
-
-const sectionToken = (s: string | undefined | null): string =>
-  (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-/** True if this group's calculated rows are owned by the backend
-    (Cash Flow, Return Analysis) and must not be locally recomputed. */
-export function isServerDrivenSection(group: { sectionType?: string; name?: string }): boolean {
-  return (
-    SERVER_DRIVEN_TOKENS.has(sectionToken(group.sectionType)) ||
-    SERVER_DRIVEN_TOKENS.has(sectionToken(group.name))
-  );
-}
-
-/* ─────────────────────────── Insert helpers (POST) ──────────────── */
-// Payload builders for a single section / single line, matching the shape
-// used by buildPutPayload so the backend sees a consistent schema.
-
-function buildSectionInsertBody(group: Group, appUser: string, grpIdx = 1): object {
-  return {
-    user_email:          appUser,
-    fin_eval_section_id: group.sectionId    ?? null,
-    section_name:        group.name,
-    section_type:        group.sectionType  ?? "CUSTOM",
-    is_custom:           group.isCustom     ?? "Y",
-    display_order:       group.displayOrder ?? grpIdx,
-    status:              group.status       ?? "ACTIVE",
-    language_code:       group.languageCode ?? "EN",
-    lines:               [],
-  };
-}
-
-function buildLineInsertBody(
-  value:     ValueRow,
-  sectionId: number | null,
-  years:     number[],
-  columnLabels: Record<number, string>,
-  appUser:   string,
-  lineIdx = 1,
-  fx = 1,
-): object {
-  const toFyKey = (year: number): string =>
-    (columnLabels[year] || `FY${String(year).slice(2)}`).toLowerCase();
-
-  const year_values: Record<string, object> = {};
-  years.forEach((y) => {
-    year_values[toFyKey(y)] = {
-      spc_projected_amount: value.yearValues[y] ? value.yearValues[y] * fx : null,
-      actual:               null,
-    };
-  });
-  const totalAmt = years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
-  year_values["total"] = {
-    spc_projected_amount: totalAmt ? totalAmt * fx : null,
-    actual:               null,
-  };
-
-  return {
-    user_email:          appUser,
-    fin_eval_line_id:    value.lineId    ?? null,
-    fin_eval_section_id: sectionId       ?? value.sectionId ?? null,
-    line_type:           value.lineType  || "CUSTOM",
-    line_item_name:      value.name,
-    line_identifier:     value.lineIdentifier ?? "Financial",
-    is_calculated:       value.isCalculated   ?? "N",
-    is_custom:           value.isCustom       ?? "Y",
-    account:             value.accountId      ?? null,
-    amortization_period:    value.amortizationPeriod  ?? null,
-    date_placed_in_service: value.datePlacedInService || null,
-    display_order:       value.displayOrder   ?? lineIdx,
-    year_values,
-    status:              value.status       ?? "ACTIVE",
-    language_code:       value.languageCode ?? "EN",
-  };
-}
-
-async function postJson(cfg: AppConfig, path: string, body: object): Promise<any> {
-  const token = await getBearerToken(cfg);
-  const url   = `${cfg.api_endpoint}${path}`;
-
-  console.log("[financial-api] → POST", url, body);
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept:         "application/json",
-      Authorization:  `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const text = await res.text().catch(() => "");
-  let json: { apiStatus?: string; api_status?: string; apiMessage?: string; api_message?: string; [k: string]: unknown } = {};
-  try { json = text ? JSON.parse(text) : {}; } catch { /* non-JSON */ }
-
-  //console.log("[financial-api] ← POST response", res.status, json || text);
-
-  const apiMsg    = json.apiMessage || json.api_message || text || res.statusText;
-  const apiStatus = json.apiStatus  || json.api_status  || "";
-
-  if (!res.ok) {
-    throw new Error(apiMsg || `Request failed (${res.status}).`);
-  }
-  if (apiStatus && apiStatus !== "S" && apiStatus !== "SUCCESS") {
-    throw new Error(apiMsg || "Insert failed on server.");
-  }
-  return json;
-}
-
-/** Insert a new section for this proposal. Returns server-assigned section id. */
-export async function insertSection(
-  cfg:   AppConfig,
-  group: Group,
-  displayOrder = 1,
-): Promise<{ sectionId: number | null; raw: any }> {
-  const body = buildSectionInsertBody(group, cfg.app_user, displayOrder);
-  const json = await postJson(cfg, `/Financial/section/${cfg.proposal_id}`, body);
-  const sectionId: number | null =
-    json?.data?.[0]?.fin_eval_section_id ??
-    json?.fin_eval_section_id ??
-    null;
-  return { sectionId, raw: json };
-}
-
-/** Insert a new line inside a section. Returns server-assigned line id. */
-export async function insertLine(
-  cfg:          AppConfig,
-  sectionId:    number | null,
-  value:        ValueRow,
-  years:        number[],
-  columnLabels: Record<number, string>,
-  displayOrder = 1,
-): Promise<{ lineId: number | null; raw: any }> {
-  // State values are always in USD — send as-is (fx=1, no conversion needed).
-  const body = buildLineInsertBody(value, sectionId, years, columnLabels, cfg.app_user, displayOrder, 1);
-  const json = await postJson(cfg, `/Financial/line/${cfg.proposal_id}`, body);
-  const lineId: number | null =
-    json?.data?.[0]?.fin_eval_line_id ??
-    json?.fin_eval_line_id ??
-    null;
-  return { lineId, raw: json };
-}

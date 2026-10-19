@@ -12,7 +12,9 @@
  *   { api_status: "S" | "E", api_message: "..." }
  */
 import type { AppConfig } from "../config/app-config";
-import { fetchAuthToken, extractToken } from "./auth-api";
+// Same token as every other call (load / save / validate): one auth request
+// per session, and a token cleared after any failure is refreshed here too.
+import { authFetch } from "./financial-api";
 
 async function extractApiError(res: Response, fallback: string): Promise<string> {
   const text = await res.text().catch(() => "");
@@ -22,19 +24,6 @@ async function extractApiError(res: Response, fallback: string): Promise<string>
     if (msg) return msg;
   } catch { /* non-JSON body */ }
   return text || fallback;
-}
-
-let cachedToken: string | null = null;
-
-async function getBearerToken(cfg: AppConfig): Promise<string> {
-  if (cachedToken) return cachedToken;
-  const resp = await fetchAuthToken(cfg);
-  cachedToken = extractToken(resp);
-  return cachedToken;
-}
-
-export function clearCachedToken(): void {
-  cachedToken = null;
 }
 
 type DeleteBody =
@@ -50,12 +39,12 @@ type DeleteResponse = {
 };
 
 async function sendDelete(cfg: AppConfig, body: DeleteBody): Promise<DeleteResponse> {
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/${cfg.proposal_id}/financialEvaluation`;
 
   //console.log("[delete-api] → DELETE", url, body);
 
-  const res = await fetch(url, {
+  // A 401 is retried once with a fresh token (see authFetch).
+  const res = await authFetch(cfg, url, (token) => ({
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
@@ -64,7 +53,7 @@ async function sendDelete(cfg: AppConfig, body: DeleteBody): Promise<DeleteRespo
       role:           cfg.app_roles,
     },
     body: JSON.stringify(body),
-  });
+  }));
 
   if (!res.ok) {
     const msg = await extractApiError(res, `Delete failed (${res.status}).`);

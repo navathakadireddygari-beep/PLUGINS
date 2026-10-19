@@ -51,7 +51,7 @@ const fmtAmount = (
 const fmtYears = (n: number | null | undefined): string =>
   n == null ? "-" : `${n} Year${n === 1 ? "" : "s"}`;
 
-export default function KpiPanel({ rawHeader, displayScale, numberFormat, fxMultiplier }: Props): React.ReactElement {
+function KpiPanel({ rawHeader, displayScale, numberFormat, fxMultiplier }: Props): React.ReactElement {
   const kpiFxMultiplier = fxMultiplier;
 
   const totalInvestment = fmtAmount(rawHeader.investment, displayScale, kpiFxMultiplier, numberFormat);
@@ -90,3 +90,6 @@ export default function KpiPanel({ rawHeader, displayScale, numberFormat, fxMult
     </div>
   );
 }
+
+// Re-renders only when its props change, not on every table keystroke.
+export default React.memo(KpiPanel);

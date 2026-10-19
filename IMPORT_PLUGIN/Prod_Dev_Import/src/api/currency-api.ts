@@ -8,7 +8,7 @@
  * stored USD value by it to get the local-currency display value.
  */
 import type { AppConfig } from "../config/app-config";
-import { getBearerToken } from "./financial-api";
+import { authFetch } from "./financial-api";
 
 export type ExchangeRateResponse = {
   entity_code?:  string;
@@ -43,10 +43,9 @@ export async function getExchangeRate(cfg: AppConfig, currency: string): Promise
   if (cached != null) return cached;
 
   if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__");
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/currencyExchangeRates`;
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -56,7 +55,7 @@ export async function getExchangeRate(cfg: AppConfig, currency: string): Promise
       role:           cfg.app_roles,
     },
     body: JSON.stringify({ year_period: yearPeriod, currency: cur }),
-  });
+  }));
 
   const text = await res.text().catch(() => "");
   let json: { apiStatus?: string; apiMessage?: string; data?: ExchangeRateResponse } = {};

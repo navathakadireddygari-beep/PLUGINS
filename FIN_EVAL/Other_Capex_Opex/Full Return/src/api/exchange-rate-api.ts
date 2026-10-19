@@ -11,16 +11,9 @@
  * 1 USD = 84.57 INR.
  */
 import type { AppConfig } from "../config/app-config";
-import { fetchAuthToken, extractToken } from "./auth-api";
-
-let cachedToken: string | null = null;
-
-async function getBearerToken(cfg: AppConfig): Promise<string> {
-  if (cachedToken) return cachedToken;
-  const resp = await fetchAuthToken(cfg);
-  cachedToken = extractToken(resp);
-  return cachedToken;
-}
+// Same token as every other call: one auth request per session, refreshed
+// after a failure, and a 401 is retried once with a fresh token.
+import { authFetch } from "./financial-api";
 
 export type CurrencyExchangeRate = {
   entity_code:  string | null;
@@ -48,9 +41,8 @@ export async function getCurrencyExchangeRate(
 ): Promise<CurrencyExchangeRate | null> {
   if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__");
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/currencyExchangeRates`;
-  const token = await getBearerToken(cfg);
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -60,7 +52,7 @@ export async function getCurrencyExchangeRate(
       role:           cfg.app_roles,
     },
     body: JSON.stringify({ year_period: yearPeriod, currency: currency.toUpperCase() }),
-  });
+  }));
 
   const text = await res.text().catch(() => "");
   let json: Record<string, unknown> = {};

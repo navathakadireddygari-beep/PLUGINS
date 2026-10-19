@@ -36,6 +36,15 @@ export type ValueRow = {
   languageCode?:    string;
 };
 
+/* TOTAL column value for a line. A line that came from the API (id "val-…")
+   shows the backend's year_values.total as-is (undefined → blank) — editing
+   its cells never recomputes it; the backend recalculates on save/validate.
+   A line added in this session (blank / pasted rows, id from generateId) has
+   no backend total yet, so the front-end sums that row's own years. */
+export const isLocalLine = (v: ValueRow): boolean => !v.id.startsWith("val-");
+export const lineTotal = (v: ValueRow, years: number[]): number | undefined =>
+  isLocalLine(v) ? years.reduce((s, y) => s + (v.yearValues[y] || 0), 0) : v.rowTotal;
+
 export type Group = {
   id:                  string;
   name:                string;
@@ -357,23 +366,6 @@ export function transformApiData(
   };
 }
 
-/* ─────────────────────────── FX helper ──────────────────────────── */
-// Converts a value from local currency to USD for API storage.
-// Always targets USD regardless of the display currency selected in the UI.
-// exchange_rate (usd_fbr) is the USD→local rate (e.g. 1 USD = 84.57 INR → rate=84.57).
-export function computeFxMultiplier(header: ApiHeader): number {
-  const local = (header.local_currency || "USD").toUpperCase();
-  const rate  = header.exchange_rate || 1;
-  if (local === "USD") return 1;       // already USD — no conversion needed
-  return 1 / rate;                      // local → USD: divide by USD→local rate
-}
-
-// Tax Rate % is a pure percentage — exempt from all currency and scale conversions.
-const TAX_RATE_IDS = new Set(["TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT"]);
-export function isTaxRateId(id: string | undefined | null): boolean {
-  return TAX_RATE_IDS.has((id || "").toUpperCase().replace(/[^A-Z0-9]/g, ""));
-}
-
 /* ─────────────────────────── PUT payload builder ────────────────── */
 export function buildPutPayload(
   tableData: PivotTableData,
@@ -397,9 +389,13 @@ export function buildPutPayload(
           variance:              null,
         };
       });
-      const totalAmt = tableData.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
+      // Backend lines send their backend total as-is; only a line added in
+      // this session (no backend total yet) sends the front-end row sum.
+      const totalAmt = isLocalLine(value)
+        ? (tableData.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0) || null)
+        : (value.rowTotal || null);
       year_values["total"] = {
-        spc_projected_amount:  totalAmt || null,
+        spc_projected_amount:  totalAmt,
         ytd_budgeted_forecast: null,
         ytd_actuals:           null,
         variance:              null,
@@ -487,7 +483,7 @@ let cachedToken: string | null = null;
 // codes, FX rate all start together) so only one token call is made.
 let tokenPromise: Promise<string> | null = null;
 
-async function getBearerToken(cfg: AppConfig): Promise<string> {
+export async function getBearerToken(cfg: AppConfig): Promise<string> {
   if (cachedToken) return cachedToken;
   if (tokenPromise) return tokenPromise;
   tokenPromise = (async () => {
@@ -505,6 +501,29 @@ async function getBearerToken(cfg: AppConfig): Promise<string> {
 /** Reset the cached token (e.g. on 401 response). */
 export function clearCachedToken(): void {
   cachedToken = null;
+}
+
+/**
+ * fetch() with the shared bearer token. A 401 means the token expired or is
+ * invalid, and the server rejected the request before doing anything, so the
+ * token is refreshed and the request is sent once more. `init` builds the
+ * request for a given token (called again for the retry).
+ */
+export async function authFetch(
+  cfg:  AppConfig,
+  url:  string,
+  init: (token: string) => RequestInit,
+): Promise<Response> {
+  let res = await fetch(url, init(await getBearerToken(cfg)));
+  if (res.status === 401) {
+    clearCachedToken();
+    // If a fresh token can't be fetched either (e.g. the APEX session itself
+    // expired), keep the original 401 so callers show the same error as before.
+    let token: string;
+    try { token = await getBearerToken(cfg); } catch { return res; }
+    res = await fetch(url, init(token));
+  }
+  return res;
 }
 
 /* ─────────────────────────── Account codes ──────────────────────── */
@@ -553,14 +572,13 @@ export function getAccountCodes(cfg: AppConfig, sectionCode: string): Promise<Ac
 }
 
 async function fetchAccountCodes(cfg: AppConfig, sectionCode: string): Promise<AccountCode[]> {
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=${encodeURIComponent(sectionCode)}`;
 
   console.log("[account-codes] section code:", sectionCode, "→ GET", url);
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-  });
+  }));
 
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
@@ -615,14 +633,13 @@ export async function getCurrencyExchangeRate(
   currency: string,
   yearPeriod = "202608",
 ): Promise<number | null> {
-  const token = await getBearerToken(cfg);
   const normalizedCurrency = (currency || "").trim().toUpperCase();
   if (!normalizedCurrency) return null;
 
   const url = `${cfg.api_endpoint}/GIS/proposalAuthoring/currencyExchangeRates`;
   const payload = { year_period: yearPeriod, currency: normalizedCurrency };
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -632,7 +649,7 @@ export async function getCurrencyExchangeRate(
       role: cfg.app_roles,
     },
     body: JSON.stringify(payload),
-  });
+  }));
 
   if (!res.ok) {
     const msg = await extractApiError(res, `Failed to fetch exchange rate (${res.status}).`);
@@ -670,9 +687,8 @@ async function fetchFinancialData(
   cfg: AppConfig,
   url: string,
 ): Promise<{ table: PivotTableData; rawHeader: ApiHeader }> {
-  const token = await getBearerToken(cfg);
   console.log("[getFinancialData] GET", url);
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     // Always go to the server: without this the browser revalidates repeat
     // GETs of the same URL against its HTTP cache (the 304s in the network tab).
     cache: "no-store",
@@ -682,7 +698,7 @@ async function fetchFinancialData(
       user_email:    cfg.app_user,
       role:          cfg.app_roles,
     },
-  });
+  }));
   console.log("[getFinancialData] status:", res.status);
   if (!res.ok) {
     const msg = await extractApiError(res, `Failed to load financial data (${res.status}).`);
@@ -724,11 +740,10 @@ async function sendJson(
   url:     string,
   payload: object,
 ): Promise<SaveResponse> {
-  const token = await getBearerToken(cfg);
   console.log(`[financial-api] → ${method}`, url);
   console.log(`[financial-api] → ${method} body:`, JSON.stringify(payload, null, 2));
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method,
     headers: {
       "Content-Type": "application/json",
@@ -738,7 +753,7 @@ async function sendJson(
       role:           cfg.app_roles,
     },
     body: JSON.stringify(payload),
-  });
+  }));
 
   const text = await res.text().catch(() => "");
   let json: SaveResponse = {};
@@ -805,130 +820,3 @@ export function isServerDrivenSection(group: { sectionType?: string; name?: stri
   );
 }
 
-/* ─────────────────────────── Insert helpers (POST) ──────────────── */
-// Payload builders for a single section / single line, matching the shape
-// used by buildPutPayload so the backend sees a consistent schema.
-
-function buildSectionInsertBody(group: Group, appUser: string, grpIdx = 1): object {
-  return {
-    user_email:          appUser,
-    fin_eval_section_id: group.sectionId    ?? null,
-    section_name:        group.name,
-    section_type:        group.sectionType  ?? "CUSTOM",
-    is_custom:           group.isCustom     ?? "Y",
-    display_order:       group.displayOrder ?? grpIdx,
-    status:              group.status       ?? "ACTIVE",
-    language_code:       group.languageCode ?? "EN",
-    lines:               [],
-  };
-}
-
-function buildLineInsertBody(
-  value:     ValueRow,
-  sectionId: number | null,
-  years:     number[],
-  columnLabels: Record<number, string>,
-  appUser:   string,
-  lineIdx = 1,
-  fx = 1,
-): object {
-  const toFyKey = (year: number): string =>
-    (columnLabels[year] || `FY${String(year).slice(2)}`).toLowerCase();
-
-  const year_values: Record<string, object> = {};
-  years.forEach((y) => {
-    year_values[toFyKey(y)] = {
-      spc_projected_amount: value.yearValues[y] ? value.yearValues[y] * fx : null,
-      actual:               null,
-    };
-  });
-  const totalAmt = years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
-  year_values["total"] = {
-    spc_projected_amount: totalAmt ? totalAmt * fx : null,
-    actual:               null,
-  };
-
-  return {
-    user_email:          appUser,
-    fin_eval_line_id:    value.lineId    ?? null,
-    fin_eval_section_id: sectionId       ?? value.sectionId ?? null,
-    line_type:           value.lineType  || "CUSTOM",
-    line_item_name:      value.name,
-    line_identifier:     value.lineIdentifier ?? "Financial",
-    is_calculated:       value.isCalculated   ?? "N",
-    is_custom:           value.isCustom       ?? "Y",
-    account:             value.accountId      ?? null,
-    display_order:       value.displayOrder   ?? lineIdx,
-    year_values,
-    status:              value.status       ?? "ACTIVE",
-    language_code:       value.languageCode ?? "EN",
-  };
-}
-
-async function postJson(cfg: AppConfig, path: string, body: object): Promise<any> {
-  const token = await getBearerToken(cfg);
-  const url   = `${cfg.api_endpoint}${path}`;
-
-  console.log("[financial-api] → POST", url, body);
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept:         "application/json",
-      Authorization:  `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const text = await res.text().catch(() => "");
-  let json: { apiStatus?: string; api_status?: string; apiMessage?: string; api_message?: string; [k: string]: unknown } = {};
-  try { json = text ? JSON.parse(text) : {}; } catch { /* non-JSON */ }
-
-  //console.log("[financial-api] ← POST response", res.status, json || text);
-
-  const apiMsg    = json.apiMessage || json.api_message || text || res.statusText;
-  const apiStatus = json.apiStatus  || json.api_status  || "";
-
-  if (!res.ok) {
-    throw new Error(apiMsg || `Request failed (${res.status}).`);
-  }
-  if (apiStatus && apiStatus !== "S" && apiStatus !== "SUCCESS") {
-    throw new Error(apiMsg || "Insert failed on server.");
-  }
-  return json;
-}
-
-/** Insert a new section for this proposal. Returns server-assigned section id. */
-export async function insertSection(
-  cfg:   AppConfig,
-  group: Group,
-  displayOrder = 1,
-): Promise<{ sectionId: number | null; raw: any }> {
-  const body = buildSectionInsertBody(group, cfg.app_user, displayOrder);
-  const json = await postJson(cfg, `/Financial/section/${cfg.proposal_id}`, body);
-  const sectionId: number | null =
-    json?.data?.[0]?.fin_eval_section_id ??
-    json?.fin_eval_section_id ??
-    null;
-  return { sectionId, raw: json };
-}
-
-/** Insert a new line inside a section. Returns server-assigned line id. */
-export async function insertLine(
-  cfg:          AppConfig,
-  sectionId:    number | null,
-  value:        ValueRow,
-  years:        number[],
-  columnLabels: Record<number, string>,
-  displayOrder = 1,
-): Promise<{ lineId: number | null; raw: any }> {
-  // State values are always in USD — send as-is (fx=1, no conversion needed).
-  const body = buildLineInsertBody(value, sectionId, years, columnLabels, cfg.app_user, displayOrder, 1);
-  const json = await postJson(cfg, `/Financial/line/${cfg.proposal_id}`, body);
-  const lineId: number | null =
-    json?.data?.[0]?.fin_eval_line_id ??
-    json?.fin_eval_line_id ??
-    null;
-  return { lineId, raw: json };
-}

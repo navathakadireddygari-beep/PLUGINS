@@ -20,8 +20,8 @@
  *
  * The staged header is mapped onto `FinancialEvaluationResponse`, the shape
  * the M&A FinEval screen already renders, with each `*_stg_id` placed in the
- * matching `fin_eval_*_id` slot. The grid, the recalculation engine and the
- * payload builder therefore run unchanged; only the envelope differs.
+ * matching `fin_eval_*_id` slot. The grid and the payload builder therefore
+ * run unchanged; only the envelope differs.
  */
 
 import { AxiosError } from "axios";

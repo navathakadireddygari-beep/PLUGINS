@@ -452,6 +452,11 @@ function attachValidationTargets(fileErrorMsg: string, header: StagingHeader | u
   return [...structured, ...fileOnly];
 }
 
+/** True for a line created in the UI that has not come back from the backend yet
+    (backend lines are keyed `val-…` in the GET mapping; new UI rows use generateId()).
+    Only such lines may have their TOTAL summed on the front-end. */
+export const isNewLine = (v: ValueRow): boolean => !v.id.startsWith("val-");
+
 /* ─────────────────────────── PUT payload builder ────────────────── */
 // Builds the body for the finEvaluationStaging PUT (Validate button) in the
 // same camelCase shape the staging GET returns. user_email travels via the
@@ -476,8 +481,11 @@ export function buildFinEvaluationStagingPutPayload(
       tableData.years.forEach((y) => {
         yearValues[toFyKey(y)] = entry(value.yearValues[y] ? value.yearValues[y] : null);
       });
-      const totalAmt = tableData.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
-      yearValues["total"] = entry(totalAmt || null);
+      // Backend lines send the backend total as-is; only new UI lines (no backend total) are summed here.
+      const totalAmt = isNewLine(value)
+        ? tableData.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0) || null
+        : (value.rowTotal || null);
+      yearValues["total"] = entry(totalAmt);
 
       return {
         finEvalLineStgId: value.lineId ?? null,
@@ -561,6 +569,29 @@ export function clearCachedToken(): void {
   cachedToken = null;
 }
 
+/**
+ * fetch() with the shared bearer token. A 401 means the token expired or is
+ * invalid, and the server rejected the request before doing anything, so the
+ * token is refreshed and the request is sent once more. `init` builds the
+ * request for a given token (called again for the retry).
+ */
+export async function authFetch(
+  cfg:  AppConfig,
+  url:  string,
+  init: (token: string) => RequestInit,
+): Promise<Response> {
+  let res = await fetch(url, init(await getBearerToken(cfg)));
+  if (res.status === 401) {
+    clearCachedToken();
+    // If a fresh token can't be fetched either (e.g. the APEX session itself
+    // expired), keep the original 401 so callers show the same error as before.
+    let token: string;
+    try { token = await getBearerToken(cfg); } catch { return res; }
+    res = await fetch(url, init(token));
+  }
+  return res;
+}
+
 /* ─────────────────────────── Account codes ──────────────────────── */
 export type AccountCode = {
   account_code: string;
@@ -584,12 +615,11 @@ export function getAccountCodes(cfg: AppConfig, sectionType: string): Promise<Ac
 }
 
 async function fetchAccountCodes(cfg: AppConfig, sectionType: string): Promise<AccountCode[]> {
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=${encodeURIComponent(sectionType)}`;
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     headers: { Accept: "application/json", Authorization: `Bearer ${token}`, user_email: cfg.app_user, role: cfg.app_roles },
-  });
+  }));
 
   if (!res.ok) {
     const msg = await extractApiError(res, `Failed to load account codes (${res.status}).`);
@@ -641,9 +671,8 @@ async function fetchFinEvaluationStaging(
   cfg: AppConfig,
   url: string,
 ): Promise<StagingResult> {
-  const token = await getBearerToken(cfg);
   console.log("[getFinEvaluationStaging] GET", url);
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     // Always go to the server: without this the browser revalidates repeat
     // GETs of the same URL against its HTTP cache (the 304s in the network tab).
     cache: "no-store",
@@ -653,7 +682,7 @@ async function fetchFinEvaluationStaging(
       user_email:    cfg.app_user,
       role:          cfg.app_roles,
     },
-  });
+  }));
   console.log("[getFinEvaluationStaging] status:", res.status);
   if (!res.ok) {
     const msg = await extractApiError(res, `Failed to load staging data (${res.status}).`);
@@ -701,12 +730,11 @@ export async function validateFinEvaluationStaging(
 ): Promise<SaveResponse> {
   const url     = buildFinEvaluationStagingPutUrl(cfg);
   const payload = buildFinEvaluationStagingPutPayload(data, rawHeader);
-  const token   = await getBearerToken(cfg);
 
   console.log("[validateFinEvaluationStaging] → PUT", url);
   console.log("[validateFinEvaluationStaging] → PUT body:", JSON.stringify(payload, null, 2));
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -717,7 +745,7 @@ export async function validateFinEvaluationStaging(
       language:       "EN",
     },
     body: JSON.stringify(payload),
-  });
+  }));
 
   const text = await res.text().catch(() => "");
   let json: SaveResponse = {};
@@ -748,11 +776,10 @@ export async function migrateFinEvalStaging(
   if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__SPC_SALES_CONFIG__");
   if (!cfg.file_id) throw new Error("Cannot save: no file_id available.");
 
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvalStagingMigrate/${cfg.file_id}`;
   console.log("[financial-api] → POST (migrate)", url);
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "POST",
     headers: {
       Accept:        "application/json",
@@ -760,7 +787,7 @@ export async function migrateFinEvalStaging(
       user_email:    cfg.app_user,
       role:          cfg.app_roles,
     },
-  });
+  }));
 
   const text = await res.text().catch(() => "");
   let json: SaveResponse = {};
@@ -776,28 +803,4 @@ export async function migrateFinEvalStaging(
     throw new Error(apiMsg || "Save failed on server.");
   }
   return json;
-}
-
-/* ───────────────────── Server-driven sections ───────────────────── */
-/** section_type OR section_name tokens (uppercase, non-alphanumerics
-    stripped) whose rows are fully driven by the engine response —
-    the front-end must not recompute calculated rows or row totals
-    for these sections. */
-const FULL_DCF_SERVER_DRIVEN_TOKENS: ReadonlySet<string> = new Set([
-  "CASHFLOW",
-  "RETURNANALYSIS",
-  "RETURNSANALYSIS",
-  "RETURNONANALYSIS",
-]);
-
-const sectionToken = (s: string | undefined | null): string =>
-  (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-/** True if this group's calculated rows should come only from the
-    backend (GET) response and must not be recomputed on the front-end. */
-export function isServerDrivenSection(group: { sectionType?: string; name?: string }): boolean {
-  return (
-    FULL_DCF_SERVER_DRIVEN_TOKENS.has(sectionToken(group.sectionType)) ||
-    FULL_DCF_SERVER_DRIVEN_TOKENS.has(sectionToken(group.name))
-  );
 }

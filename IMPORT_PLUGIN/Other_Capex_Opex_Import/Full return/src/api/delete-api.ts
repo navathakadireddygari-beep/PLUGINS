@@ -11,22 +11,9 @@
  *   { api_status: "S" | "E", api_message: "..." }
  */
 import type { AppConfig } from "../config/app-config";
-import { fetchAuthToken, extractToken } from "./auth-api";
-
-let cachedToken: string | null = null;
-
-async function getBearerToken(cfg: AppConfig): Promise<string> {
-  if (cachedToken) return cachedToken;
-  // Match the dev-stub pattern used in financial-api.ts while backend auth is off.
-  const resp = await fetchAuthToken(cfg);
-  cachedToken = extractToken(resp);
-  void fetchAuthToken; void extractToken; void cfg;
-  return cachedToken;
-}
-
-export function clearCachedToken(): void {
-  cachedToken = null;
-}
+// Same token as every other call (load / save / validate): one auth request
+// per session, and a token cleared after any failure is refreshed here too.
+import { authFetch } from "./financial-api";
 
 type DeleteBody =
   | { fin_eval_section_id: number }
@@ -39,12 +26,11 @@ type DeleteResponse = {
 };
 
 async function sendDelete(cfg: AppConfig, body: DeleteBody): Promise<DeleteResponse> {
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/${cfg.proposal_id}/financialEvaluation`;
 
   //console.log("[delete-api] → DELETE", url, body);
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
@@ -54,7 +40,7 @@ async function sendDelete(cfg: AppConfig, body: DeleteBody): Promise<DeleteRespo
       role:           cfg.app_roles,
     },
     body: JSON.stringify(body),
-  });
+  }));
 
   const text = await res.text().catch(() => "");
   let json: DeleteResponse = {};

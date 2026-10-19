@@ -79,7 +79,7 @@ const isValidYearsInput = (s: string): boolean => s === "" || /^\d{0,4}$/.test(s
 const clampYears = (n: number): number =>
   Math.min(9999, Math.max(0, Math.trunc(n)));
 
-export default function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, dateFormat, isReadonly, fxRate }: Props): React.ReactElement {
+function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, dateFormat, isReadonly, fxRate }: Props): React.ReactElement {
   const pm = rawHeader.performance_metrics;
   const metrics: HurdleCheck[] = pm?.hurdle_checks ?? [];
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -325,3 +325,6 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, numberForm
     </div>
   );
 }
+
+// Re-renders only when its props change, not on every table keystroke.
+export default React.memo(KpiPanel);

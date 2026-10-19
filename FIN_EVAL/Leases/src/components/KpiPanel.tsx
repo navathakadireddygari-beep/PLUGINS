@@ -46,7 +46,7 @@ function fmtMoney(
   return formatCurrencyValue(raw, symbol, numberFormat, scale, fxMult, undefined, true, true);
 }
 
-export default function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, fxMultiplier }: Props): React.ReactElement {
+function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, fxMultiplier }: Props): React.ReactElement {
   void onChange;
 
   const display = (rawHeader.display_currency || rawHeader.local_currency || "USD").toUpperCase();
@@ -75,3 +75,6 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, numberForm
     </div>
   );
 }
+
+// Re-renders only when its props change, not on every table keystroke.
+export default React.memo(KpiPanel);

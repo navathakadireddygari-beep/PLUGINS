@@ -8,7 +8,6 @@ import {
   getFinancialData,
   saveFinancialData,
   clearCachedToken,
-  isServerDrivenSection,
   getAccountCodes,
   type AccountCode,
   type ApiHeader,
@@ -16,6 +15,7 @@ import {
   type PivotTableData,
   type ValueRow,
   type YearValues,
+  lineTotal,
   computeDisplayMultiplier,
 } from "../api/financial-api";
 import { deleteLine, deleteSection } from "../api/delete-api";
@@ -81,13 +81,14 @@ function AccountCodeSelect({
   const menuRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = options.filter((ac) => {
-    const q = search.toLowerCase();
-    return (
-      ac.account_code.toLowerCase().includes(q) ||
-      ac.account_name.toLowerCase().includes(q)
-    );
-  });
+  // The list is only rendered while open, so only filter then: every account
+  // row has one of these, and the table re-renders on each keystroke.
+  const q = search.toLowerCase();
+  const filtered = open
+    ? options.filter((ac) =>
+        ac.account_code.toLowerCase().includes(q) ||
+        ac.account_name.toLowerCase().includes(q))
+    : [];
 
   // Position the options panel with fixed coordinates (computed from the
   // trigger's viewport rect) and render it in a portal on <body>. This lets
@@ -304,75 +305,6 @@ const sectionDisplayName = (g: Group): string =>
 // Amortization period: whole months only, max 4 digits (0–9999), no decimals.
 const isValidMonthsInput = (s: string): boolean => s === "" || /^\d{0,4}$/.test(s);
 
-// Depreciation / Amortization / EBIT / Intangibles / Net Assets are backend-calculated
-// (not a sum of the other lines in their section) — recomputeGroup must leave
-// them untouched.
-const FIXED_CALC_IDS = new Set(["DEPRECIATION", "AMORTIZATION", "EBIT", "INTANGIBLES", "NETASSETS"]);
-const isFixedCalcRow = (v: ValueRow): boolean =>
-  FIXED_CALC_IDS.has(tok(v.lineIdentifier)) ||
-  FIXED_CALC_IDS.has(tok(v.lineType)) ||
-  FIXED_CALC_IDS.has(tok(v.name));
-
-// Depreciation / Amortization still count towards the section's total row,
-// even though their own values are backend-owned.
-const DEP_AMORT_IDS = new Set(["DEPRECIATION", "AMORTIZATION"]);
-const isDepAmortRow = (v: ValueRow): boolean =>
-  DEP_AMORT_IDS.has(tok(v.lineIdentifier)) ||
-  DEP_AMORT_IDS.has(tok(v.lineType)) ||
-  DEP_AMORT_IDS.has(tok(v.name));
-
-/* Front-end subtotal / total recompute.
-   For each section: calculated lines (isCalculated === "Y") get their year
-   values set to the per-year sum of editable (isCalculated !== "Y") lines.
-   Every line's rowTotal is set to the sum of its own year values.
-   Server-driven sections (e.g. Cash Flow) are left untouched — their
-   row values are owned by the backend and must not be overwritten by a
-   local sum on cell edits. */
-const recomputeGroup = (g: Group, years: number[]): Group => {
-  if (isServerDrivenSection(g)) {
-    return g;
-  }
-  const editable    = g.values.filter((v) => v.isCalculated !== "Y");
-  const nonOngoing  = editable.filter((v) => v.lineType !== "ONGOING_CAPEX");
-  const depAmort    = g.values.filter((v) => v.isCalculated === "Y" && isDepAmortRow(v));
-
-  const yearSumsAll:        Record<number, number> = {};
-  const yearSumsNonOngoing: Record<number, number> = {};
-  years.forEach((y) => {
-    const editableSum = editable.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
-    const depAmortSum = depAmort.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
-    yearSumsAll[y]        = editableSum + depAmortSum;
-    yearSumsNonOngoing[y] = nonOngoing.reduce((s, v) => s + (v.yearValues[y] || 0), 0);
-  });
-
-  return {
-    ...g,
-    values: g.values.map((v) => {
-      if (v.isCalculated === "Y") {
-        // Depreciation / Amortization keep whatever value the backend sent.
-        if (isFixedCalcRow(v)) return v;
-        // INITIAL_CAPEX = Total - Ongoing  (exclude ONGOING_CAPEX lines)
-        // All other calculated rows (TOTAL_CAPEX etc.) = sum of all editable
-        const sums = v.lineType === "INITIAL_CAPEX" ? yearSumsNonOngoing : yearSumsAll;
-        const yv: YearValues = { ...v.yearValues };
-        years.forEach((y) => { yv[y] = sums[y] || 0; });
-        const rowTotal = years.reduce((s, y) => s + (yv[y] || 0), 0);
-        return { ...v, yearValues: yv, rowTotal };
-      }
-      const rowTotal = years.reduce((s, y) => s + (v.yearValues[y] || 0), 0);
-      return { ...v, rowTotal };
-    }),
-  };
-};
-
-// Custom sections' calculated total row comes back from the API with
-// year_values: null (the backend never computes it) — every freshly-fetched
-// table must run through this before it reaches state, or that row stays "—".
-const recomputeAllGroups = (table: PivotTableData): PivotTableData => ({
-  ...table,
-  groups: table.groups.map((g) => recomputeGroup(g, table.years)),
-});
-
 const parseExcelPaste = (text: string): ParsedRow[] => {
   const lines = text.split(/\r?\n/).map((l: string) => l.trimEnd()).filter((l: string) => l.trim());
   if (!lines.length) return [];
@@ -525,9 +457,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const dataRef = useRef<PivotTableData | null>(null);
   useEffect(() => { dataRef.current = data; });
 
-  const autocompleteRef = useRef<HTMLDivElement>(null);
   const yearMenuRef     = useRef<HTMLDivElement>(null);
   const hoverTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (hoverTimer.current) clearTimeout(hoverTimer.current); }, []);
+  // Stable, so the memoised KpiPanel only re-renders when its data changes.
+  const onKpiChange = useCallback((patch: Partial<ApiHeader>) => setRawHeader((p) => p ? { ...p, ...patch } : p), []);
 
   /* ── Account codes — fetch on demand when user opens the dropdown ── */
   // Stable callback (no state deps): it used to depend on accountCodesBySection,
@@ -555,7 +489,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     try {
       const cfg = getAppConfig();
       const result = await getFinancialData(cfg);
-      setData(recomputeAllGroups(result.table));
+      setData(result.table);
       setRawHeader(result.rawHeader);
       dbYearsRef.current = new Set(result.table.years);
       return result;
@@ -588,15 +522,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
     try {
       const cfg    = getAppConfig();
       const result = await getFinancialData(cfg);
-      const recomputed = recomputeAllGroups(result.table);
+      const serverTable = result.table;
       const numId  = parseInt(targetId, 10);
-      const fresh  = recomputed.groups.find((g) =>
+      const fresh  = serverTable.groups.find((g) =>
         (Number.isFinite(numId) && g.sectionId === numId) ||
         tok(g.sectionType) === tok(targetId) ||
         tok(g.name)        === tok(targetId),
       );
       setData((prev) => {
-        if (!prev) return recomputed;
+        if (!prev) return serverTable;
         if (!fresh) return prev;
         // Match on sectionType/name first — sectionId is unreliable here:
         // unsaved (template) sections all carry sectionId === undefined, so an
@@ -749,12 +683,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
       // state so the view doesn't jump.
       try {
         const refetched = await getFinancialData(cfg, { force: true });
-        const recomputed = recomputeAllGroups(refetched.table);
+        const serverTable = refetched.table;
         console.log("[saveDraft] re-fetch groups:", refetched.table.groups.length,
           "lines:", refetched.table.groups.reduce((s, g) => s + g.values.length, 0));
 
         setData((current) => {
-          if (!current) return recomputed;
+          if (!current) return serverTable;
 
           const expandedBySection = new Map(
             current.groups.filter((g) => g.sectionId != null).map((g) => [g.sectionId, g.expanded]),
@@ -764,8 +698,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
           );
 
           return {
-            ...recomputed,
-            groups: recomputed.groups.map((g) => ({
+            ...serverTable,
+            groups: serverTable.groups.map((g) => ({
               ...g,
               expanded:
                 (g.sectionId != null && expandedBySection.has(g.sectionId)
@@ -872,21 +806,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
     })();
     return () => { cancelled = true; };
   }, [rawHeader?.local_currency]);
-
-  useEffect(() => {
-    const h = (e: MouseEvent): void => {
-      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
-        if (activeAutocomplete && autocompleteSearch) {
-          const [gId, ...rest] = activeAutocomplete.split("|");
-          const vId = rest.join("|");
-          setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? { ...g, values: g.values.map((v) => v.id === vId ? { ...v, name: autocompleteSearch } : v) } : g) }) : p);
-        }
-        setActiveAutocomplete(null); setAutocompleteSearch("");
-      }
-    };
-    if (activeAutocomplete) document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [activeAutocomplete, autocompleteSearch]);
 
   useEffect(() => {
     const h = (e: MouseEvent): void => { if (yearMenuRef.current && !yearMenuRef.current.contains(e.target as Node)) setOpenYearMenuIdx(null); };
@@ -1151,9 +1070,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   const addValueRow = (gId: string): void => setData((p) => p ? ({
     ...p,
-    groups: p.groups.map((g) => g.id === gId ? recomputeGroup({ ...g, values: [...g.values, { ...blankRow(p), lineIdentifier: newRowIdentifier(g) }] }, p.years) : g),
+    groups: p.groups.map((g) => g.id === gId ? { ...g, values: [...g.values, { ...blankRow(p), lineIdentifier: newRowIdentifier(g) }] } : g),
   }) : p);
-  const removeValueRow = (gId: string, vId: string): void => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? recomputeGroup({ ...g, values: g.values.filter((v) => v.id !== vId) }, p.years) : g) }) : p);
+  const removeValueRow = (gId: string, vId: string): void => setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? { ...g, values: g.values.filter((v) => v.id !== vId) } : g) }) : p);
   const updateCellValue = (gId: string, vId: string, year: number, raw: string): void => {
     const n = parseFloat(raw.replace(/,/g, "")) || 0;
     setData((p) => p ? ({
@@ -1164,7 +1083,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
           ...g,
           values: g.values.map((v) => v.id === vId ? { ...v, yearValues: { ...v.yearValues, [year]: n } } : v),
         };
-        return recomputeGroup(withValue, p.years);
+        return withValue;
       }),
     }) : p);
   };
@@ -1188,7 +1107,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         const ex      = g.values[idx];
         const isBlank = (!ex?.name || ex.name === "New Line Item") && Object.values(ex.yearValues).every((v) => v === 0);
         const withRows: Group = { ...g, values: isBlank ? [...g.values.slice(0, idx), ...newRows, ...g.values.slice(idx + 1)] : [...g.values.slice(0, idx + 1), ...newRows, ...g.values.slice(idx + 1)] };
-        return recomputeGroup(withRows, p.years);
+        return withRows;
       }) };
     });
     setPasteToast({ gId, count: parsed.length }); setActiveAutocomplete(null); setAutocompleteSearch("");
@@ -1205,7 +1124,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     for (let c = 0; c < maxC; c++) { if (rawRows.every((r) => { const v = (r[c] ?? "").trim(); return !v || isNumericCell(v); })) { vs = c; break; } }
     const parsedRows: number[][] = rawRows.map((cols) => cols.slice(vs).map((c) => parseExcelValue(c)));
     if (!parsedRows.length) return;
-    setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; const vIsPct = isPercentRow(v); parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = vIsPct ? clampPercent(val) : val; }); return { ...v, yearValues: nv }; }) }; return recomputeGroup(withValues, p.years); }) }; });
+    setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; const vIsPct = isPercentRow(v); parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = vIsPct ? clampPercent(val) : val; }); return { ...v, yearValues: nv }; }) }; return withValues; }) }; });
     const grp = data.groups.find((g) => g.id === gId);
     const si  = grp ? grp.values.findIndex((v) => v.id === vId) : 0;
     setPasteToast({ gId, count: grp ? Math.min(parsedRows.length, grp.values.length - si) : parsedRows.length });
@@ -1538,7 +1457,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       {rawHeader && (
         <KpiPanel
           rawHeader={rawHeader}
-          onChange={(patch) => setRawHeader((p) => p ? { ...p, ...patch } : p)}
+          onChange={onKpiChange}
           displayScale={displayScale}
           numberFormat={numberFormat}
           dateFormat={dateFormat}
@@ -1821,7 +1740,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             })}
                           {(isNoTotalRow(value) || groupNoTotal || isNonFinancialRow(value))
                             ? <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={groupNoTotal || isNonFinancialRow(value) ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>
-                            : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={(isUnscaledRow(value) || isNonFinancialRow(value) || groupIsCustomSection) ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>; })()
+                            : (() => { const t = lineTotal(value, data.years); return <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={(isUnscaledRow(value) || isNonFinancialRow(value) || groupIsCustomSection) ? (t == null ? "" : rawFmt(t)) : (t == null ? "" : displayFmt(t))} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: (t ?? 0) < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>; })()
                           }
                         </tr>
                       );
@@ -1855,7 +1774,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         })}
                         {(isNoTotalRow(value) || groupNoTotal || isNonFinancialRow(value))
                           ? <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={groupNoTotal || isNonFinancialRow(value) ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} /></td>
-                          : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
+                          : (() => { const t = lineTotal(value, data.years); const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? (t == null ? "" : rawFmt(t)) : (t == null ? "" : displayFmt(t))} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: (t ?? 0) < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
                         }
                       </tr>
                     );
@@ -1891,7 +1810,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           })}
                           {(isNoTotalRow(value) || groupNoTotal || isNonFinancialRow(value))
                             ? <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={groupNoTotal || isNonFinancialRow(value) ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} /></td>
-                            : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? rawFmt(t) : displayFmt(t)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
+                            : (() => { const t = lineTotal(value, data.years); const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? (t == null ? "" : rawFmt(t)) : (t == null ? "" : displayFmt(t))} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: (t ?? 0) < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
                           }
                         </tr>
                       ))}

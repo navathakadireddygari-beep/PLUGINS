@@ -343,7 +343,7 @@ let cachedToken: string | null = null;
 // codes, FX rate all start together) so only one token call is made.
 let tokenPromise: Promise<string> | null = null;
 
-async function getBearerToken(cfg: AppConfig): Promise<string> {
+export async function getBearerToken(cfg: AppConfig): Promise<string> {
   if (cachedToken) return cachedToken;
   if (tokenPromise) return tokenPromise;
   tokenPromise = (async () => {
@@ -361,6 +361,29 @@ async function getBearerToken(cfg: AppConfig): Promise<string> {
 /** Reset the cached token (e.g. on 401 response). */
 export function clearCachedToken(): void {
   cachedToken = null;
+}
+
+/**
+ * fetch() with the shared bearer token. A 401 means the token expired or is
+ * invalid, and the server rejected the request before doing anything, so the
+ * token is refreshed and the request is sent once more. `init` builds the
+ * request for a given token (called again for the retry).
+ */
+export async function authFetch(
+  cfg:  AppConfig,
+  url:  string,
+  init: (token: string) => RequestInit,
+): Promise<Response> {
+  let res = await fetch(url, init(await getBearerToken(cfg)));
+  if (res.status === 401) {
+    clearCachedToken();
+    // If a fresh token can't be fetched either (e.g. the APEX session itself
+    // expired), keep the original 401 so callers show the same error as before.
+    let token: string;
+    try { token = await getBearerToken(cfg); } catch { return res; }
+    res = await fetch(url, init(token));
+  }
+  return res;
 }
 
 /* ─────────────────────────── FX helper ──────────────────────────── */
@@ -396,12 +419,11 @@ export function computeDisplayMultiplier(
  * a ×1 multiplier.
  */
 export async function getCurrencyExchangeRate(cfg: AppConfig, currency: string): Promise<number> {
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/currencyExchangeRates`;
   const now   = new Date();
   const year_period = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -409,7 +431,7 @@ export async function getCurrencyExchangeRate(cfg: AppConfig, currency: string):
       ...authHeaders(cfg, token),
     },
     body: JSON.stringify({ year_period, currency: currency.toUpperCase() }),
-  });
+  }));
 
   if (!res.ok) {
     const msg = await extractApiError(res, `Failed to load exchange rate (${res.status}).`);
@@ -452,15 +474,14 @@ export function getAccountCodes(cfg: AppConfig, sectionType: string): Promise<Ac
 }
 
 async function fetchAccountCodes(cfg: AppConfig, sectionType: string): Promise<AccountCode[]> {
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluation/accountCategoryCodes?account_category_type=${encodeURIComponent(sectionType)}`;
 
   //console.log("[account-codes] section_type:", sectionType);
   //console.log("[account-codes] api:", url);
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     headers: { Accept: "application/json", ...authHeaders(cfg, token) },
-  });
+  }));
 
   if (!res.ok) {
     const msg = await extractApiError(res, `Failed to load account codes (${res.status}).`);
@@ -687,6 +708,20 @@ function attachValidationTargets(fileErrorMsg: string, header: StagingHeader | u
   return [...structured, ...fileOnly];
 }
 
+/* ─────────────────────────── Line totals ────────────────────────── */
+/** True for a line created in the UI this session (add row / name paste)
+    that has not come back from the staging GET yet. Backend-loaded lines get
+    the "val-…" id in transformStagingData; UI-created lines use generateId(). */
+export const isNewUnsavedRow = (value: ValueRow): boolean => !value.id.startsWith("val-");
+
+/** Line TOTAL. Backend lines: the backend yearValues.total as-is (the
+    backend recalculates it on Validate / Save Model). New unsaved lines have
+    no backend total, so the front-end sums that row's own years. */
+export function lineTotal(value: ValueRow, years: number[]): number | undefined {
+  if (isNewUnsavedRow(value)) return years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
+  return value.rowTotal;
+}
+
 /* ─────────────────────────── PUT payload builder ─────────────────── */
 // Builds the body for the finEvaluationStaging PUT (Validate button).
 export function buildFinEvaluationStagingPutPayload(
@@ -707,9 +742,13 @@ export function buildFinEvaluationStagingPutPayload(
           variance:              null,
         };
       });
-      const totalAmt = tableData.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
+      // Backend lines send their backend total unchanged; only new unsaved
+      // lines (no backend total) send the front-end sum of their years.
+      const totalAmt = isNewUnsavedRow(value)
+        ? (lineTotal(value, tableData.years) || null)
+        : (value.rowTotal || null);
       year_values["total"] = {
-        spc_projected_amount:  totalAmt || null,
+        spc_projected_amount:  totalAmt,
         ytd_budgeted_forecast: null,
         ytd_actuals:           null,
         variance:              null,
@@ -794,9 +833,8 @@ async function fetchFinEvaluationStaging(
   cfg: AppConfig,
   url: string,
 ): Promise<{ table: PivotTableData; rawHeader: ApiHeader; errors: ValidationIssue[] }> {
-  const token = await getBearerToken(cfg);
   //console.log("[getFinEvaluationStaging] GET", url);
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     // Always go to the server: without this the browser revalidates repeat
     // GETs of the same URL against its HTTP cache (the 304s in the network tab).
     cache: "no-store",
@@ -804,7 +842,7 @@ async function fetchFinEvaluationStaging(
       Accept: "application/json",
       ...authHeaders(cfg, token),
     },
-  });
+  }));
   //console.log("[getFinEvaluationStaging] status:", res.status);
   if (!res.ok) {
     const msg = await extractApiError(res, `Failed to load staging data (${res.status}).`);
@@ -846,11 +884,10 @@ export async function validateFinEvaluationStaging(
 ): Promise<SaveResponse> {
   const url     = buildFinEvaluationStagingPutUrl(cfg);
   const payload = buildFinEvaluationStagingPutPayload(data, rawHeader);
-  const token   = await getBearerToken(cfg);
 
   //console.log("[validateFinEvaluationStaging] → PUT", url, payload);
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -859,7 +896,7 @@ export async function validateFinEvaluationStaging(
       ...authHeaders(cfg, token),
     },
     body: JSON.stringify(payload),
-  });
+  }));
 
   const text = await res.text().catch(() => "");
   let json: SaveResponse = {};
@@ -891,17 +928,16 @@ export async function migrateFinEvalStaging(
   if (!cfg.api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__");
   if (!fileId) throw new Error("Cannot save: no file_id available.");
 
-  const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvalStagingMigrate/${fileId}`;
   //console.log("[financial-api] → POST (migrate)", url);
 
-  const res = await fetch(url, {
+  const res = await authFetch(cfg, url, (token) => ({
     method: "POST",
     headers: {
       Accept: "application/json",
       ...authHeaders(cfg, token),
     },
-  });
+  }));
 
   const text = await res.text().catch(() => "");
   let json: SaveResponse = {};
@@ -917,31 +953,5 @@ export async function migrateFinEvalStaging(
     throw new Error(apiMsg || "Save failed on server.");
   }
   return json;
-}
-
-/* ─────────────────────────── Server-driven sections ──────────────── */
-
-/** section_type OR section_name tokens (uppercase, non-alphanumerics
-    stripped) whose rows are fully driven by the engine response —
-    the front-end must not recompute calculated rows or row totals
-    for these sections. */
-const FULL_DCF_SERVER_DRIVEN_TOKENS: ReadonlySet<string> = new Set([
-  "CASHFLOW",
-  "RETURNANALYSIS",
-  "RETURNSANALYSIS",
-  "RETURNONANALYSIS",
-]);
-
-const sectionToken = (s: string | undefined | null): string =>
-  (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-/** True if this group's calculated rows are fully driven by an
-    external calc engine (e.g. the Cash Flow section) rather than
-    being recomputed client-side. */
-export function isServerDrivenSection(group: { sectionType?: string; name?: string }): boolean {
-  return (
-    FULL_DCF_SERVER_DRIVEN_TOKENS.has(sectionToken(group.sectionType)) ||
-    FULL_DCF_SERVER_DRIVEN_TOKENS.has(sectionToken(group.name))
-  );
 }
 

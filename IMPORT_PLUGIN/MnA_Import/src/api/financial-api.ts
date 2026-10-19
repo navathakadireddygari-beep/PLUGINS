@@ -314,7 +314,7 @@ const fromBase = (value: string | null | undefined): number | null => {
 /**
  * Every `fyNN` bucket present anywhere in the payload, chronologically ordered.
  * Two-digit years are compared as written (this domain is entirely 20xx), and
- * `total` — a derived column the grid computes itself — is excluded.
+ * `total` — the server's own figure, not a fiscal year — is excluded.
  */
 const collectFiscalYears = (items: FinancialEvaluationResponse): string[] => {
   const seen = new Set<string>();
@@ -364,7 +364,7 @@ const mapLine = (
 ): FinEvalGridRow => {
   const yearValues: Record<string, string> = {};
   Object.entries(line.year_values ?? {}).forEach(([key, bucket]) => {
-    // `total` is a derived column the grid computes itself.
+    // `total` is the server's own figure; the save echoes it from the GET.
     if (!/^fy\d{2}$/i.test(key) || !bucket) return;
     yearValues[key.toLowerCase()] = toBase(bucket.spc_projected_amount);
   });
@@ -380,10 +380,9 @@ const mapLine = (
     // `line_type` is the stable row identity in principle, but M&A proposal
     // payloads leave it null on EVERY template line and carry the identity in
     // `line_item_code` instead (STANDALONE_REVENUES, TERMINAL_VALUE,
-    // POST_TAX_RETURN, ...). Falling back to the code is what makes the live
-    // recalculation engine and the percentage-row rules see anything at all —
-    // keyed on the null `line_type` alone they matched no row, so no calculated
-    // line updated between saves and "Post tax return" (whose label carries no
+    // POST_TAX_RETURN, ...). Falling back to the code is what makes the
+    // percentage-row rules see anything at all — keyed on the null `line_type`
+    // alone they matched no row, so "Post tax return" (whose label carries no
     // "%") was run through the currency formatter.
     //
     // This mirrors the precedent already set on the way OUT, where
@@ -779,7 +778,11 @@ const emptyYearValue = (): FinEvalYearValue => ({
   variance: null,
 });
 
-/** Rebuild one line's year buckets, recomputing `total` from the years. */
+/**
+ * Rebuild one line's year buckets. `total` is the backend's when the response
+ * carries one (it recalculates on validate / save); only a line that came back
+ * without a total gets it summed from the years here.
+ */
 const applyYearValues = (
   line: FinEvalLine,
   edits: Record<string, string> | undefined,
@@ -822,9 +825,15 @@ const applyYearValues = (
   });
 
   if (source.total !== undefined) {
+    const backendTotal = source.total?.spc_projected_amount;
     next.total = {
       ...(source.total ?? emptyYearValue()),
-      spc_projected_amount: hasTotal ? total : null,
+      spc_projected_amount:
+        backendTotal !== null && backendTotal !== undefined && backendTotal !== ""
+          ? Number(backendTotal)
+          : hasTotal
+            ? total
+            : null,
     };
   }
 

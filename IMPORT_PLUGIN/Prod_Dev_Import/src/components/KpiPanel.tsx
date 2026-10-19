@@ -81,7 +81,7 @@ const isValidYearsInput = (s: string): boolean => s === "" || /^\d{0,4}$/.test(s
 const clampYears = (n: number): number =>
   Math.min(9999, Math.max(0, Math.trunc(n)));
 
-export default function KpiPanel({ rawHeader, onChange, displayScale, isReadonly, numberFormat, dateFormat, fxMultiplier, highlightField }: Props): React.ReactElement {
+function KpiPanel({ rawHeader, onChange, displayScale, isReadonly, numberFormat, dateFormat, fxMultiplier, highlightField }: Props): React.ReactElement {
   const highlightStyle: React.CSSProperties = { border: "2px solid #f59e0b", boxShadow: "0 0 0 3px #fde68a" };
   const fieldStyle = (key: string): React.CSSProperties => ({
     ...fieldInput,
@@ -328,3 +328,6 @@ export default function KpiPanel({ rawHeader, onChange, displayScale, isReadonly
     </div>
   );
 }
+
+// Re-renders only when its props change, not on every table keystroke.
+export default React.memo(KpiPanel);

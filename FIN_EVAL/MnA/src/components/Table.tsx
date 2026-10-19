@@ -38,7 +38,6 @@ import useSaveFinancialEvaluation from "@/hooks/useSaveFinancialEvaluation";
 import useDeleteFinEvalLine from "@/hooks/useDeleteFinEvalLine";
 import useDeleteFinEvalSection from "@/hooks/useDeleteFinEvalSection";
 import { useSaveModel } from "@/context/SaveModelContext";
-import { applyMaNpvBlock, recalcMaGrids } from "@/lib/ma-recalc";
 import { DARK_HEADER } from "@/components/strip-styles";
 import { formatNumber, formatPercent } from "@/lib/number-format";
 import { actualsCountOf, fyNumberOf } from "@/lib/fiscal-years";
@@ -592,40 +591,10 @@ const Table: React.FC = () => {
    */
   const actualsColSpan = Math.min(actualsCount, allYearIdx.length);
 
-  /**
-   * Live recalculation (see lib/ma-formulas + lib/ma-recalc).
-   *
-   * Editing a cell writes to `corRows`/`fcfRows`/`ptrRows`; these DERIVED grids
-   * are what the tables render, so every calculated line downstream of the edit
-   * refreshes immediately. All three grids are recomputed together because EBIT
-   * depends on Revenue and Costs, and the cash-flow bridge depends on EBIT.
-   *
-   * The array order and length are preserved, so the positional indices used by
-   * selection, editing and the clipboard stay valid against the source state.
-   *
-   * The server owns these numbers: it recomputes on save and its answer
-   * replaces this on the next GET. This is the between-saves preview.
-   */
-  const [calcCor, calcFcf, calcPtr, calcNpv] = useMemo<
-    [Row[], Row[], Row[], Row[]]
-  >(() => {
-    const { grids, npvBlock } = recalcMaGrids<Row>(
-      [corRows, fcfRows, ptrRows],
-      keyInputs,
-      visibleCols,
-      actualsCount,
-    );
-    // The NPV Calculation block (S9) is derived from the same pass — its PV
-    // components discount the very cash-flow vectors the grids above produce —
-    // so it refreshes with them rather than sitting on the last saved figures
-    // while everything feeding it moves.
-    return [
-      grids[0],
-      grids[1],
-      grids[2],
-      applyMaNpvBlock<Row>(npvRows, npvBlock),
-    ];
-  }, [corRows, fcfRows, ptrRows, npvRows, keyInputs, visibleCols, actualsCount]);
+  // Every figure on screen is the server's: calculated lines, the NPV block
+  // and CAGR all come from the GET (the backend recalculates on save/validate
+  // and the forced reload brings the new numbers back). Nothing is recomputed
+  // locally - an edit changes only the cell that was edited.
 
   /* ─────────────────────────── Year stepper ────────────────────────────
    * "+" ADDS a projection year, the way the reference does
@@ -864,12 +833,13 @@ const Table: React.FC = () => {
     const sectionDrafts: Record<string, NewSectionDraft> = {};
     // Consideration is never calculated, so its state IS what is on screen.
     collectRows(conRows, conYearIdx, yearValues, newLines, sectionDrafts);
-    collectRows(calcCor, allYearIdx, yearValues, newLines, sectionDrafts);
-    collectRows(calcFcf, allYearIdx, yearValues, newLines, sectionDrafts);
+    // Calculated lines go out as loaded (last-fetched backend values); the
+    // server recomputes them on save.
+    collectRows(corRows, allYearIdx, yearValues, newLines, sectionDrafts);
+    collectRows(fcfRows, allYearIdx, yearValues, newLines, sectionDrafts);
     // Post Tax Return only renders the projection columns.
-    collectRows(calcPtr, projYearIdx, yearValues, newLines, sectionDrafts);
-    // The user's own block. Its rows are never calculated, so there is no
-    // derived copy of it — the state IS what is on screen.
+    collectRows(ptrRows, projYearIdx, yearValues, newLines, sectionDrafts);
+    // The user's own block.
     collectRows(cusRows, allYearIdx, yearValues, newLines, sectionDrafts);
 
     const newSections: NewSectionEdit[] = Object.entries(sectionDrafts).map(
@@ -886,11 +856,9 @@ const Table: React.FC = () => {
     });
 
     const npv: Record<string, [string, string, string]> = {};
-    // The DERIVED rows, matching the three grids above: the previewed PV
-    // components go out with the save rather than the stale figures they
-    // replaced on screen. The server recomputes them either way, so this only
-    // decides what the payload carries in the meantime.
-    calcNpv.forEach((row) => {
+    // The NPV components as loaded from the server (the backend recomputes
+    // them on save; nothing is previewed locally).
+    npvRows.forEach((row) => {
       if (!row.apiKey) return;
       npv[row.apiKey] = [
         row.values[0] ?? "",
@@ -2282,7 +2250,7 @@ const Table: React.FC = () => {
                 <GridColgroup showActions={!isReadonly} yearCount={allYearIdx.length} cagr />
                 {gridHead(true)}
                 <tbody>
-                  {gridRows("cor", calcCor, corRows, setCorRows, allYearIdx, true)}
+                  {gridRows("cor", corRows, corRows, setCorRows, allYearIdx, true)}
                 </tbody>
               </table>
             </div>
@@ -2297,7 +2265,7 @@ const Table: React.FC = () => {
                 <GridColgroup showActions={!isReadonly} yearCount={allYearIdx.length} />
                 {gridHead(false)}
                 <tbody>
-                  {gridRows("fcf", calcFcf, fcfRows, setFcfRows, allYearIdx)}
+                  {gridRows("fcf", fcfRows, fcfRows, setFcfRows, allYearIdx)}
                 </tbody>
               </table>
             </div>
@@ -2323,7 +2291,7 @@ const Table: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {gridRows("ptr", calcPtr, ptrRows, setPtrRows, projYearIdx)}
+                  {gridRows("ptr", ptrRows, ptrRows, setPtrRows, projYearIdx)}
                 </tbody>
               </table>
             </div>
@@ -2354,7 +2322,7 @@ const Table: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {calcNpv.map((row, rowIdx) => {
+                  {npvRows.map((row, rowIdx) => {
                     const locked = isRowLocked(row, isReadonly);
                     return (
                       <tr key={row.id} className={rowBgClass(locked)}>
@@ -2415,9 +2383,6 @@ const Table: React.FC = () => {
                   />
                   {gridHead(true)}
                   <tbody>
-                    {/* Source and rendered rows are the same array: nothing in
-                        this block is calculated, so there is no derived copy of
-                        it the way the template grids have one. */}
                     {gridRows("cus", cusRows, cusRows, setCusRows, allYearIdx, true)}
                   </tbody>
                 </table>

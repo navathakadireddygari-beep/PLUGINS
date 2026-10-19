@@ -152,5 +152,5 @@ console.log("\nBlank, zero and percentage passthrough");
 console.log(`\n${pass} passed, ${fail} failed`);
 // Thrown rather than set as an exit code so this file needs no Node type
 // definitions — it is compiled by the app's tsconfig alongside the source it
-// checks, the same way ma-formulas.check.ts is.
+// checks.
 if (fail > 0) throw new Error(`${fail} format round-trip check(s) failed`);
