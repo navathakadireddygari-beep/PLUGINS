@@ -51,8 +51,10 @@ const mount: MountState = (window.__leasesImportInvestmentReportMount ??= { root
 /*
  * Identifies which proposal/file/template a mount is showing.
  */
-const mountKey = (c: AppConfig): string =>
-  `${c.proposal_id}|${c.file_id}|${c.spc_type_id}|${c.template_type_id}`;
+// The whole config, not just the ids: a repeat init() with any changed value
+// (read-only flag, user, APEX session ids, …) must still remount as it did
+// before. Only an identical repeat call keeps the live widget.
+const mountKey = (c: AppConfig): string => JSON.stringify(c ?? null);
 
 
 /* ============================================================
@@ -100,7 +102,7 @@ function init(hostId: string, config: AppConfig): void {
    * calls); anything else → unmount the old one before mounting fresh.
    */
   if (mount.root) {
-    if (mount.container === container && container.isConnected && mount.key === mountKey(config)) {
+    if (mount.container === container && container.isConnected && container.childElementCount > 0 && mount.key === mountKey(config)) {
       return;
     }
 

@@ -54,7 +54,10 @@ const w = window as any;
 const mount: MountState = (w.__prodDevImportMount ??= { root: null, container: null, key: null });
 
 // Identifies which proposal/file a mount is showing.
-const mountKey = (c: AppConfig): string => `${c.proposal_id}|${c.spc_type_id}|${c.file_id}`;
+// The whole config, not just the ids: a repeat init() with any changed value
+// (read-only flag, user, APEX session ids, …) must still remount as it did
+// before. Only an identical repeat call keeps the live widget.
+const mountKey = (c: AppConfig): string => JSON.stringify(c ?? null);
 
 function init(hostId: string, config: AppConfig): void {
   const container = document.getElementById(hostId);
@@ -74,7 +77,7 @@ function init(hostId: string, config: AppConfig): void {
   // for refresh events. Now: same container + same proposal/file → keep the
   // live widget; anything else → unmount the old one before mounting fresh.
   if (mount.root) {
-    if (mount.container === container && container.isConnected && mount.key === mountKey(config)) {
+    if (mount.container === container && container.isConnected && container.childElementCount > 0 && mount.key === mountKey(config)) {
       return;
     }
     mount.root.unmount();

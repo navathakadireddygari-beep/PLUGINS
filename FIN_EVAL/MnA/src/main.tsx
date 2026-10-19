@@ -59,10 +59,10 @@ const _mount: MountState =
 /*
  * Identifies what a mount is showing.
  */
-const mountKey = (c: AppConfig): string =>
-  [c?.proposal_id, c?.spc_type_id, c?.template_type_id]
-    .map((id) => id ?? "")
-    .join("|");
+// The whole config, not just the ids: a repeat init() with any changed value
+// (read-only flag, user, APEX session ids, …) must still remount as it did
+// before. Only an identical repeat call keeps the live widget.
+const mountKey = (c: AppConfig): string => JSON.stringify(c ?? null);
 
 
 /* ============================================================
@@ -181,6 +181,7 @@ function init(
     if (
       _mount.container === container &&
       container.isConnected &&
+      container.childElementCount > 0 &&
       _mount.key === mountKey(config)
     ) {
       return;
