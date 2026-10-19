@@ -660,7 +660,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   // NON_FINANCIAL lines (e.g. custom counts/metrics) are stored and shown as-is — no K/M/B scale, no FX.
   const isNonFinancialRow = (v?: { lineIdentifier?: string }): boolean =>
-    (v?.lineIdentifier ?? "").toUpperCase() === "NON_FINANCIAL";
+    tok(v?.lineIdentifier) === "NONFINANCIAL"; // NON_FINANCIAL / NONFINANCIAL / "Non Financial"
   // Row-level "show as-is" rule: NON_FINANCIAL lines, and any line whose name
   // contains "%" (percentages) — no K/M/B scale, no FX. The section-level rule
   // (isSectionNonFinancial) stays NON_FINANCIAL-only.
@@ -966,9 +966,20 @@ export default function PivotTableWithAPI(): React.ReactElement {
       groups: p.groups.map((g) => tabSectionIds.has(g.id) ? { ...g, expanded: n } : g),
     }) : p);
   };
+  // A new line takes its section's kind: NON_FINANCIAL when every existing
+  // editable line in the section is NON_FINANCIAL (e.g. Additional Metrics),
+  // otherwise FINANCIAL. Without this, a row added or pasted into a
+  // non-financial section was created FINANCIAL and got K/M/B-scaled.
+  const newRowIdentifier = (g: Group): string => {
+    const editable = g.values.filter((v) => v.isCalculated !== "Y");
+    if (editable.length > 0) return editable.every((v) => tok(v.lineIdentifier) === "NONFINANCIAL") ? "NON_FINANCIAL" : "FINANCIAL";
+    const kind = `${g.sectionType ?? ""} ${g.name ?? ""}`.toUpperCase().replace(/[^A-Z ]/g, "");
+    return /NONFINANCIAL|NON FINANCIAL|ADDITIONAL ?METRIC/.test(kind) ? "NON_FINANCIAL" : "FINANCIAL";
+  };
+
   const addValueRow = (gId: string): void => { if (isReadonly) return; setData((p) => p ? ({
     ...p,
-    groups: p.groups.map((g) => g.id === gId ? recomputeGroup({ ...g, values: [...g.values, blankRow(p)] }, p.years) : g),
+    groups: p.groups.map((g) => g.id === gId ? recomputeGroup({ ...g, values: [...g.values, { ...blankRow(p), lineIdentifier: newRowIdentifier(g) }] }, p.years) : g),
   }) : p); };
   const removeValueRow = (gId: string, vId: string): void => { if (isReadonly) return; setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? recomputeGroup({ ...g, values: g.values.filter((v) => v.id !== vId) }, p.years) : g) }) : p); };
   const updateCellValue = (gId: string, vId: string, year: number, raw: string): void => {
@@ -1008,7 +1019,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
       return { ...p, groups: p.groups.map((g) => {
         if (g.id !== gId) return g;
         const idx     = g.values.findIndex((v) => v.id === vId);
-        const newRows: ValueRow[] = parsed.map((r): ValueRow => { const yv: YearValues = {}; p.years.forEach((y, i) => { const v = r.values[i] ?? 0; yv[y] = v * scaleDivisorFor(displayScale) / fxMultiplier; }); return { id: generateId(), name: r.name, yearValues: yv, lineType: "CUSTOM", lineIdentifier: "FINANCIAL", isCalculated: "N", status: "ACTIVE", languageCode: "EN" }; });
+        const pastedIdent = newRowIdentifier(g);
+        const newRows: ValueRow[] = parsed.map((r): ValueRow => { const yv: YearValues = {}; p.years.forEach((y, i) => { const v = r.values[i] ?? 0; yv[y] = isUnscaledRow({ lineIdentifier: pastedIdent, name: r.name }) ? v : v * scaleDivisorFor(displayScale) / fxMultiplier; }); return { id: generateId(), name: r.name, yearValues: yv, lineType: "CUSTOM", lineIdentifier: pastedIdent, isCalculated: "N", status: "ACTIVE", languageCode: "EN" }; });
         const ex      = g.values[idx];
         const isBlank = (!ex?.name || ex?.name === "New Line Item") && Object.values(ex.yearValues).every((v) => v === 0);
         const withRows: Group = { ...g, values: isBlank ? [...g.values.slice(0, idx), ...newRows, ...g.values.slice(idx + 1)] : [...g.values.slice(0, idx + 1), ...newRows, ...g.values.slice(idx + 1)] };
