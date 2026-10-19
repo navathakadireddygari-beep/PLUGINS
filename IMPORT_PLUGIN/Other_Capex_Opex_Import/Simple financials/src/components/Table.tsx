@@ -232,6 +232,12 @@ type ParsedRow = { name: string; values: number[] };
 const tok = (s: string | undefined | null): string =>
   (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
+// Balance Sheet and new (custom) sections never show a cross-year TOTAL — the
+// TOTAL cell stays empty, same as Prod Dev Import / Other Capex Full return.
+const isNoTotalGroup = (g: Group): boolean =>
+  g.isCustom === "Y" || tok(g.sectionType) === "CUSTOM" ||
+  tok(g.sectionType) === "BALANCESHEET" || tok(g.name) === "BALANCESHEET";
+
 const isReturnsAnalysisGroup = (g: Group): boolean =>
   tok(g.sectionType) === "RETURNSANALYSIS" || tok(g.name) === "RETURNSANALYSIS";
 
@@ -1562,7 +1568,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           )}
                         </th>
                       ))}
-                      <th style={TH({ textAlign: "right", whiteSpace: "nowrap", width: 90, background: "#e5e7eb" })}>TOTAL</th>
+                      <th style={TH({ textAlign: "right", whiteSpace: "nowrap", width: 90, background: "#e5e7eb" })}>{isNoTotalGroup(group) ? "" : "TOTAL"}</th>
                     </tr>
                   )}
 
@@ -1587,8 +1593,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               </td>
                             );
                           })}
-                          {isNoTotalRow(value)
-                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: bold ? 700 : 400, color: "#111827" }}>-</td>
+                          {(isNoTotalRow(value) || isNoTotalGroup(group))
+                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: bold ? 700 : 400, color: "#111827" }}>{isNoTotalGroup(group) ? "" : "-"}</td>
                             : (() => {
                                 const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
                                 const text = isNonFinancialRow(value) ? rawFmtNonFinancial(t) : isUnscaledRow(value) ? rawFmt(t) : displayFmt(t);
@@ -1702,8 +1708,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               </td>
                               );
                             })}
-                          {isNoTotalRow(value)
-                            ? <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 12, fontWeight: 600, color: "#1f2937" }}>—</td>
+                          {(isNoTotalRow(value) || isNoTotalGroup(group))
+                            ? <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 12, fontWeight: 600, color: "#1f2937" }}>{isNoTotalGroup(group) ? "" : "—"}</td>
                             : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 12, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937" }}>{isNonFinancialRow(value) ? rawFmtNonFinancial(t) : isUnscaledRow(value) ? rawFmt(t) : displayFmt(t)}</td>; })()
                           }
                         </tr>
@@ -1726,8 +1732,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           const text = rawRow ? (nonFinRow ? rawFmtNonFinancial(val) : rawFmt(val)) : displayFmt(val);
                           return (<td key={year} style={{ ...TD, padding: "8px 12px" }}>{roValueCell(text, { fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" })}</td>);
                         })}
-                        {isNoTotalRow(value)
-                          ? <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>—</td>
+                        {(isNoTotalRow(value) || isNoTotalGroup(group))
+                          ? <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>{isNoTotalGroup(group) ? "" : "—"}</td>
                           : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const nonFinRow = isNonFinancialRow(value) || groupAllNonFinancial; const rawRow = isUnscaledRow(value) || nonFinRow; return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 12, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{rawRow ? (nonFinRow ? rawFmtNonFinancial(t) : rawFmt(t)) : displayFmt(t)}</td>; })()
                         }
                       </tr>
@@ -1752,8 +1758,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             const text = rawRow ? (nonFinRow ? rawFmtNonFinancial(val) : rawFmt(val)) : displayFmt(val);
                             return (<td key={year} style={{ ...TD, padding: "10px 14px" }}>{roValueCell(text, { fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" })}</td>);
                           })}
-                          {isNoTotalRow(value)
-                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>—</td>
+                          {(isNoTotalRow(value) || isNoTotalGroup(group))
+                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>{isNoTotalGroup(group) ? "" : "—"}</td>
                             : (() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); const nonFinRow = isNonFinancialRow(value) || groupAllNonFinancial; const rawRow = isUnscaledRow(value) || nonFinRow; return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: t < 0 ? "#DC2626" : "#111" }}>{rawRow ? (nonFinRow ? rawFmtNonFinancial(t) : rawFmt(t)) : displayFmt(t)}</td>; })()
                           }
                         </tr>
