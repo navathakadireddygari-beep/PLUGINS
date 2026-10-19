@@ -427,13 +427,22 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const fxFetchedForRef = useRef<string | null>(null);
 
   /* ── Account codes — fetch on demand when user opens the dropdown ── */
+  // Stable callback (no state deps): it used to depend on accountCodesBySection,
+  // so every section's response changed its identity and re-ran the pre-load
+  // effect below, re-requesting sections whose codes were still in flight.
+  // The ref records what was already requested; getAccountCodes also caches.
+  const requestedAccountTypesRef = useRef<Set<string>>(new Set());
   const loadAccountCodesForSection = useCallback((sectionType: string) => {
-    if (!sectionType || accountCodesBySection[sectionType]) return;
+    if (!sectionType || requestedAccountTypesRef.current.has(sectionType)) return;
+    requestedAccountTypesRef.current.add(sectionType);
     const cfg = getAppConfig();
     getAccountCodes(cfg, sectionType)
       .then((codes) => setAccountCodesBySection((prev) => ({ ...prev, [sectionType]: codes })))
-      .catch((e) => console.error("[account-codes] failed for", sectionType, e));
-  }, [accountCodesBySection]);
+      .catch((e) => {
+        requestedAccountTypesRef.current.delete(sectionType); // allow a retry on next focus
+        console.error("[account-codes] failed for", sectionType, e);
+      });
+  }, []);
 
   /* ── GET ─────────────────────────────────────────────────────── */
   const loadData = useCallback(async (): Promise<{ table: PivotTableData; rawHeader: ApiHeader } | null> => {
@@ -657,7 +666,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       // reload does. We only carry over each section's expanded/collapsed
       // state so the view doesn't jump.
       try {
-        const refetched = await getFinancialData(cfg);
+        const refetched = await getFinancialData(cfg, { force: true });
         const recomputed = recomputeAllGroups(refetched.table);
         console.log("[saveDraft] re-fetch groups:", refetched.table.groups.length,
           "lines:", refetched.table.groups.reduce((s, g) => s + g.values.length, 0));
@@ -704,7 +713,17 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // "fin-eval" — commands from sibling plugins using our typed action names.
   // "editor"   — legacy target used by the chatbot (tool:refresh_financial_evaluation).
   // Existing window custom-event listeners are untouched.
+  // Handlers are read through a ref so we subscribe ONCE: saveDraft changes on
+  // every data edit, and re-subscribing each time could let the bridge replay
+  // its last message to the new subscriber (another GET).
+  const bridgeHandlersRef = useRef({ loadData, refreshSection, saveDraft });
+  bridgeHandlersRef.current = { loadData, refreshSection, saveDraft };
   useEffect(() => {
+    const { loadData, refreshSection, saveDraft } = {
+      loadData:       () => bridgeHandlersRef.current.loadData(),
+      refreshSection: (id: string) => bridgeHandlersRef.current.refreshSection(id),
+      saveDraft:      () => bridgeHandlersRef.current.saveDraft(),
+    };
     const unsubFinEval = subscribeAllActions("fin-eval", (env) => {
       const action  = env.action as string;
       const payload = env.payload as Record<string, unknown> | null | undefined;
@@ -735,7 +754,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     });
 
     return () => { unsubFinEval(); unsubEditor(); };
-  }, [loadData, refreshSection, saveDraft]);
+  }, []);
 
   /* ── Side-effects ───────────────────────────────────────────── */
   useEffect(() => {
