@@ -23,15 +23,36 @@ declare global {
       init: (hostId: string, config: AppConfig) => void;
       destroy: (hostId: string) => void;
     };
+
+    /*
+     * Mount record shared by every copy of this bundle.
+     */
+    __leasesImportInvestmentReportMount?: MountState;
   }
 }
+
+type MountState = {
+  root:      ReturnType<typeof ReactDOM.createRoot> | null;
+  container: HTMLElement | null;
+  key:       string | null;
+};
 
 /*
  * Keep track of the React root so we do not create
  * multiple roots on the same DOM element.
+ *
+ * Kept on window (not module scope) so that if the APEX page loads this
+ * bundle more than once, every copy sees the same mount and can't add a
+ * second live widget. Named for Leases Import so it can't collide with the
+ * other widgets that expose the same InvestmentReportWidget global.
  */
-let _reactRoot: ReturnType<typeof ReactDOM.createRoot> | null = null;
-let _mountedHostId: string | null = null;
+const mount: MountState = (window.__leasesImportInvestmentReportMount ??= { root: null, container: null, key: null });
+
+/*
+ * Identifies which proposal/file/template a mount is showing.
+ */
+const mountKey = (c: AppConfig): string =>
+  `${c.proposal_id}|${c.file_id}|${c.spc_type_id}|${c.template_type_id}`;
 
 
 /* ============================================================
@@ -73,17 +94,24 @@ function init(hostId: string, config: AppConfig): void {
   window.__APP_CONFIG__ = config;
 
   /*
-   * If React was already mounted, unmount before
-   * creating a fresh root.
+   * init() runs on page load (auto-mount below) AND whenever APEX calls
+   * InvestmentReportWidget.init. Same container + same proposal/file →
+   * keep the live widget (remounting would repeat its GET / account-code
+   * calls); anything else → unmount the old one before mounting fresh.
    */
-  if (_reactRoot) {
+  if (mount.root) {
+    if (mount.container === container && container.isConnected && mount.key === mountKey(config)) {
+      return;
+    }
+
     console.log(
       "[InvestmentReport] Existing React root found. Unmounting first."
     );
 
-    _reactRoot.unmount();
-    _reactRoot = null;
-    _mountedHostId = null;
+    mount.root.unmount();
+    mount.root = null;
+    mount.container = null;
+    mount.key = null;
   }
 
   /*
@@ -94,10 +122,11 @@ function init(hostId: string, config: AppConfig): void {
   /*
    * Create React root.
    */
-  _reactRoot = ReactDOM.createRoot(container);
-  _mountedHostId = hostId;
+  mount.root = ReactDOM.createRoot(container);
+  mount.container = container;
+  mount.key = mountKey(config);
 
-  _reactRoot.render(
+  mount.root.render(
     // <React.StrictMode>
       <App />
     // </React.StrictMode>
@@ -113,15 +142,16 @@ function init(hostId: string, config: AppConfig): void {
    DESTROY
    ============================================================ */
 function destroy(hostId: string): void {
-  if (_reactRoot) {
+  if (mount.root) {
     console.log(
       "[InvestmentReport] Unmounting React root from:",
-      _mountedHostId
+      mount.container?.id ?? null
     );
 
-    _reactRoot.unmount();
-    _reactRoot = null;
-    _mountedHostId = null;
+    mount.root.unmount();
+    mount.root = null;
+    mount.container = null;
+    mount.key = null;
   }
 
   const container = document.getElementById(hostId);
@@ -168,7 +198,7 @@ function autoMount(): void {
    * Do not auto-mount again if we already have
    * a React root.
    */
-  if (_reactRoot) {
+  if (mount.root) {
     console.log(
       "[InvestmentReport Init] Widget is already mounted. Skipping autoMount."
     );

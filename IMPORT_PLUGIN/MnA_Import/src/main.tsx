@@ -9,6 +9,8 @@ declare global {
 
     __GIS_INVEST_INIT_DONE__?: boolean;
 
+    __mnaImportInvestmentReportMount?: MountState;
+
     InvestmentReportWidget?: {
       init: (
         hostId: string,
@@ -22,26 +24,45 @@ declare global {
   }
 }
 
+type MountState = {
+  root: ReturnType<typeof ReactDOM.createRoot> | null;
+  container: HTMLElement | null;
+  key: string | null;
+};
+
 /*
  * Keep track of the currently mounted React root, together with the DOM node
- * it was created against.
+ * it was created against and the ids it is showing.
  *
  * APEX can replace the host element out from under us — e.g. a native AJAX
  * region refresh (see the "reinit-investment-report" custom event on the
  * host page) swaps the region's HTML, including this exact <div>, BEFORE our
- * destroy() ever runs. If that happens, `_reactRoot` still points at the OLD,
- * now-detached element. Calling `.unmount()` on it doesn't touch the new
- * element APEX just inserted, but it also doesn't hurt — the real danger is
- * anything (a stray native event, a late async setState) later assuming
- * `_reactRoot`/`_mountedContainer` are still attached to the live document.
- * Tracking the container lets destroy()/init() detect that mismatch and skip
- * operating on the stale node instead of unmounting/reconciling against DOM
- * React no longer actually owns.
+ * destroy() ever runs. If that happens, `_mount.root` still points at the
+ * OLD, now-detached element. Calling `.unmount()` on it doesn't touch the new
+ * element APEX just inserted, and it is still needed: without it the old tree
+ * stays alive, and its listeners (host refresh event, AppBridge) keep firing
+ * GETs next to the new widget's. Tracking the container lets destroy()/init()
+ * tell a replaced host element from the current one.
+ *
+ * Kept on window (not module scope) so that if the APEX page loads this
+ * bundle more than once, every copy sees the same mount and can't add a
+ * second live widget. The name is this plugin's own: other plugins expose the
+ * same `InvestmentReportWidget` global and keep their own mount record.
  */
-let _reactRoot:
-  ReturnType<typeof ReactDOM.createRoot> | null =
-  null;
-let _mountedContainer: HTMLElement | null = null;
+const _mount: MountState =
+  (window.__mnaImportInvestmentReportMount ??= {
+    root: null,
+    container: null,
+    key: null,
+  });
+
+/*
+ * Identifies what a mount is showing.
+ */
+const mountKey = (c: AppConfig): string =>
+  [c?.file_id, c?.proposal_id, c?.spc_type_id, c?.template_type_id]
+    .map((id) => id ?? "")
+    .join("|");
 
 
 /* ============================================================
@@ -52,29 +73,29 @@ function destroy(hostId: string): void {
 
   /*
    * If APEX already swapped the host element (e.g. a native AJAX region
-   * refresh ran before destroy() was called), `_mountedContainer` is a
+   * refresh ran before destroy() was called), `_mount.container` is a
    * detached node that no longer represents anything on the live page.
-   * Unmounting into it can't affect the new element, so skip straight to
-   * discarding the stale reference rather than risking a call into a fiber
-   * tree whose DOM was pulled out from under it.
+   * The root is unmounted either way (see the note on `_mount` above).
    */
   const containerStillCurrent =
-    _mountedContainer !== null && _mountedContainer === liveContainer;
+    _mount.container !== null && _mount.container === liveContainer;
 
   try {
-    if (_reactRoot && containerStillCurrent) {
-      _reactRoot.unmount();
+    if (_mount.root) {
+      _mount.root.unmount();
 
-      console.log(
-        "[InvestmentReport] destroy() unmounted:",
-        hostId
-      );
-    } else if (_reactRoot) {
-      console.warn(
-        "[InvestmentReport] destroy() skipped unmount " +
-        "— host element was already replaced:",
-        hostId
-      );
+      if (containerStillCurrent) {
+        console.log(
+          "[InvestmentReport] destroy() unmounted:",
+          hostId
+        );
+      } else {
+        console.warn(
+          "[InvestmentReport] destroy() unmounted a root " +
+          "whose host element was already replaced:",
+          hostId
+        );
+      }
     }
   } catch (error) {
     console.warn(
@@ -82,8 +103,9 @@ function destroy(hostId: string): void {
       error
     );
   } finally {
-    _reactRoot = null;
-    _mountedContainer = null;
+    _mount.root = null;
+    _mount.container = null;
+    _mount.key = null;
   }
 
   /*
@@ -151,15 +173,24 @@ function init(
 
 
   /*
-   * Protect against APEX calling init() without destroy() first — and guard
-   * against unmounting into a container APEX has since replaced (see the
-   * note on `_mountedContainer` above). If the tracked container isn't the
-   * one currently in the document, it's already been swapped out from under
-   * us, so there is nothing live left to unmount.
+   * init() runs on page load (auto-mount below) AND whenever APEX calls
+   * InvestmentReportWidget.init. Same container + same ids → keep the live
+   * widget (a second root would do its own GET and listen for refresh events
+   * too). Anything else → unmount the old root before mounting fresh,
+   * including one whose container APEX has since replaced (see the note on
+   * `_mount` above): its DOM is gone but its listeners are still live.
    */
-  if (_reactRoot && _mountedContainer === container) {
+  if (_mount.root) {
+    if (
+      _mount.container === container &&
+      container.isConnected &&
+      _mount.key === mountKey(config)
+    ) {
+      return;
+    }
+
     try {
-      _reactRoot.unmount();
+      _mount.root.unmount();
     } catch (error) {
       console.warn(
         "[InvestmentReport] Previous root unmount error:",
@@ -168,8 +199,9 @@ function init(
     }
   }
 
-  _reactRoot = null;
-  _mountedContainer = null;
+  _mount.root = null;
+  _mount.container = null;
+  _mount.key = null;
 
 
   /*
@@ -181,15 +213,16 @@ function init(
   /*
    * Create fresh React root.
    */
-  _reactRoot =
+  _mount.root =
     ReactDOM.createRoot(container);
-  _mountedContainer = container;
+  _mount.container = container;
+  _mount.key = mountKey(config);
 
 
   /*
    * Render React application.
    */
-  _reactRoot.render(
+  _mount.root.render(
     // <React.StrictMode>
       <App />
     // </React.StrictMode>
