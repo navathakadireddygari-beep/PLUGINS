@@ -931,15 +931,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
   /* ── FX multiplier for display currency conversion ────────────── */
   // All values are stored in USD in the database.
   // exchangeRate is fetched live from the currencyExchangeRates API as
-  // "1 local currency = exchangeRate USD" (usd_fbr).
+  // "1 USD = exchangeRate <local currency>" (usd_fbr).
   // USD display → no conversion (×1).
-  // Local display → USD × (1/rate) = local (e.g. 3000 USD × 1/0.78 = 3846 GBP).
+  // Local display → USD × rate = local (e.g. 3000 USD × 0.78 = 2340 GBP).
   // Save path divides by fxMultiplier to convert back to USD for storage.
   const fxMultiplier: number = (() => {
     if (!rawHeader) return 1;
     const display = (rawHeader.display_currency || rawHeader.local_currency || "USD").toUpperCase();
     if (display === "USD") return 1;
-    return exchangeRate ? 1 / exchangeRate : 1;
+    return exchangeRate && exchangeRate > 0 ? exchangeRate : 1;
   })();
 
   const scaleDivisor = (scale: number): number =>

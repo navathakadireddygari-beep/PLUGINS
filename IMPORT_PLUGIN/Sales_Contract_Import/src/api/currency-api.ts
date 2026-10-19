@@ -4,8 +4,8 @@
  * Endpoint: {api_endpoint}/GIS/proposalAuthoring/currencyExchangeRates
  * POST → { year_period, currency } → { data: { usd_fbr, ... } }
  *
- * usd_fbr is "1 <currency> = usd_fbr USD" — same semantics as the legacy
- * ApiHeader.exchange_rate field it replaces.
+ * usd_fbr is "1 USD = usd_fbr <currency>" (e.g. 84.57 for INR). Multiply a
+ * stored USD value by it to get the local-currency display value.
  */
 import type { AppConfig } from "../config/app-config";
 import { getBearerToken } from "./financial-api";
@@ -32,7 +32,7 @@ function currentYearPeriod(): string {
 // Cached per currency+year_period so the toggle doesn't refetch on every render.
 const rateCache = new Map<string, number>();
 
-/** Fetches "1 currency = X USD". Returns 1 for USD without calling the API. */
+/** Fetches "1 USD = X currency". Returns 1 for USD without calling the API. */
 export async function getExchangeRate(cfg: AppConfig, currency: string): Promise<number> {
   const cur = currency.toUpperCase();
   if (cur === "USD") return 1;
