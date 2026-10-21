@@ -41,7 +41,11 @@ import { useSaveModel } from "@/context/SaveModelContext";
 import { DARK_HEADER } from "@/components/strip-styles";
 import { formatNumber, formatPercent } from "@/lib/number-format";
 import { actualsCountOf, fyNumberOf } from "@/lib/fiscal-years";
-import { collectGridRows, type NewSectionDraft } from "@/lib/save-collect";
+import {
+  collectGridRows,
+  newSectionsError,
+  type NewSectionDraft,
+} from "@/lib/save-collect";
 import {
   getProposalId,
   isHostReadonly,
@@ -461,6 +465,12 @@ const Table: React.FC = () => {
    * populated evaluation is well below the fold.
    */
   const [pendingScroll, setPendingScroll] = useState<string | null>(null);
+  /**
+   * Key of the custom section whose name is being typed. Only that header shows
+   * an input; every other one shows its name as the bar's own text, as in
+   * Simple Financials.
+   */
+  const [editingSectionKey, setEditingSectionKey] = useState<string | null>(null);
   /** Section type a bridge `fin-eval:scroll-to-section` asked to bring into view. */
   const [bridgeScrollTarget, setBridgeScrollTarget] = useState<string | null>(null);
 
@@ -842,6 +852,12 @@ const Table: React.FC = () => {
     // The user's own block.
     collectRows(cusRows, allYearIdx, yearValues, newLines, sectionDrafts);
 
+    const sectionError = newSectionsError(sectionDrafts);
+    if (sectionError) {
+      setToast({ kind: "error", message: sectionError });
+      return;
+    }
+
     const newSections: NewSectionEdit[] = Object.entries(sectionDrafts).map(
       ([id, draft]) => ({ id, name: draft.name, lines: draft.lines }),
     );
@@ -1187,6 +1203,8 @@ const Table: React.FC = () => {
       return next;
     });
     setPendingScroll(`cus:${key}`);
+    // A new section's header opens ready for its name.
+    setEditingSectionKey(key);
   };
 
   /** Rename a section — every row carries the name, so all of them move. */
@@ -1298,18 +1316,24 @@ const Table: React.FC = () => {
             ) : (
               <ChevronUp size={16} style={{ flexShrink: 0 }} />
             )}
-            {isCustom && !isReadonly ? (
-              // Always an input, not click-to-edit: every editable label on
-              // this screen is already a plain input sitting in the cell (see
-              // the row labels), and a second idiom for the same act would be
-              // one more thing to discover.
+            {isCustom && !isReadonly && editingSectionKey === key ? (
+              // Click-to-edit, as in Simple Financials: the input only exists
+              // while the name is being typed. Left in place it showed as a
+              // white box in the dark bar after the section was named.
               <input
+                autoFocus
                 value={name}
                 placeholder="Enter section name"
                 onChange={(e) => renameSection(key, e.target.value)}
+                onBlur={() => setEditingSectionKey(null)}
                 // The bar itself toggles the section; typing in it must not.
                 onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter" || e.key === "Escape") {
+                    e.currentTarget.blur();
+                  }
+                }}
                 style={{
                   flex: 1,
                   minWidth: 0,
@@ -1325,7 +1349,22 @@ const Table: React.FC = () => {
                 }}
               />
             ) : (
-              <span style={{ flex: 1, minWidth: 0 }}>{name}</span>
+              <span
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  cursor: isCustom && !isReadonly ? "text" : undefined,
+                  opacity: name ? 1 : 0.45,
+                  fontStyle: name ? "normal" : "italic",
+                }}
+                onClick={(e) => {
+                  if (!isCustom || isReadonly) return;
+                  e.stopPropagation();
+                  setEditingSectionKey(key);
+                }}
+              >
+                {name || (isCustom && !isReadonly ? "Enter section name" : "")}
+              </span>
             )}
             {isCustom && !isReadonly && (
               <button

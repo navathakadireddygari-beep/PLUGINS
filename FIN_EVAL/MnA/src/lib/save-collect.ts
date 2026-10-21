@@ -108,3 +108,25 @@ export const collectGridRows = (
     });
   });
 };
+
+/**
+ * Why the user-added sections cannot be saved yet, or null when they can.
+ *
+ * A section needs a name and at least one named line. The backend accepts a
+ * section with no lines but never returns it, so without this check the save
+ * reports success and the section silently disappears on the next GET.
+ */
+export const newSectionsError = (
+  drafts: Record<string, NewSectionDraft>,
+): string | null => {
+  for (const draft of Object.values(drafts)) {
+    const name = draft.name.trim();
+    if (!name) {
+      return "Cannot save — a new section has no name. Enter a section name or delete the section.";
+    }
+    if (!draft.lines.length) {
+      return `Cannot save — section "${name}" has no lines. Add at least one line or delete the section.`;
+    }
+  }
+  return null;
+};

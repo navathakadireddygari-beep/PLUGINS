@@ -21,6 +21,7 @@ import {
 } from "@/api/financial-api";
 import {
   collectGridRows,
+  newSectionsError,
   type CollectableRow,
   type NewSectionDraft,
 } from "@/lib/save-collect";
@@ -229,6 +230,29 @@ console.log("\n5. Rename / delete an existing section");
     sectionNames: { "0": "Revenue (renamed)" },
   });
   eq("edit still lands on section 0", sectionsOf(both)[0].section_name, "Revenue (renamed)");
+}
+
+/* ── 6. a new section with no lines, or no name, blocks the save ──────── */
+console.log("\n6. Incomplete new sections are rejected before the PUT");
+{
+  const gather = (rows: CollectableRow[]) => {
+    const drafts: Record<string, NewSectionDraft> = {};
+    collectGridRows(rows, [0, 1, 2], FY, sectionIndexOfKey, {}, [], drafts);
+    return newSectionsError(drafts);
+  };
+  const row = (sectionName: string, label: string): CollectableRow => ({
+    label,
+    values: ["1", "2", "3"],
+    newSectionId: "s1",
+    sectionName,
+  });
+
+  eq("named, one blank row -> error", gather([row("Synergies", "")]),
+    'Cannot save — section "Synergies" has no lines. Add at least one line or delete the section.');
+  eq("unnamed, with a line -> error", gather([row("", "Cost saving")]),
+    "Cannot save — a new section has no name. Enter a section name or delete the section.");
+  eq("named, with a line -> ok", gather([row("Synergies", "Cost saving")]), null);
+  eq("no new sections -> ok", gather([]), null);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
