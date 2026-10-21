@@ -23,6 +23,8 @@ function rootIndexRedirect(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
+  // Every plugin reads the one shared env file at the repo root (PLUGINS/.env).
+  envDir: "..",
   // tailwindcss() is kept here (unlike Sales contract) because M&A uses
   // Tailwind v4 via @tailwindcss/vite instead of postcss.config.js.
   plugins: [rootIndexRedirect(), react(), tailwindcss()],

@@ -4,6 +4,8 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({ command }) => ({
+  // Every plugin reads the one shared env file at the repo root (PLUGINS/.env).
+  envDir: "../..",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

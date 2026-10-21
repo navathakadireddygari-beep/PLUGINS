@@ -1,0 +1,2 @@
+# Local env overrides with real credentials (see .env).
+*.local

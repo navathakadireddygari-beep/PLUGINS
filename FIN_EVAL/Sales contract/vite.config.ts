@@ -24,6 +24,8 @@ function rootIndexRedirect(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
+  // Every plugin reads the one shared env file at the repo root (PLUGINS/.env).
+  envDir: "../..",
   plugins: [rootIndexRedirect(), react()],
 
   resolve: {
