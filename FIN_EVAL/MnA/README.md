@@ -3539,12 +3539,12 @@ response:
 
 also for token this is the api : curl --request POST \
  --url https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1/oauth/token \
- --header 'authorization: Basic QVRCNEI5OEVWZ1RnZm1rUUJ2ek5ndy4uOk9TWDJBVUJoWVZyMThDVG5HOVZQZEEuLg==' \
+ --header 'authorization: Basic <base64 client_id:client_secret>' \
  --header 'content-type: application/x-www-form-urlencoded' \
  --data grant_type=client_credentials
 
 response : {
-"access_token": "z1TEsAZmKBtiwDciVy3Sqg",
+"access_token": "<token>",
 "token_type": "bearer",
 "expires_in": 3600
 } , use this for token, create a function for this since it can be used at other places, for the get api also use this, also for every api calls, use axios

@@ -104,12 +104,18 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
     );
   }
 
-  // ── Local dev token — replace with a fresh token when you get 401 ──
+  // ── Local dev token ──
   // Only reached when the OAuth endpoint above could not be used. Generate a
   // new one via: POST {base}/oauth/token with the client_credentials grant.
   // Tokens live ~1 hour, so this goes stale quickly and is a stopgap, not a
   // configuration — a 401 here means it needs replacing.
-  const ACCESS_TOKEN = "yLy3oPUJjUT57V9Qbi0bfw";
+  // Dev-only fallback. The DEV check lets Vite drop this branch from
+  // production builds, so no token is ever bundled into the APEX plugin.
+  // Set VITE_DEV_ACCESS_TOKEN in .env.local (git-ignored) to use it.
+  if (!import.meta.env.DEV) {
+    throw new Error("No APEX context: an auth token is only available inside APEX.");
+  }
+  const ACCESS_TOKEN: string = import.meta.env.VITE_DEV_ACCESS_TOKEN ?? "";
   return {
     accessToken: ACCESS_TOKEN,
     token_type: "Bearer",
@@ -142,7 +148,7 @@ const requestOAuthToken = async (): Promise<AuthTokenResponse> => {
   const basicAuth = getBasicAuth();
   if (!basicAuth) {
     throw new Error(
-      "Missing API credentials: set DEV_BASIC_AUTH in config/app-config.ts, or run inside an APEX page so the token comes from the AJAX callback."
+      "Missing API credentials: set VITE_DEV_BASIC_AUTH in .env.local, or run inside an APEX page so the token comes from the AJAX callback."
     );
   }
 

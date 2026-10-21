@@ -45,10 +45,16 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
       app_user:        json.app_user,
     };
   }
-  // ── Local dev token — replace with a fresh token when you get 401 ──
+  // ── Local dev token ──
   // Generate via: POST {TOKEN_URL} with client_credentials grant
-  // Token expires in ~1 hour; update ACCESS_TOKEN below when expired.
-  const ACCESS_TOKEN = "48CUhIPMR4SZgQC92jch_g";
+  // Token expires in ~1 hour; refresh VITE_DEV_ACCESS_TOKEN when it does.
+  // Dev-only fallback. The DEV check lets Vite drop this branch from
+  // production builds, so no token is ever bundled into the APEX plugin.
+  // Set VITE_DEV_ACCESS_TOKEN in .env.local (git-ignored) to use it.
+  if (!import.meta.env.DEV) {
+    throw new Error("No APEX context: an auth token is only available inside APEX.");
+  }
+  const ACCESS_TOKEN: string = import.meta.env.VITE_DEV_ACCESS_TOKEN ?? "";
   return {
     accessToken: ACCESS_TOKEN,
     token_type: "Bearer",

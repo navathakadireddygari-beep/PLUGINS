@@ -78,11 +78,12 @@ export const TOKEN_PATH = "/oauth/token";
  * Local-dev only: inside APEX the token comes from the page's own AJAX callback
  * and this is never read. M&A has its own OAuth client, distinct from the
  * reference project's — the two apps talk to different ORDS modules.
+ *
+ * Read from VITE_DEV_BASIC_AUTH in .env.local (git-ignored). The DEV check
+ * keeps it out of production builds entirely.
  */
-const DEV_BASIC_AUTH =
-  "QVRCNEI5OEVWZ1RnZm1rUUJ2ek5ndy4uOk9TWDJBVUJoWVZyMThDVG5HOVZQZEEuLg==";
-
-export const getBasicAuth = (): string | undefined => DEV_BASIC_AUTH;
+export const getBasicAuth = (): string | undefined =>
+  import.meta.env.DEV ? import.meta.env.VITE_DEV_BASIC_AUTH : undefined;
 
 /**
  * A pre-issued bearer token that bypasses the token endpoint entirely, for

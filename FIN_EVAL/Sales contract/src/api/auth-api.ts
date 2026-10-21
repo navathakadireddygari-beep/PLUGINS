@@ -45,8 +45,14 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
       app_user:        json.app_user,
     };
   }
+  // Dev-only fallback. The DEV check lets Vite drop this branch from
+  // production builds, so no token is ever bundled into the APEX plugin.
+  // Set VITE_DEV_ACCESS_TOKEN in .env.local (git-ignored) to use it.
+  if (!import.meta.env.DEV) {
+    throw new Error("No APEX context: an auth token is only available inside APEX.");
+  }
   return {
-    accessToken: "vyPAf2hg0D8nwIehXbXueg",
+    accessToken: import.meta.env.VITE_DEV_ACCESS_TOKEN ?? "",
     token_type: "Bearer",
     expiration_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     app_user: "Navatha.Kadireddygari@test.exp.com",

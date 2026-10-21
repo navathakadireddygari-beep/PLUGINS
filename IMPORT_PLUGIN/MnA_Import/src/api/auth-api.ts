@@ -6,7 +6,7 @@
  *   1. APEX (`window.$v` present): POST AJAX call to wwv_flow.ajax with
  *      plugin/flow/step/instance from the widget config. The secret stays
  *      server-side and this is the only path a deployment takes.
- *   2. Standalone / local dev: the static dev token below.
+ *   2. Standalone / local dev: VITE_DEV_ACCESS_TOKEN from .env.local (dev builds only).
  *
  * No OAuth client-credentials call here — M&A FinEval's own auth-api.ts has
  * one (for gisdev), but this import plugin's `api_endpoint` now points at
@@ -102,11 +102,17 @@ export async function fetchAuthToken(
     };
   }
 
-  // ── Local dev token — replace with a fresh token when you get 401 ──
+  // ── Local dev token ──
   // Generate via: POST {base}/oauth/token with the client_credentials grant.
   // Tokens live ~1 hour, so this goes stale quickly — a 401 here means it
   // needs replacing.
-  const ACCESS_TOKEN = "a39SQQaO1WPx1w1tP2c0xw.v1.-eG5oNS4TDVOO-et";
+  // Dev-only fallback. The DEV check lets Vite drop this branch from
+  // production builds, so no token is ever bundled into the APEX plugin.
+  // Set VITE_DEV_ACCESS_TOKEN in .env.local (git-ignored) to use it.
+  if (!import.meta.env.DEV) {
+    throw new Error("No APEX context: an auth token is only available inside APEX.");
+  }
+  const ACCESS_TOKEN: string = import.meta.env.VITE_DEV_ACCESS_TOKEN ?? "";
   return {
     accessToken: ACCESS_TOKEN,
     token_type: "Bearer",

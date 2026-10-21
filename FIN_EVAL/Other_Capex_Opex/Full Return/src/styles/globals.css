@@ -1,6 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+ * Tailwind v4, set up to behave like this plugin's previous v3 build:
+ *  - No preflight (v3 had `corePlugins.preflight: false`): the reset would
+ *    restyle the whole APEX page, not just this widget.
+ *  - Theme and utilities are imported WITHOUT a cascade layer. v4 normally
+ *    layers them, and any unlayered rule (APEX Universal Theme's `th`,
+ *    `button`, `input` …) beats a layered one regardless of specificity.
+ *    Unlayered, utilities win on specificity exactly as they did in v3.
+ */
+@import 'tailwindcss/theme.css';
+@import 'tailwindcss/utilities.css';
+
+@config '../../tailwind.config.js';
 
 :root {
   --background: 0 0% 100%;
@@ -282,4 +292,15 @@
   width: 0;
   height: 0;
   display: none;              /* Chrome / Safari / Edge */
+}
+
+/*
+ * v3 parity: without preflight, v3's `border` utilities set only the width, so
+ * a bare `border` drew nothing except on form controls. v4's also set
+ * `border-style: var(--tw-border-style)` (solid). Defaulting that variable to
+ * none on the widget's non-form elements keeps the v3 look; `border-solid`,
+ * `border-dashed` etc. still win because they set border-style directly.
+ */
+:where(#sales-contracts-investment-report-root, #fin-eval-widget-root) :where(*:not(input, select, textarea, button)) {
+  --tw-border-style: none;
 }
