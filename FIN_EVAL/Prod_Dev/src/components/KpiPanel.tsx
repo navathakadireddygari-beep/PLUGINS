@@ -169,12 +169,12 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, dateFormat,
           <div style={subStyle}>Net Present Value</div>
         </div>
         <div style={{ ...cardShell, borderLeftColor: SLATE }}>
-          <div style={labelStyle}>IRR <span style={{ color: "#9ca3af", fontWeight: 500 }}>· {display}</span></div>
+          <div style={labelStyle}>IRR</div>
           {(() => { const { text, negative } = fmtPercent(rawHeader.irr_percent); return <div style={{ ...valueStyle, color: negative ? "#DC2626" : "#111827" }}>{text}</div>; })()}
           <div style={subStyle}>Internal Rate of Return</div>
         </div>
         <div style={{ ...cardShell, borderLeftColor: GREEN }}>
-          <div style={labelStyle}>Payback Period <span style={{ color: "#9ca3af", fontWeight: 500 }}>· {display}</span></div>
+          <div style={labelStyle}>Payback Period</div>
           <div style={valueStyle}>{fmtYears(rawHeader.payback_period_years)}</div>
           <div style={subStyle}>Simple payback period</div>
         </div>
