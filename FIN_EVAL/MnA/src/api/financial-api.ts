@@ -643,6 +643,11 @@ export interface NewLineEdit {
    * and jumps below it on the next load, undoing the placement.
    */
   afterKey?: string;
+  /**
+   * The row's own identifier. Lines in a custom section are NON_FINANCIAL;
+   * absent (a line added to a template section) it saves as FINANCIAL.
+   */
+  lineIdentifier?: string | null;
 }
 
 /**
@@ -656,7 +661,11 @@ export interface NewSectionEdit {
   /** Section name as typed. */
   name: string;
   /** Lines typed into the section, in screen order. */
-  lines: Array<{ name: string; yearValues: Record<string, string> }>;
+  lines: Array<{
+    name: string;
+    yearValues: Record<string, string>;
+    lineIdentifier?: string | null;
+  }>;
 }
 
 /** Position of a section within `raw.sections`, read back out of a row key. */
@@ -710,7 +719,9 @@ const buildNewLine = (
     // just below that echoes existing lines. A new row sending "Financial"
     // while every other line in the same payload sends "FINANCIAL" is a
     // difference the backend has no reason to expect.
-    line_identifier: "FINANCIAL",
+    // The row's own identifier, so a custom section's NON_FINANCIAL lines are
+    // not saved as money; a line in a template section has none (FINANCIAL).
+    line_identifier: (edit.lineIdentifier || "FINANCIAL").toUpperCase(),
     is_calculated: "N",
     is_read_only: "N",
     is_mandatory: "N",
@@ -758,7 +769,12 @@ const buildNewSection = (
       // `sectionIndex` is how the caller routes a new LINE to an existing
       // section; a new section carries its lines directly, so the field has
       // nothing to point at.
-      { sectionIndex: -1, name: line.name, yearValues: line.yearValues },
+      {
+        sectionIndex: -1,
+        name: line.name,
+        yearValues: line.yearValues,
+        lineIdentifier: line.lineIdentifier,
+      },
       (i + 1) * 10,
       null,
     ),

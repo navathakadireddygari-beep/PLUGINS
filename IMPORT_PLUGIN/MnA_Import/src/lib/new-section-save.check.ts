@@ -100,8 +100,9 @@ const gridWith = (sectionName: string): CollectableRow[] => [
   { apiKey: "s0l0", label: "Standalone Revenues", values: ["1", "1", "1"] },
   { apiKey: "s0l1", label: "Revenue (Total)", values: ["1", "1", "1"] },
   { apiKey: "s1l0", label: "EBIT", values: ["1", "1", "1"] },
-  { newSectionId: "sec1", sectionName, label: "Licence fees", values: ["11", "22", "33"] },
-  { newSectionId: "sec1", sectionName, label: "  ", values: ["", "", ""] },
+  // A new section's rows are NON_FINANCIAL from the moment they are created.
+  { newSectionId: "sec1", sectionName, label: "Licence fees", values: ["11", "22", "33"], lineIdentifier: "NON_FINANCIAL" },
+  { newSectionId: "sec1", sectionName, label: "  ", values: ["", "", ""], lineIdentifier: "NON_FINANCIAL" },
 ];
 
 const save = (sectionName: string) => {
@@ -162,6 +163,7 @@ console.log("\n2. NewSectionEdit -> PUT body");
   eq("line id left for the database", lines[0].fin_eval_line_id, null);
   eq("line is the user's", lines[0].is_custom, "Y");
   eq("line is editable", lines[0].is_calculated, "N");
+  eq("line keeps its NON_FINANCIAL identifier", lines[0].line_identifier, "NON_FINANCIAL");
   eq(
     "fy26 value survived the unit round trip",
     (lines[0].year_values as Record<string, { spc_projected_amount: number }>).fy26
@@ -191,12 +193,14 @@ console.log("\n4. PUT body -> next GET");
 {
   const { payload } = save("Other income");
   const model = mapFinancialEvaluation(payload as unknown as FinancialEvaluationResponse);
-  // CUSTOM is unmapped in SECTION_GRID, so the fallback puts it in the first
-  // grid — which is where the screen shows it. If this ever changes, an added
-  // section jumps to another table on reload.
-  eq("lands in the first grid", model.cor.length, 4);
-  const row = model.cor[3];
-  eq("last row is the added one", row.label, "Licence fees");
+  // `gridIdOf` routes a CUSTOM section to the user's block (`cus`) below NPV —
+  // which is where the screen shows it. If this ever changes, an added section
+  // jumps to another table on reload.
+  eq("lands in the user's block", model.cus.length, 1);
+  eq("template rows stay in the first grid", model.cor.length, 3);
+  const row = model.cus[0];
+  eq("the row is the added one", row.label, "Licence fees");
+  eq("comes back NON_FINANCIAL", row.lineIdentifier, "NON_FINANCIAL");
   eq("under its own section", row.sectionName, "Other income");
   eq("marked custom, so it stays renameable", row.sectionIsCustom, true);
   eq("section still takes lines", row.allowsNewLines, true);

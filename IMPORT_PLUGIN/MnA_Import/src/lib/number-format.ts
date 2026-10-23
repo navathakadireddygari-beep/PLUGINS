@@ -100,6 +100,41 @@ export const formatNumber = (
 };
 
 /**
+ * Most decimals a NON_FINANCIAL value is shown or seeded with. Only there to
+ * strip IEEE-754 noise (0.1 + 0.2): what the user typed is never rounded.
+ */
+export const NON_FINANCIAL_MAX_DECIMALS = 10;
+
+/** A NON_FINANCIAL value trimmed of float noise; 0 when it rounds away. */
+export const trimNonFinancial = (n: number): number =>
+  parseFloat(n.toFixed(NON_FINANCIAL_MAX_DECIMALS));
+
+/**
+ * A NON_FINANCIAL value as a plain, ungrouped string with no trailing zeros
+ * (the editor seed). toFixed, not String(): String(1e-7) is "1e-7", which the
+ * editor's sanitiser would mangle and which has no "." to count decimals by.
+ */
+export const nonFinancialPlain = (n: number): string =>
+  n.toFixed(NON_FINANCIAL_MAX_DECIMALS).replace(/\.?0+$/, "");
+
+/**
+ * Format a NON_FINANCIAL value (a count or metric) exactly as stored: 2 -> "2",
+ * 2.35 -> "2.35", no fixed decimals and no trailing zeros. FX and scale do not
+ * apply; only the regional grouping, decimal separator and accounting
+ * parentheses do, so it reads like the rest of the grid.
+ */
+export const formatNonFinancial = (
+  n: number | null | undefined,
+  format: NumberFormatId = "us",
+): string => {
+  if (n === null || n === undefined || !isFiniteNumber(n)) return "";
+  const fixed = nonFinancialPlain(Math.abs(n));
+  const decimals = fixed.includes(".") ? fixed.split(".")[1].length : 0;
+  // Scale "K" divides by 1; it is only here for grouping and separators.
+  return formatNumber(n, "K", format, decimals);
+};
+
+/**
  * Decimal places shown on a PERCENTAGE cell.
  *
  * Zero — a margin reads as "43%", not "43.21%". The stored value keeps every

@@ -17,7 +17,7 @@ import {
   type YearValues,
 } from "../api/financial-api";
 import { deleteLine, deleteSection } from "../api/delete-api";
-import { NUMBER_FORMATS, getNumFmt, formatNumber, plainNumber, parseFormatted, type NumFmtKey } from "./number-format";
+import { NUMBER_FORMATS, getNumFmt, formatNumber, plainNumber, parseFormatted, EXACT_DECIMALS, type NumFmtKey } from "./number-format";
 import { subscribeAllActions, publishAction } from "../lib";
 import KpiPanel from "./KpiPanel";
 import Toast, { type ToastState } from "./Toast";
@@ -87,6 +87,9 @@ type ParsedRow = { name: string; values: number[] };
 
 const tok = (s: string | undefined | null): string =>
   (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+// A custom (user-added) section, as opposed to a template section.
+const isCustomGroup = (g: Group): boolean => g.isCustom === "Y" || tok(g.sectionType) === "CUSTOM";
 
 const parseExcelPaste = (text: string): ParsedRow[] => {
   const lines = text.split(/\r?\n/).map((l: string) => l.trimEnd()).filter((l: string) => l.trim());
@@ -632,10 +635,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // Active number-format spec (thousands/decimal separators) — display only.
   const numFmt = getNumFmt(numberFormat);
 
+  // True when n shows as 0 at EXACT_DECIMALS (float noise) — rendered as empty.
+  const roundsToZero = (n: number): boolean => parseFloat(Math.abs(n).toFixed(EXACT_DECIMALS)) === 0;
+
+  // bypassScale (NON_FINANCIAL) values are shown exactly as entered — 2 → 2,
+  // 2.35 → 2.35 — not rounded to the scale's decimals.
   const displayFmt = (n: number, bypassScale = false): string => {
-    if (!n) return "—";
+    if (!n || (bypassScale && roundsToZero(n))) return "—";
     const v = bypassScale ? n : (n * fxMultiplier) / scaleDivisor(displayScale);
-    const formatted = formatNumber(Math.abs(v), numFmt, bypassScale ? 0 : scaleDecimals(displayScale));
+    const formatted = formatNumber(Math.abs(v), numFmt, bypassScale ? EXACT_DECIMALS : scaleDecimals(displayScale));
     return v < 0 ? `(${formatted})` : formatted;
   };
 
@@ -653,9 +661,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   // A section whose every editable line is NON_FINANCIAL (e.g. Additional
   // Metrics) has no meaningful cross-year TOTAL — its TOTAL column is empty.
+  // A custom (user-added) section is non-financial by default, so it has no
+  // TOTAL even before its first line exists or after all its lines are deleted.
   const isAllNonFinancialGroup = (g: Group): boolean => {
     const editable = g.values.filter((v) => v.isCalculated !== "Y");
-    return editable.length > 0 && editable.every(isNonFinancialRow);
+    if (editable.length === 0) return isCustomGroup(g);
+    return editable.every(isNonFinancialRow);
   };
 
   const displayPercent = (n: number): string => {
@@ -762,7 +773,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         id: newId, name: "", expanded: true,
         sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
         displayOrder: p.groups.length + 1,
-        values: [blankRow(p)],
+        values: [{ ...blankRow(p), lineIdentifier: "NON_FINANCIAL" }],   // new sections are non-financial
       }],
     }) : p);
     setEditingGroupId(newId);
@@ -779,6 +790,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const newRowIdentifier = (g: Group): string => {
     const editable = g.values.filter((v) => v.isCalculated !== "Y");
     if (editable.length > 0) return editable.every((v) => isNonFinancialIdent(v.lineIdentifier)) ? "NON_FINANCIAL" : "FINANCIAL";
+    if (isCustomGroup(g)) return "NON_FINANCIAL";   // new sections default to non-financial
     const kind = `${g.sectionType ?? ""} ${g.name ?? ""}`.toUpperCase().replace(/[^A-Z ]/g, "");
     return /NONFINANCIAL|NON FINANCIAL|ADDITIONAL ?METRIC/.test(kind) ? "NON_FINANCIAL" : "FINANCIAL";
   };
@@ -810,13 +822,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const numCellText = (cellKey: string, storedVal: number, bypassScale = false): string => {
     if (numEdit && numEdit.key === cellKey) return numEdit.text;
     if (storedVal === 0) return "";
-    if (bypassScale) return formatNumber(storedVal, numFmt, 0);
+    if (bypassScale) return roundsToZero(storedVal) ? "" : formatNumber(storedVal, numFmt, EXACT_DECIMALS);   // exact, unrounded
     return formatNumber((storedVal * fxMultiplier) / scaleDivisor(displayScale), numFmt, scaleDecimals(displayScale));
   };
   const numCellFocus = (cellKey: string, storedVal: number, bypassScale = false): void => {
     if (isReadOnly) return;
     const dv = bypassScale ? storedVal : (storedVal === 0 ? 0 : (storedVal * fxMultiplier) / scaleDivisor(displayScale));
-    setNumEdit({ key: cellKey, text: storedVal === 0 ? "" : plainNumber(dv, numFmt, bypassScale ? 0 : scaleDecimals(displayScale)) });
+    setNumEdit({ key: cellKey, text: storedVal === 0 ? "" : plainNumber(dv, numFmt, bypassScale ? EXACT_DECIMALS : scaleDecimals(displayScale)) });
   };
   const numCellChange = (gId: string, vId: string, year: number, cellKey: string, raw: string, bypassScale = false): void => {
     if (isReadOnly) return;
@@ -1535,7 +1547,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     const calc     = group.values.filter((v) => v.isCalculated === "Y");
                     // Bypass scale on this section's own calculated TOTAL row only when every
                     // editable line in it is NON_FINANCIAL (mixed sections still scale).
-                    const groupAllNonFinancial = editable.length > 0 && editable.every(isNonFinancialRow);
+                    const groupAllNonFinancial = isAllNonFinancialGroup(group);
 
                     const renderEditable = (value: ValueRow, idx: number) => {
                       const acKey = `${group.id}|${value.id}`;

@@ -76,6 +76,17 @@ export function formatNumber(value: number, formatKey: NumberFormatKey, maximumF
   return decPart ? `${grouped}${decimalSep}${decPart}` : grouped;
 }
 
+/**
+ * Like formatNumber, but shows only the decimals the value actually has
+ * (2 → "2", 2.35 → "2.35"), capped at `maxDecimals` to strip float noise.
+ * Used for NON_FINANCIAL values, which are shown exactly as entered.
+ */
+export function formatNumberTrimmed(value: number, formatKey: NumberFormatKey, maxDecimals = 10): string {
+  const trimmed = Math.abs(value).toFixed(maxDecimals).replace(/\.?0+$/, "");
+  const dot = trimmed.indexOf(".");
+  return formatNumber(value, formatKey, dot === -1 ? 0 : trimmed.length - dot - 1);
+}
+
 /* ─────────────────────────── Date format ─────────────────────────────── */
 export type DateFormatKey = "DD_MM_YYYY" | "DD_MON_YYYY" | "YYYY_MM_DD" | "MM_DD_YYYY" | "SLASH_DD_MM_YYYY";
 

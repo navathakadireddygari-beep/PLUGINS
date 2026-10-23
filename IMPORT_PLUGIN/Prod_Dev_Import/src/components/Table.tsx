@@ -273,9 +273,12 @@ const isCapitalInvestmentGroup = (g: Group): boolean =>
 // section has no Account column).
 const assetSpan = (g: Group): number => (isCapitalInvestmentGroup(g) ? 0 : 2);
 
+// A user-added (custom) section, saved or not.
+const isCustomGroup = (g: Group): boolean => g.isCustom === "Y" || tok(g.sectionType) === "CUSTOM";
+
 // Balance Sheet and user-added custom sections never show a cross-year TOTAL.
 const isNoTotalGroup = (g: Group): boolean =>
-  g.isCustom === "Y" || tok(g.sectionType) === "CUSTOM" ||
+  isCustomGroup(g) ||
   tok(g.sectionType) === "BALANCESHEET" || tok(g.name) === "BALANCESHEET";
 
 // Amortization period: whole months only, max 4 digits (0–9999), no decimals.
@@ -953,6 +956,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return n < 0 ? `(${formatted})` : formatted;
   };
 
+  // NON_FINANCIAL formatter: no fx, no scale and no rounding — counts/metrics
+  // show exactly what was entered (2 → 2, 2.35 → 2.35). 10dp only strips float noise.
+  const NON_FIN_DECIMALS = 10;
+  const nonFinFmt = (n: number): string => {
+    if (!n || Number(Math.abs(n).toFixed(NON_FIN_DECIMALS)) === 0) return "—";
+    const formatted = formatGroupedTrimmed(n, numberFormat, NON_FIN_DECIMALS);
+    return n < 0 ? `(${formatted})` : formatted;
+  };
+
   const displayFmt = (n: number): string => {
     if (!n) return "—";
     const v = (n * fxMultiplier) / scaleDivisor(displayScale);
@@ -1103,8 +1115,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // editable line in the section is NON_FINANCIAL (e.g. Additional Metrics),
   // otherwise FINANCIAL. Without this, a row added or pasted into a
   // non-financial section was created FINANCIAL and got K/M/B-scaled.
+  // User-added (custom) sections default to NON_FINANCIAL, even once emptied.
   const newRowIdentifier = (g: Group): string => {
     const editable = g.values.filter((v) => v.isCalculated !== "Y");
+    if (isCustomGroup(g) && editable.every((v) => tok(v.lineIdentifier) === "NONFINANCIAL")) return "NON_FINANCIAL";
     if (editable.length > 0) return editable.every((v) => tok(v.lineIdentifier) === "NONFINANCIAL") ? "NON_FINANCIAL" : "FINANCIAL";
     const kind = `${g.sectionType ?? ""} ${g.name ?? ""}`.toUpperCase().replace(/[^A-Z ]/g, "");
     return /NONFINANCIAL|NON FINANCIAL|ADDITIONAL ?METRIC/.test(kind) ? "NON_FINANCIAL" : "FINANCIAL";
@@ -1705,7 +1719,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             // decimal precision — a fixed 2 decimals is used regardless of scale.
                             const pctRow = isPercentRow(value);
                             const rawRow = pctRow || isNonFinancialRow(value);
-                            const decimals = rawRow ? 2 : decimalsForScale(displayScale);
+                            // NON_FINANCIAL is unrounded (display and editor seed); percent keeps 2dp.
+                            const decimals = rawRow ? (pctRow ? 2 : NON_FIN_DECIMALS) : decimalsForScale(displayScale);
                             return (
                               <td key={year} style={{ ...TD, padding: "4px 12px" }}>
                                 <input type="text"
@@ -1769,8 +1784,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {renderAssetCells(group, value, "4px 8px")}
                         {data.years.map((year: number) => {
                           const val = value.yearValues[year] ?? 0;
-                          const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial;
-                          return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{rawRow ? rawFmt(val) : displayFmt(val)}</td>);
+                          const nonFin = !isPercentRow(value) && (isNonFinancialRow(value) || groupAllNonFinancial);
+                          return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{isPercentRow(value) ? rawFmt(val) : nonFin ? nonFinFmt(val) : displayFmt(val)}</td>);
                         })}
                         {(isNoTotalRow(value) || groupNoTotal || isNonFinancialRow(value))
                           ? <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>{groupNoTotal || isNonFinancialRow(value) ? "" : "—"}</td>
@@ -1794,7 +1809,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           {renderAssetCells(group, value, "4px 8px")}
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
-                            return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{(isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial) ? rawFmt(val) : displayFmt(val)}</td>);
+                            return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{isPercentRow(value) ? rawFmt(val) : (isNonFinancialRow(value) || groupAllNonFinancial) ? nonFinFmt(val) : displayFmt(val)}</td>);
                           })}
                           {(isNoTotalRow(value) || groupNoTotal || isNonFinancialRow(value))
                             ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>{groupNoTotal || isNonFinancialRow(value) ? "" : "—"}</td>

@@ -36,6 +36,10 @@ function groupDigits(digits: string, group: string, indian: boolean): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, group);
 }
 
+// Max decimals for values shown exactly as entered (NON_FINANCIAL lines):
+// enough to keep 2.35 as 2.35 while trimming float noise like 2.35000000000001.
+export const EXACT_DECIMALS = 10;
+
 // Full display: grouped integer + decimal separator, trailing zeros trimmed.
 export function formatNumber(value: number, fmt: NumFmtSpec, maxDecimals = 2): string {
   if (!isFinite(value)) return "";

@@ -17,6 +17,7 @@ import {
   parseDisplayedToBase,
   type MoneySettings,
 } from "./format";
+import { formatNonFinancial } from "./number-format";
 import type { NumberFormatId, ScaleId } from "@/config/formats";
 
 let pass = 0;
@@ -147,6 +148,19 @@ console.log("\nBlank, zero and percentage passthrough");
   eq("blank -> ''", parseDisplayedToBase("", s), "");
   eq("zero seeds blank", formatBaseToEditable("0", s), "");
   eq("percentage passes through", parseDisplayedToBase("25%", s), "25%");
+}
+
+/* ── NON_FINANCIAL values are shown exactly as entered ───────────────── */
+console.log("\nNON_FINANCIAL display is never rounded");
+{
+  eq("2 -> '2'", formatNonFinancial(2), "2");
+  eq("2.35 -> '2.35'", formatNonFinancial(2.35), "2.35");
+  eq("2.6 -> '2.6'", formatNonFinancial(2.6), "2.6");
+  eq("float noise trimmed", formatNonFinancial(0.1 + 0.2), "0.3");
+  eq("tiny value not shown as 1e-7", formatNonFinancial(1e-7), "0.0000001");
+  eq("grouping kept", formatNonFinancial(1234567.5), "1,234,567.5");
+  eq("EU separators", formatNonFinancial(1234.25, "eu"), "1.234,25");
+  eq("negatives use parentheses", formatNonFinancial(-2.35), "(2.35)");
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -54,6 +54,19 @@ export const formatSignedAmount = (n: number, fmt: NumberFormatCode, decimals: n
   return n < 0 ? `(${formatted})` : formatted;
 };
 
+// Exact value with no fixed decimal count (2 → "2", 2.35 → "2.35") — for
+// NON_FINANCIAL counts/metrics, which must never be rounded. Trimmed to 10
+// decimals only to strip float noise (0.1 + 0.2). Same zero/negative style
+// as formatSignedAmount.
+export const formatSignedTrimmed = (n: number, fmt: NumberFormatCode): string => {
+  const abs = parseFloat(Math.abs(n).toFixed(10));
+  if (!abs) return "—";
+  let s = new Intl.NumberFormat(NUMBER_LOCALE[fmt], { minimumFractionDigits: 0, maximumFractionDigits: 10 }).format(abs);
+  if (fmt === "FR") s = s.replace(/[\u202f\u00a0]/g, " ");
+  if (fmt === "CH") s = s.replace(/\u2019/g, "'");
+  return n < 0 ? `(${s})` : s;
+};
+
 // Combines currency conversion + scale + number-format for a table/KPI cell.
 export const formatDisplayValue = (
   raw: number,

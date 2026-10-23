@@ -41,7 +41,13 @@ import useDeleteFinEvalLine from "@/hooks/useDeleteFinEvalLine";
 import useDeleteFinEvalSection from "@/hooks/useDeleteFinEvalSection";
 import { useSaveModel } from "@/context/SaveModelContext";
 import { DARK_HEADER } from "@/components/strip-styles";
-import { formatNumber, formatPercent } from "@/lib/number-format";
+import {
+  formatNonFinancial,
+  formatNumber,
+  formatPercent,
+  nonFinancialPlain,
+  trimNonFinancial,
+} from "@/lib/number-format";
 import { actualsCountOf } from "@/lib/fiscal-years";
 import { collectGridRows, type NewSectionDraft } from "@/lib/save-collect";
 import {
@@ -267,6 +273,16 @@ const identityOf = (row: Row): RowIdentity => ({
   lineType: row.lineType,
   name: row.label,
 });
+
+/**
+ * `lineIdentifier` for a line the user adds to `section`. A user-added (custom)
+ * section holds counts and metrics, so its lines are NON_FINANCIAL from the
+ * start and display / edit / save that way before the first save too. Lines
+ * added to a template section keep no identifier (saved as FINANCIAL).
+ */
+const newRowIdentifier = (section: Row): string | undefined =>
+  // `sectionIsCustom` already covers a saved section typed "CUSTOM".
+  section.sectionIsCustom || section.newSectionId ? "NON_FINANCIAL" : undefined;
 
 /* ───────────────────── Row styling (Prod Dev parity) ─────────────────
  * The reference renders a CALCULATED line as a grey band with bold near-black
@@ -1072,8 +1088,9 @@ const Table: React.FC = () => {
     }
     // NON_FINANCIAL rows (custom counts/metrics) also bypass FX + scale entirely.
     if (isNonFinancialRow(identityOf(row))) {
-      if (!Number.isFinite(n)) return "—";
-      return formatNumber(n, "K", numberFormat, 0);
+      if (!Number.isFinite(n) || trimNonFinancial(n) === 0) return "—";
+      // Shown exactly as entered (2.35 stays 2.35) — never rounded to a count.
+      return formatNonFinancial(n, numberFormat);
     }
     const shown = formatBaseToDisplayed(value);
     return shown === "" ? "—" : shown;
@@ -1337,8 +1354,15 @@ const Table: React.FC = () => {
   /** Editor seed for one row — percentage and NON_FINANCIAL rows are seeded unconverted. */
   const cellSeed = (row: Row, raw: string | undefined): string => {
     const value = raw ?? "";
-    if (isPercentRow(identityOf(row)) || isNonFinancialRow(identityOf(row))) {
+    if (isPercentRow(identityOf(row))) {
       return value === "" || Number(value) === 0 ? "" : value;
+    }
+    if (isNonFinancialRow(identityOf(row))) {
+      // The exact stored value (2.35 reopens as 2.35) — no 3-decimal editor
+      // rounding, only float noise trimmed.
+      const n = Number(value);
+      if (value.trim() === "" || !Number.isFinite(n)) return "";
+      return trimNonFinancial(n) === 0 ? "" : nonFinancialPlain(n);
     }
     return formatBaseToEditable(value);
   };
@@ -1634,6 +1658,7 @@ const Table: React.FC = () => {
       sectionIsCustom: section.sectionIsCustom,
       newSectionId: section.newSectionId,
       allowsNewLines: section.allowsNewLines,
+      lineIdentifier: newRowIdentifier(section),
     });
     setRows(next);
   };
@@ -1708,6 +1733,7 @@ const Table: React.FC = () => {
             sectionIsCustom: row.sectionIsCustom,
             newSectionId: row.newSectionId,
             allowsNewLines: row.allowsNewLines,
+            lineIdentifier: newRowIdentifier(row),
           };
           const at = rows.findIndex((r) => r.id === id);
           remaining = [

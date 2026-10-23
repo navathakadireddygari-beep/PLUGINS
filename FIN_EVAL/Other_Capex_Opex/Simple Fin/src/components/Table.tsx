@@ -24,7 +24,7 @@ import Toast, { type ToastState } from "./Toast";
 import KpiPanel from "./KpiPanel";
 import {
   SCALE_OPTIONS, SCALE_DIVISOR, SCALE_TOOLTIP, type ScaleCode,
-  NUMBER_FORMAT_OPTIONS, formatSignedAmount, formatDisplayValue, type NumberFormatCode,
+  NUMBER_FORMAT_OPTIONS, formatSignedAmount, formatSignedTrimmed, formatDisplayValue, type NumberFormatCode,
   DATE_FORMAT_OPTIONS, type DateFormatCode,
 } from "../lib/value-format";
 
@@ -799,19 +799,25 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like Tax Rate %.
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
 
+  // User-added (custom) section — its lines are NON_FINANCIAL by default.
+  const isCustomGroup = (g: Group): boolean => g.isCustom === "Y" || tok(g.sectionType) === "CUSTOM";
+
   // A section whose every editable line is NON_FINANCIAL (e.g. Additional
   // Metrics) has no meaningful cross-year TOTAL — its TOTAL column is empty.
+  // A custom section with no editable lines left counts too: its lines are
+  // always created NON_FINANCIAL, so it must not flash a TOTAL header.
   const isAllNonFinancialGroup = (g: Group): boolean => {
     const editable = g.values.filter((v) => v.isCalculated !== "Y");
-    return editable.length > 0 && editable.every(isNonFinancialRow);
+    if (editable.length === 0) return isCustomGroup(g);
+    return editable.every(isNonFinancialRow);
   };
 
   // Raw formatter: no fx, no scale — used for pure percentage rows like Tax Rate %
   const rawFmt = (n: number): string => formatSignedAmount(n, numberFormat);
 
-  // NON_FINANCIAL values always show as a plain whole number — unlike Tax Rate %,
-  // their decimal count must NOT shift with the K/M/B scale toggle either.
-  const rawFmtNonFinancial = (n: number): string => formatSignedAmount(n, numberFormat, 0);
+  // NON_FINANCIAL values show exactly as entered (2 → 2, 2.35 → 2.35) — never
+  // rounded, and never tied to the K/M/B scale toggle.
+  const rawFmtNonFinancial = (n: number): string => formatSignedTrimmed(n, numberFormat);
 
   const displayFmt = (n: number): string =>
     formatDisplayValue(n, { fxMultiplier, scale: displayScale, numberFormat });
@@ -921,7 +927,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
         id: newId, name: "", expanded: true,
         sectionType: "CUSTOM", isCustom: "Y", status: "ACTIVE", languageCode: "EN",
         displayOrder: p.groups.length + 1,
-        values: [blankRow(p)],
+        // A new section is non-financial by default (no TOTAL, no fx/scale).
+        values: [{ ...blankRow(p), lineIdentifier: "NON_FINANCIAL" }],
       }],
     }) : p);
     // Focuses the new section's name input, which auto-scrolls it into view.
@@ -936,6 +943,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // non-financial section was created FINANCIAL and got K/M/B-scaled.
   const newRowIdentifier = (g: Group): string => {
     const editable = g.values.filter((v) => v.isCalculated !== "Y");
+    // Custom (user-added) sections are non-financial by default; one already
+    // holding FINANCIAL lines keeps following them rather than going mixed.
+    if (isCustomGroup(g) && editable.every((v) => tok(v.lineIdentifier) === "NONFINANCIAL")) return "NON_FINANCIAL";
     if (editable.length > 0) return editable.every((v) => tok(v.lineIdentifier) === "NONFINANCIAL") ? "NON_FINANCIAL" : "FINANCIAL";
     const kind = `${g.sectionType ?? ""} ${g.name ?? ""}`.toUpperCase().replace(/[^A-Z ]/g, "");
     return /NONFINANCIAL|NON FINANCIAL|ADDITIONAL ?METRIC/.test(kind) ? "NON_FINANCIAL" : "FINANCIAL";
@@ -1588,7 +1598,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                     : val === 0 ? "" : (rawRow ? (isNonFinancialRow(value) ? rawFmtNonFinancial(val) : rawFmt(val)) : displayFmt(val))}
                                   placeholder="—"
                                   onFocus={() => {
-                                    const displayed = val === 0 ? "" : rawRow
+                                    // NON_FINANCIAL seeds the exact stored value (10dp only strips float noise).
+                                    const displayed = val === 0 ? "" : isNonFinancialRow(value)
+                                      ? String(parseFloat(val.toFixed(10)))
+                                      : rawRow
                                       ? String(parseFloat(val.toFixed(3)))
                                       : String(parseFloat(((val * fxMultiplier) / SCALE_DIVISOR[displayScale]).toFixed(3)));
                                     setEditingCell({ gId: group.id, vId: value.id, year, raw: displayed });

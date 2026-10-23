@@ -28,12 +28,18 @@ export interface CollectableRow {
   newSectionId?: string;
   /** Owning section's name; on a new section, whatever the user typed. */
   sectionName?: string | null;
+  /** Carried onto a new line's `line_identifier` (NON_FINANCIAL in a custom section). */
+  lineIdentifier?: string | null;
 }
 
 /** One user-added section under assembly, keyed by its local id. */
 export type NewSectionDraft = {
   name: string;
-  lines: Array<{ name: string; yearValues: Record<string, string> }>;
+  lines: Array<{
+    name: string;
+    yearValues: Record<string, string>;
+    lineIdentifier?: string | null;
+  }>;
 };
 
 /** Row values keyed by fiscal-year bucket ("fy26"), for the columns shown. */
@@ -99,6 +105,7 @@ export const collectGridRows = (
         draft.lines.push({
           name: row.label.trim(),
           yearValues: byYearOf(row, cols, fyKeys),
+          lineIdentifier: row.lineIdentifier,
         });
       }
       return;
@@ -109,6 +116,7 @@ export const collectGridRows = (
       name: row.label.trim(),
       yearValues: byYearOf(row, cols, fyKeys),
       afterKey,
+      lineIdentifier: row.lineIdentifier,
     });
   });
 };
