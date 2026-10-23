@@ -6,9 +6,19 @@
  *    layers them, and any unlayered rule (APEX Universal Theme's `th`,
  *    `button`, `input` …) beats a layered one regardless of specificity.
  *    Unlayered, utilities win on specificity exactly as they did in v3.
+ *  - `important`: every utility is emitted with !important, so a host rule
+ *    that out-ranks a plain utility by specificity (an ID-scoped or
+ *    `.t-Region th` style Universal Theme selector) can no longer win over
+ *    the widget's own classes either.
+ *    Consequence: a utility now also beats an inline `style` on the same
+ *    element, so never set the same property both ways.
+ *
+ * Hand-written rules below are !important where nothing inline competes with
+ * them; the ones left normal say why.
  */
 @import 'tailwindcss/theme.css';
-@import 'tailwindcss/utilities.css';
+@import 'tailwindcss/utilities.css' important;
+@config '../../tailwind.config.js';
 
 @plugin 'tailwindcss-animate';
 
@@ -100,14 +110,18 @@
   --radius: 0.5rem;
 }
 
-/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX */
+/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX.
+   Not !important: it matches every element, and per-element inline borders /
+   boxSizing must keep winning over it. */
 #investment-report-root *,
 #fin-eval-widget-root * {
   box-sizing: border-box;
   border-color: hsl(var(--border));
 }
 
-/* Scope background/foreground to the widget root — prevents overwriting APEX body styles */
+/* Scope background/foreground to the widget root — prevents overwriting APEX body styles.
+   Not !important: these are inherited defaults that inline background /
+   color on individual elements override. */
 #investment-report-root,
 #fin-eval-widget-root {
   background-color: hsl(var(--background));
@@ -159,170 +173,172 @@
 
 /* Outer wrapper */
 #fin-eval-widget-root .currency-strip {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 /* Inner row */
 #fin-eval-widget-root .currency-strip-row {
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
-  width: max-content;
-  min-width: 100%;
-  box-sizing: border-box;
+  padding: 6px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  width: max-content !important;
+  min-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 /* CURRENCY / SCALE / NUMBER FORMAT / DATE FORMAT labels */
 #fin-eval-widget-root .strip-label {
-  font-size: 10px;
-  color: #6b7280;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  flex-shrink: 0;
+  font-size: 10px !important;
+  color: #6b7280 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  flex-shrink: 0 !important;
 }
 
 /* Currency/Scale toggle group */
 #fin-eval-widget-root .toggle-group {
-  display: flex;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  overflow: hidden;
+  display: flex !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
 }
 
 /* Individual toggle button (from toggleBtn(active, first)) */
 #fin-eval-widget-root .toggle-btn {
-  padding: 3px 8px;
-  border: none;
-  border-left: 1px solid #e5e7eb;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
-  background: #fff;
-  color: #6b7280;
+  padding: 3px 8px !important;
+  border: none !important;
+  border-left: 1px solid #e5e7eb !important;
+  cursor: pointer !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  transition: background 0.15s, color 0.15s !important;
+  background: #fff !important;
+  color: #6b7280 !important;
 }
 #fin-eval-widget-root .toggle-group .toggle-btn:first-child {
-  border-left: none;
+  border-left: none !important;
 }
 #fin-eval-widget-root .toggle-btn.active {
-  background: #1e2433; /* DARK_TOGGLE */
-  color: #fff;
+  background: #1e2433 !important; /* DARK_TOGGLE */
+  color: #fff !important;
 }
 
 /* Divider between groups */
 #fin-eval-widget-root .strip-divider {
-  width: 1px;
-  height: 18px;
-  background: #e5e7eb;
-  flex-shrink: 0;
+  width: 1px !important;
+  height: 18px !important;
+  background: #e5e7eb !important;
+  flex-shrink: 0 !important;
 }
 
 /* Number/Date format dropdown (stripSelect) */
 #fin-eval-widget-root .strip-select {
-  height: 24px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #374151;
-  padding: 0 6px;
-  background: #fff;
-  cursor: pointer;
-  outline: none;
-  flex-shrink: 0;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 6px center;
-  background-size: 12px 12px;
-  padding-right: 20px;
-  line-height: 1;
+  height: 24px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  padding: 0 6px !important;
+  background: #fff !important;
+  cursor: pointer !important;
+  outline: none !important;
+  flex-shrink: 0 !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 6px center !important;
+  background-size: 12px 12px !important;
+  padding-right: 20px !important;
+  line-height: 1 !important;
 }
 #fin-eval-widget-root .strip-select:focus {
-  outline: 1.5px solid #A5005A;
-  outline-offset: -1px;
+  outline: 1.5px solid #A5005A !important;
+  outline-offset: -1px !important;
 }
 
 /* Info "i" icon */
 #fin-eval-widget-root .info-icon {
-  width: 15px;
-  height: 15px;
-  border-radius: 999px;
-  border: 1.5px solid #9ca3af;
-  color: #9ca3af;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: default;
-  user-select: none;
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 999px !important;
+  border: 1.5px solid #9ca3af !important;
+  color: #9ca3af !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  cursor: default !important;
+  user-select: none !important;
 }
 /* Unscoped (not #fin-eval-widget-root ...): the tooltip is rendered via a
    React portal into document.body, outside the widget root, so an
    ID-scoped selector here would never match and the tooltip would render
    as unstyled inline text instead of a floating box. */
 .info-tooltip {
+  /* position / left / top / z-index stay normal: the portal sets them inline. */
   position: absolute;
   left: 19px;
   top: -4px;
-  background: #1e2433; /* DARK_TOGGLE */
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  white-space: normal;
-  width: 360px;
-  line-height: 1.5;
+  background: #1e2433 !important; /* DARK_TOGGLE */
+  color: #fff !important;
+  padding: 6px 10px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  white-space: normal !important;
+  width: 360px !important;
+  line-height: 1.5 !important;
   z-index: 300;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+  pointer-events: none !important;
 }
 
 /* FX conversion block (right-aligned) */
 #fin-eval-widget-root .fx-wrap {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  margin-left: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-shrink: 0 !important;
 }
 #fin-eval-widget-root .fx-badge {
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: #fff;
-  color: #000;
-  border: 1.5px solid #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 800;
-  flex-shrink: 0;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #000 !important;
+  border: 1.5px solid #000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  flex-shrink: 0 !important;
 }
 #fin-eval-widget-root .fx-rate-text {
-  font-size: 11px;
+  /* color stays normal: the "Updating exchange rate…" text sets it inline. */
+  font-size: 11px !important;
   color: rgb(17, 24, 39);
-  white-space: nowrap;
-  line-height: 1.25;
+  white-space: nowrap !important;
+  line-height: 1.25 !important;
 }
 #fin-eval-widget-root .fx-rate-text strong {
-  font-weight: 700;
+  font-weight: 700 !important;
 }
 #fin-eval-widget-root .fx-error-text {
-  font-size: 11px;
-  color: #b91c1c;
-  white-space: nowrap;
+  font-size: 11px !important;
+  color: #b91c1c !important;
+  white-space: nowrap !important;
 }
 
 /*
@@ -334,4 +350,52 @@
  */
 :where(#investment-report-root, #fin-eval-widget-root) :where(*:not(input, select, textarea, button)) {
   --tw-border-style: none;
+}
+
+/*
+ * Host-page neutraliser, scoped to the widget root.
+ *
+ * Covers decorations a host theme commonly puts on bare elements that the
+ * widget never sets itself (so `important` alone cannot shield them):
+ * gradients, shadows, letter-spacing, fixed heights, rounded inputs.
+ * Deliberately UNLAYERED and NOT !important — it out-ranks ordinary host
+ * rules by ID specificity, while inline styles, the !important utilities and
+ * the class rules above still win over it wherever one is set.
+ * `line-height: normal` (not inherit) on buttons matches the UA default the
+ * toggle / icon buttons were sized against.
+ */
+#fin-eval-widget-root table {
+  border-spacing: 0;
+  margin: 0;
+  background: transparent;
+}
+#fin-eval-widget-root th,
+#fin-eval-widget-root td {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: normal;
+  font-family: inherit;
+}
+#fin-eval-widget-root button {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  min-height: 0;
+  line-height: normal;
+  font-family: inherit;
+}
+#fin-eval-widget-root input,
+#fin-eval-widget-root select,
+#fin-eval-widget-root textarea {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: normal;
+  text-transform: none;
+  border-radius: 0;
+  min-height: 0;
+  font-family: inherit;
 }

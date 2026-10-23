@@ -5,10 +5,19 @@
  *  - Theme and utilities are imported WITHOUT a cascade layer. v4 normally
  *    layers them, and any unlayered rule (APEX Universal Theme's `th`,
  *    `button`, `input` …) beats a layered one regardless of specificity.
- *    Unlayered, utilities win on specificity exactly as they did in v3.
+ *
+ * `important`: every utility is emitted with !important, so the widget's own
+ * classes always win over the host page's global stylesheet, whatever its
+ * specificity or load order (unlayered alone only won on specificity, and a
+ * host `#… th` or a later-loaded rule could still beat a utility).
+ *
+ * Consequence: a utility now also beats an inline `style` on the same element,
+ * so never set the same CSS property both ways. (Today the components style
+ * everything inline and use no utility classes at all.)
  */
 @import 'tailwindcss/theme.css';
-@import 'tailwindcss/utilities.css';
+@import 'tailwindcss/utilities.css' important;
+@config '../../tailwind.config.js';
 
 @plugin 'tailwindcss-animate';
 
@@ -100,14 +109,21 @@
   --radius: 0.5rem;
 }
 
-/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX */
+/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX.
+   box-sizing is !important: every inline `boxSizing` in the components is
+   border-box too, so it can never override one. border-color stays normal:
+   it is a default for every element, and the components' inline `border` /
+   `borderColor` values must keep winning over it. */
 #investment-report-root *,
 #fin-eval-widget-root * {
-  box-sizing: border-box;
+  box-sizing: border-box !important;
   border-color: hsl(var(--border));
 }
 
-/* Scope background/foreground to the widget root — prevents overwriting APEX body styles */
+/* Scope background/foreground to the widget root — prevents overwriting APEX body styles.
+   Deliberately NOT !important: these are only the inherited defaults, and
+   inline `background` / `color` on the widget's elements must override them.
+   The ID selector already out-ranks the host's bare-element rules. */
 #investment-report-root,
 #fin-eval-widget-root {
   background-color: hsl(var(--background));
@@ -120,7 +136,61 @@
  * `border-style: var(--tw-border-style)` (solid). Defaulting that variable to
  * none on the widget's non-form elements keeps the v3 look; `border-solid`,
  * `border-dashed` etc. still win because they set border-style directly.
+ * Deliberately zero-specificity and NOT !important, so any utility wins.
  */
 :where(#investment-report-root, #fin-eval-widget-root) :where(*:not(input, select, textarea, button)) {
   --tw-border-style: none;
+}
+
+/*
+ * Host-page neutraliser, scoped to the widget root.
+ *
+ * Covers decorations APEX Universal Theme puts on bare elements that the
+ * widget never sets itself (the components style inline, but only the
+ * properties they care about): gradients, shadows, letter-spacing, fixed
+ * heights, rounded inputs, inherited-font overrides. Each value is the
+ * browser default for that element (`inherit` for inherited properties, so
+ * e.g. the KPI table's `<tr style={{ letterSpacing }}>` still reaches its
+ * `<th>`s), i.e. the look the widget was built against.
+ * Deliberately UNLAYERED and NOT !important — it out-ranks ordinary host
+ * rules by ID specificity, while inline styles and !important utilities
+ * still win over it wherever one is set.
+ */
+:is(#investment-report-root, #fin-eval-widget-root) table {
+  margin: 0;
+  background: transparent;
+}
+:is(#investment-report-root, #fin-eval-widget-root) th,
+:is(#investment-report-root, #fin-eval-widget-root) td {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  line-height: inherit;
+  font-family: inherit;
+  vertical-align: inherit;
+}
+:is(#investment-report-root, #fin-eval-widget-root) button {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  min-height: 0;
+  line-height: normal;
+  font-family: inherit;
+}
+:is(#investment-report-root, #fin-eval-widget-root) input,
+:is(#investment-report-root, #fin-eval-widget-root) select,
+:is(#investment-report-root, #fin-eval-widget-root) textarea {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  border-radius: 0;
+  min-height: 0;
+  font-family: inherit;
 }

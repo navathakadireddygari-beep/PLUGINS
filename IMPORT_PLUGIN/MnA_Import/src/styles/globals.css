@@ -136,6 +136,9 @@
     --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Base rules stay un-important: for !important declarations layer order is
+   reversed, so an important base rule would beat every utility (and inline
+   styles), e.g. `cursor-not-allowed` on a disabled button. */
 @layer base {
   * {
     @apply mna:border-border mna:outline-ring/50;
@@ -221,7 +224,7 @@
   tr.mna_flash > td,
   div.mna_flash {
     background-color: #fef08a !important;
-    transition: background-color 0.4s;
+    transition: background-color 0.4s !important;
   }
   tr.mna_flash,
   div.mna_flash {

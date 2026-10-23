@@ -6,9 +6,19 @@
  *    layers them, and any unlayered rule (APEX Universal Theme's `th`,
  *    `button`, `input` …) beats a layered one regardless of specificity.
  *    Unlayered, utilities win on specificity exactly as they did in v3.
+ *  - `important`: every utility is emitted with !important, so a host rule
+ *    that out-ranks a plain utility by specificity (an ID-scoped or
+ *    `.t-Region th` style Universal Theme selector) can no longer win over
+ *    the widget's own classes either.
+ *    Consequence: a utility now also beats an inline `style` on the same
+ *    element, so never set the same property both ways.
+ *
+ * Hand-written rules below are !important where nothing inline competes with
+ * them; the ones left normal say why.
  */
 @import 'tailwindcss/theme.css';
-@import 'tailwindcss/utilities.css';
+@import 'tailwindcss/utilities.css' important;
+@config '../../tailwind.config.js';
 
 @plugin 'tailwindcss-animate';
 
@@ -100,14 +110,18 @@
   --radius: 0.5rem;
 }
 
-/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX */
+/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX.
+   Not !important: it matches every element, and per-element inline borders /
+   boxSizing must keep winning over it. */
 #investment-report-root *,
 #fin-eval-widget-root * {
   box-sizing: border-box;
   border-color: hsl(var(--border));
 }
 
-/* Scope background/foreground to the widget root — prevents overwriting APEX body styles */
+/* Scope background/foreground to the widget root — prevents overwriting APEX body styles.
+   Not !important: these are inherited defaults that inline background /
+   color on individual elements override. */
 #investment-report-root,
 #fin-eval-widget-root {
   background-color: hsl(var(--background));
@@ -157,24 +171,25 @@
    of leaving extra vertical/horizontal space around them.
    ────────────────────────────────────────────────────────────── */
 #fin-eval-widget-root .feval-strip {
+  /* Not !important: the strip's inline `gap: 16` sets row-gap too and wins. */
   row-gap: 6px;
 }
 
 #fin-eval-widget-root .feval-strip select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 6px center;
-  background-size: 12px 12px;
-  padding-right: 24px;
-  line-height: 1;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 6px center !important;
+  background-size: 12px 12px !important;
+  padding-right: 24px; /* normal: inline `padding` (stripSelect) wins */
+  line-height: 1 !important;
 }
 
 #fin-eval-widget-root .feval-strip select:focus {
-  outline: 1.5px solid #A5005A;
-  outline-offset: -1px;
+  outline: 1.5px solid #A5005A !important;
+  outline-offset: -1px !important;
 }
 
 /*
@@ -186,4 +201,52 @@
  */
 :where(#investment-report-root, #fin-eval-widget-root) :where(*:not(input, select, textarea, button)) {
   --tw-border-style: none;
+}
+
+/*
+ * Host-page neutraliser, scoped to the widget root.
+ *
+ * Covers decorations a host theme commonly puts on bare elements that the
+ * widget never sets itself (so `important` alone cannot shield them):
+ * gradients, shadows, letter-spacing, fixed heights, rounded inputs.
+ * Deliberately UNLAYERED and NOT !important — it out-ranks ordinary host
+ * rules by ID specificity, while inline styles, the !important utilities and
+ * the class rules above still win over it wherever one is set.
+ * `line-height: normal` (not inherit) on buttons matches the UA default the
+ * toggle / icon buttons were sized against.
+ */
+#fin-eval-widget-root table {
+  border-spacing: 0;
+  margin: 0;
+  background: transparent;
+}
+#fin-eval-widget-root th,
+#fin-eval-widget-root td {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: normal;
+  font-family: inherit;
+}
+#fin-eval-widget-root button {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  min-height: 0;
+  line-height: normal;
+  font-family: inherit;
+}
+#fin-eval-widget-root input,
+#fin-eval-widget-root select,
+#fin-eval-widget-root textarea {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: normal;
+  text-transform: none;
+  border-radius: 0;
+  min-height: 0;
+  font-family: inherit;
 }

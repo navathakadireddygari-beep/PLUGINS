@@ -6,9 +6,24 @@
  *    layers them, and any unlayered rule (APEX Universal Theme's `th`,
  *    `button`, `input` …) beats a layered one regardless of specificity.
  *    Unlayered, utilities win on specificity exactly as they did in v3.
+ *  - `important`: every utility is also emitted with !important, so the
+ *    plugin's CSS always takes priority over the APEX page's global CSS,
+ *    including the host's own !important rules and whatever order the
+ *    stylesheets load in.
+ *
+ * `important` and the config's `important: "#fin-eval-widget-root"` stack.
+ * v4 treats the two separately: the import flag marks every declaration
+ * !important, and the config's selector string nests the utilities under
+ * the root ID. Each utility comes out as
+ * `#fin-eval-widget-root .flex{display:flex!important}`. The flag does not
+ * replace the ID scoping, and the ID scoping does not switch the flag off.
+ * (Only `important: true` in the config would duplicate the import flag.)
+ *
+ * Consequence: a utility now also beats an inline `style` on the same
+ * element, so never set the same property both ways.
  */
 @import 'tailwindcss/theme.css';
-@import 'tailwindcss/utilities.css';
+@import 'tailwindcss/utilities.css' important;
 
 @config '../../tailwind.config.js';
 
@@ -74,14 +89,19 @@
   --ring: 212.7 26.8% 83.9%;
 }
 
-/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX */
+/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX.
+   Deliberately NOT !important: it hits every element, and the components set
+   their borders inline (`border: "1px solid #d1d5db"` …); an !important
+   border-color here would repaint all of them. */
 #sales-contracts-investment-report-root *,
 #fin-eval-widget-root * {
   box-sizing: border-box;
   border-color: hsl(var(--border));
 }
 
-/* Scope background/foreground to the widget root — prevents overwriting APEX body styles */
+/* Scope background/foreground to the widget root — prevents overwriting APEX body styles.
+   Deliberately NOT !important: these are page-level defaults that inline
+   styles on the widget's own elements override per element. */
 #sales-contracts-investment-report-root,
 #fin-eval-widget-root {
   background-color: hsl(var(--background));
@@ -90,7 +110,7 @@
 
 #sales-contracts-investment-report-root,
 #fin-eval-widget-root {
-  width: 100%;
+  width: 100% !important;
 }
 
 #sales-contracts-investment-report-root > #fin-eval-widget-root,
@@ -121,93 +141,97 @@
    ────────────────────────────────────────────────────────────────── */
 /* Scoped under #fin-eval-widget-root (not just bare class selectors) so these
    rules out-specificity the host page's (APEX) global CSS, whichever order
-   the stylesheets load in — fixes the plugin's own styling being overridden. */
+   the stylesheets load in — fixes the plugin's own styling being overridden.
+   !important on top, so a host !important rule can't win either. None of these
+   classes' elements set the same property inline, except where noted. */
 #fin-eval-widget-root .currency-strip {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 5px;
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  margin-bottom: 5px !important;
 }
 #fin-eval-widget-root .currency-strip-row {
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  row-gap: 8px;
-  box-sizing: border-box;
+  padding: 6px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+  row-gap: 8px !important;
+  box-sizing: border-box !important;
 }
 #fin-eval-widget-root .strip-label {
-  font-size: 10px;
-  color: #6b7280;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  flex-shrink: 0;
+  font-size: 10px !important;
+  color: #6b7280 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  flex-shrink: 0 !important;
 }
 #fin-eval-widget-root .toggle-group {
-  display: flex;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  overflow: hidden;
+  display: flex !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
 }
 #fin-eval-widget-root .toggle-btn {
-  padding: 3px 8px;
-  border: none;
-  border-left: 1px solid #e5e7eb;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
-  background: #fff;
-  color: #6b7280;
+  padding: 3px 8px !important;
+  border: none !important;
+  border-left: 1px solid #e5e7eb !important;
+  cursor: pointer !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  transition: background 0.15s, color 0.15s !important;
+  background: #fff !important;
+  color: #6b7280 !important;
 }
 #fin-eval-widget-root .toggle-btn:first-child {
-  border-left: none;
+  border-left: none !important;
 }
 #fin-eval-widget-root .toggle-btn.active {
-  background: #1e2433;
-  color: #fff;
+  background: #1e2433 !important;
+  color: #fff !important;
 }
 #fin-eval-widget-root .strip-divider {
-  width: 1px;
-  height: 18px;
-  background: #e5e7eb;
-  flex-shrink: 0;
+  width: 1px !important;
+  height: 18px !important;
+  background: #e5e7eb !important;
+  flex-shrink: 0 !important;
 }
 #fin-eval-widget-root .strip-select {
-  height: 24px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #374151;
-  padding: 0 6px;
-  background: #fff;
-  cursor: pointer;
-  outline: none;
-  flex-shrink: 0;
+  height: 24px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  padding: 0 6px !important;
+  background: #fff !important;
+  cursor: pointer !important;
+  outline: none !important;
+  flex-shrink: 0 !important;
 }
 #fin-eval-widget-root .info-icon {
-  position: relative;
-  width: 15px;
-  height: 15px;
-  border-radius: 999px;
-  border: 1.5px solid #9ca3af;
-  color: #9ca3af;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: default;
-  user-select: none;
-  flex-shrink: 0;
+  position: relative !important;
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 999px !important;
+  border: 1.5px solid #9ca3af !important;
+  color: #9ca3af !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  cursor: default !important;
+  user-select: none !important;
+  flex-shrink: 0 !important;
 }
 /* NOT scoped under #fin-eval-widget-root — this span is portaled straight into
    document.body (see Table.tsx's info-icon hover handler), so it's no longer a
    descendant of the widget root and that ancestor selector wouldn't match it.
-   !important guards its look since it can't rely on ID-ancestor specificity. */
+   !important guards its look since it can't rely on ID-ancestor specificity.
+   position / left / top / z-index stay NOT !important: the portaled span sets
+   them inline (position: fixed at the icon's coordinates) and must win. */
 .info-tooltip {
   position: absolute;
   left: 19px;
@@ -217,47 +241,48 @@
   padding: 6px 10px !important;
   border-radius: 4px !important;
   font-size: 12px !important;
-  white-space: normal;
-  width: 360px;
-  line-height: 1.5;
+  white-space: normal !important;
+  width: 360px !important;
+  line-height: 1.5 !important;
   z-index: 300;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
-  pointer-events: none;
+  pointer-events: none !important;
 }
 #fin-eval-widget-root .fx-wrap {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  margin-left: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-shrink: 0 !important;
 }
 #fin-eval-widget-root .fx-badge {
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: #fff;
-  color: #000;
-  border: 1.5px solid #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 800;
-  flex-shrink: 0;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #000 !important;
+  border: 1.5px solid #000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  flex-shrink: 0 !important;
 }
 #fin-eval-widget-root .fx-rate-text {
-  font-size: 11px;
-  color: rgb(17, 24, 39);
-  white-space: nowrap;
-  line-height: 1.25;
+  font-size: 11px !important;
+  color: rgb(17, 24, 39) !important;
+  white-space: nowrap !important;
+  line-height: 1.25 !important;
 }
 #fin-eval-widget-root .fx-rate-text strong {
-  font-weight: 700;
+  font-weight: 700 !important;
 }
+/* color stays NOT !important: the "Loading…" span overrides it inline (grey). */
 #fin-eval-widget-root .fx-error-text {
-  font-size: 11px;
+  font-size: 11px !important;
   color: #b91c1c;
-  white-space: nowrap;
+  white-space: nowrap !important;
 }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -267,15 +292,15 @@
    scrolling still works by wheel, trackpad, touch and keyboard.
    ────────────────────────────────────────────────────────────────── */
 #fin-eval-widget-root .table-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;      /* Firefox */
-  -ms-overflow-style: none;   /* legacy Edge / IE */
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;      /* Firefox */
+  -ms-overflow-style: none !important;   /* legacy Edge / IE */
 }
 #fin-eval-widget-root .table-scroll::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;              /* Chrome / Safari / Edge */
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;              /* Chrome / Safari / Edge */
 }
 
 /* Hide every scrollbar inside the widget, in every engine, whatever element
@@ -284,14 +309,14 @@
    trackpad, touch, drag and keyboard all still work. */
 #fin-eval-widget-root,
 #fin-eval-widget-root * {
-  scrollbar-width: none;      /* Firefox */
-  -ms-overflow-style: none;   /* legacy Edge / IE */
+  scrollbar-width: none !important;      /* Firefox */
+  -ms-overflow-style: none !important;   /* legacy Edge / IE */
 }
 #fin-eval-widget-root::-webkit-scrollbar,
 #fin-eval-widget-root *::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;              /* Chrome / Safari / Edge */
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;              /* Chrome / Safari / Edge */
 }
 
 /*
@@ -300,7 +325,73 @@
  * `border-style: var(--tw-border-style)` (solid). Defaulting that variable to
  * none on the widget's non-form elements keeps the v3 look; `border-solid`,
  * `border-dashed` etc. still win because they set border-style directly.
+ * Deliberately NOT !important: it is a zero-specificity default that those
+ * utilities must be able to override.
  */
 :where(#sales-contracts-investment-report-root, #fin-eval-widget-root) :where(*:not(input, select, textarea, button)) {
   --tw-border-style: none;
 }
+
+/*
+ * Host-page neutraliser, scoped to the widget root.
+ *
+ * APEX Universal Theme decorates bare table / th / td / button / input /
+ * select / textarea. The widget styles those elements inline and never sets
+ * these particular properties, so neither inline styles nor !important
+ * utilities shield them. Each value here is what the element shows with no
+ * host CSS (the widget's standalone look):
+ *  - th / td inherit letter-spacing, font-size, color, line-height and
+ *    text-transform, as the UA does. The KPI hurdle table sets font-size,
+ *    color and letter-spacing on its <tr> for the <th>s to inherit.
+ *  - buttons keep the UA `line-height: normal` and `text-transform: none`.
+ *  - fields are square unless they set a radius inline (most do), e.g. the
+ *    borderless grid-cell inputs whose grey read-only fill shows any radius.
+ *  - font-family: inherit on controls, so they use the widget's font rather
+ *    than a host font stack.
+ * Deliberately UNLAYERED and NOT !important. It out-ranks ordinary host rules
+ * by ID specificity, while inline styles, the !important utilities and the
+ * class rules above (`.toggle-btn`, `.strip-select`: higher specificity) still
+ * win over it.
+ * Not covered: the account-code dropdown and the info tooltip are portaled to
+ * document.body, outside the root.
+ */
+#fin-eval-widget-root table {
+  border-spacing: 0;
+  margin: 0;
+  background: transparent;
+}
+#fin-eval-widget-root th,
+#fin-eval-widget-root td {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: inherit;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  line-height: inherit;
+  text-transform: inherit;
+}
+#fin-eval-widget-root button {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  min-height: 0;
+  line-height: normal;
+  font-family: inherit;
+}
+#fin-eval-widget-root input,
+#fin-eval-widget-root select,
+#fin-eval-widget-root textarea {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: normal;
+  text-transform: none;
+  border-radius: 0;
+  min-height: 0;
+  font-family: inherit;
+}
+

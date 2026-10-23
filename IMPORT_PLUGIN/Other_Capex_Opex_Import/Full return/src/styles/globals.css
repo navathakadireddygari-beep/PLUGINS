@@ -6,9 +6,17 @@
  *    layers them, and any unlayered rule (APEX Universal Theme's `th`,
  *    `button`, `input` …) beats a layered one regardless of specificity.
  *    Unlayered, utilities win on specificity exactly as they did in v3.
+ *  - `important`: every utility is also emitted with !important
+ *    (`.flex{display:flex!important}`), so the plugin's CSS always takes
+ *    priority over the APEX page's global CSS, including the host's own
+ *    !important rules and whatever order the stylesheets load in.
+ *
+ * Consequence: a utility now also beats an inline `style` on the same
+ * element, so never set the same property both ways.
  */
 @import 'tailwindcss/theme.css';
-@import 'tailwindcss/utilities.css';
+@import 'tailwindcss/utilities.css' important;
+@config '../../tailwind.config.js';
 
 @plugin 'tailwindcss-animate';
 
@@ -129,14 +137,19 @@
   --ring: 212.7 26.8% 83.9%;
 }
 
-/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX */
+/* Scope box-sizing and border-color to the widget root only — prevents leaking into APEX.
+   Deliberately NOT !important: it hits every element, and the components set
+   their borders inline (`border: "1px solid #d1d5db"` …); an !important
+   border-color here would repaint all of them. */
 #sales-contracts-investment-report-root *,
 #fin-eval-widget-root * {
   box-sizing: border-box;
   border-color: hsl(var(--border));
 }
 
-/* Scope background/foreground to the widget root — prevents overwriting APEX body styles */
+/* Scope background/foreground to the widget root — prevents overwriting APEX body styles.
+   Deliberately NOT !important: these are page-level defaults that inline
+   styles on the widget's own elements override per element. */
 #sales-contracts-investment-report-root,
 #fin-eval-widget-root {
   background-color: hsl(var(--background));
@@ -145,7 +158,7 @@
 
 #sales-contracts-investment-report-root,
 #fin-eval-widget-root {
-  width: 100%;
+  width: 100% !important;
 }
 
 #sales-contracts-investment-report-root > #fin-eval-widget-root,
@@ -167,7 +180,71 @@
  * `border-style: var(--tw-border-style)` (solid). Defaulting that variable to
  * none on the widget's non-form elements keeps the v3 look; `border-solid`,
  * `border-dashed` etc. still win because they set border-style directly.
+ * Deliberately NOT !important: it is a zero-specificity default that those
+ * utilities must be able to override.
  */
 :where(#sales-contracts-investment-report-root, #fin-eval-widget-root) :where(*:not(input, select, textarea, button)) {
   --tw-border-style: none;
+}
+
+/*
+ * Host-page neutraliser, scoped to the widget root.
+ *
+ * APEX Universal Theme decorates bare table / th / td / button / input /
+ * select / textarea. The widget styles those elements inline and never sets
+ * these particular properties, so neither inline styles nor !important
+ * utilities shield them. Each value here is what the element shows with no
+ * host CSS (the widget's standalone look):
+ *  - th / td inherit letter-spacing, font-size, color, line-height and
+ *    text-transform, as the UA does. The KPI hurdle table sets font-size,
+ *    color and letter-spacing on its <tr> for the <th>s to inherit.
+ *  - buttons keep the UA `line-height: normal` and `text-transform: none`.
+ *  - fields are square unless they set a radius inline (most do), e.g. the
+ *    borderless grid-cell inputs whose grey read-only fill shows any radius.
+ *  - font-family: inherit on controls, so they use the widget's font rather
+ *    than a host font stack.
+ * Deliberately UNLAYERED and NOT !important. It out-ranks ordinary host rules
+ * by ID specificity, while inline styles and the !important utilities still
+ * win over it.
+ * Not covered: the currency / scale info tooltip is portaled to
+ * document.body, outside the root.
+ */
+#fin-eval-widget-root table {
+  border-spacing: 0;
+  margin: 0;
+  background: transparent;
+}
+#fin-eval-widget-root th,
+#fin-eval-widget-root td {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: inherit;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  line-height: inherit;
+  text-transform: inherit;
+}
+#fin-eval-widget-root button {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  min-height: 0;
+  line-height: normal;
+  font-family: inherit;
+}
+#fin-eval-widget-root input,
+#fin-eval-widget-root select,
+#fin-eval-widget-root textarea {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: normal;
+  text-transform: none;
+  border-radius: 0;
+  min-height: 0;
+  font-family: inherit;
 }

@@ -1,3 +1,22 @@
+/*
+ * Buy Plan has no Tailwind utilities: everything is a hand-written `bp-`
+ * class (plus inline styles on the toolbar strip), so there is no utilities
+ * import to mark `important` here.
+ *
+ * The widget is mounted inside an APEX page whose global stylesheet styles
+ * bare elements (th, td, button, input, table …) and theme classes. So every
+ * `bp-` declaration below is !important: an APEX rule can then never win over
+ * the widget's own look, whatever its specificity or source order.
+ *
+ * Consequence: a `bp-` class now also beats an inline `style` on the same
+ * element, so never set the same property both ways. Where two `bp-` rules
+ * set the same property on one element, source order (or specificity, see
+ * `.bp-border-var`) still decides, exactly as before.
+ *
+ * The bare-element rules just below (`*`, `body`, `button`) are left NOT
+ * !important: they are page-level defaults, not plugin-owned, and inside APEX
+ * they would otherwise force the widget's base font / colours onto the host.
+ */
 * {
   box-sizing: border-box;
 }
@@ -17,96 +36,96 @@ button:not(:disabled),
 }
 
 .bp-page {
-  padding: 28px 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 28px 32px !important;
+  max-width: 1400px !important;
+  margin: 0 auto !important;
 }
 
 /* ── Header card ── */
 .bp-header-card {
-  background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 10px;
-  padding: 18px 22px;
-  margin-bottom: 20px;
+  background: white !important;
+  border: 1px solid #e9ecef !important;
+  border-radius: 10px !important;
+  padding: 18px 22px !important;
+  margin-bottom: 20px !important;
 }
 .bp-header-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
 }
 .bp-badge {
-  font-size: 11px;
-  font-weight: 700;
-  color: #1a2b4b;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  margin-bottom: 4px;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #1a2b4b !important;
+  letter-spacing: 0.8px !important;
+  text-transform: uppercase !important;
+  margin-bottom: 4px !important;
 }
 .bp-title {
-  font-size: 19px;
-  font-weight: 800;
-  color: #1a2b4b;
-  margin: 0 0 3px;
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  color: #1a2b4b !important;
+  margin: 0 0 3px !important;
 }
 .bp-subtitle {
-  font-size: 12px;
-  color: #6c757d;
+  font-size: 12px !important;
+  color: #6c757d !important;
 }
 .bp-ebs {
-  text-align: right;
+  text-align: right !important;
 }
 .bp-ebs-label {
-  font-size: 10px;
-  color: #adb5bd;
-  margin-bottom: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 10px !important;
+  color: #adb5bd !important;
+  margin-bottom: 3px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
 }
 .bp-ebs-code {
-  background: #eef3fa;
-  color: #1a2b4b;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 14px;
-  font-weight: 700;
+  background: #eef3fa !important;
+  color: #1a2b4b !important;
+  border-radius: 6px !important;
+  padding: 6px 14px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
 }
 .bp-meta-row {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e9ecef;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  font-size: 12px;
-  color: #6c757d;
+  margin-top: 12px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid #e9ecef !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 18px !important;
+  font-size: 12px !important;
+  color: #6c757d !important;
 }
 .bp-meta-row strong {
-  color: #495057;
+  color: #495057 !important;
 }
 
 /* ── Top bar (copied from FIN_EVAL/MA Header) ── */
 .bp-topbar {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 24px;
-  overflow: hidden;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  background: white !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  margin-bottom: 12px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 .bp-topbar-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 16px 24px;
-  border-bottom: 1px solid #e2e8f0;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  padding: 16px 24px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
 }
 .bp-topbar-strip {
-  margin: 16px 24px;
+  margin: 16px 24px !important;
 }
 
 /* ── Tables — FIN_EVAL/MA colour code ──
@@ -116,176 +135,179 @@ button:not(:disabled),
  * year partitions 2px #4b5563 · label col 180px · value cols 120px
  */
 .bp-table-card {
-  margin-bottom: 24px;
+  margin-bottom: 24px !important;
 }
 .bp-table-title {
-  background: #2d3748;
-  color: white;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 4px 4px 0 0;
+  background: #2d3748 !important;
+  color: white !important;
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border-radius: 4px 4px 0 0 !important;
 }
 .bp-table-scroll {
-  overflow: auto;
-  border: 1px solid #e2e8f0;
-  border-top: none;
-  border-radius: 0 0 4px 4px;
+  overflow: auto !important;
+  border: 1px solid #e2e8f0 !important;
+  border-top: none !important;
+  border-radius: 0 0 4px 4px !important;
 }
 
 table.bp-table {
-  width: 100%;
-  min-width: 700px;
-  border-collapse: collapse;
-  table-layout: fixed;
-  font-size: 14px;
+  width: 100% !important;
+  min-width: 700px !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+  font-size: 14px !important;
 }
 /* Fixed layout: the table grows to the sum of these widths and the wrapper
    scrolls sideways, rather than squeezing big figures into narrow columns. */
 .bp-col-label {
-  width: 180px;
+  width: 180px !important;
 }
 .bp-col-value {
-  width: 120px;
+  width: 120px !important;
 }
 
 .bp-th-corner,
 .bp-th-fy,
 .bp-th-sub {
-  height: 35px;
-  padding: 6px 8px;
-  background: #e5e7eb;
-  color: #374151;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-bottom: 1px solid #d1d5db;
-  border-right: 1px solid #d1d5db;
+  height: 35px !important;
+  padding: 6px 8px !important;
+  background: #e5e7eb !important;
+  color: #374151 !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  border-bottom: 1px solid #d1d5db !important;
+  border-right: 1px solid #d1d5db !important;
 }
 .bp-th-corner,
 .bp-th-sub--corner {
-  text-align: left;
+  text-align: left !important;
 }
 .bp-th-fy {
-  text-align: center;
+  text-align: center !important;
 }
 .bp-th-sub {
-  text-align: right;
+  text-align: right !important;
 }
 
-.bp-border-var {
+/* Year partition. Element-qualified (0,1,1) so it out-ranks the cell's own
+   `.bp-cell` / `.bp-th-*` border-right, which are equally !important. */
+th.bp-border-var,
+td.bp-border-var {
   border-right: 2px solid #4b5563 !important;
 }
 
 .bp-group-header {
-  padding: 10px 14px;
-  background: #2d3748;
-  color: white;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  padding: 10px 14px !important;
+  background: #2d3748 !important;
+  color: white !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
 }
 
 /* No row hover colour — FIN_EVAL/MA has none. */
 .bp-row {
-  background: white;
+  background: white !important;
 }
 /* Locked rows (server figures, totals) on #f3f4f6; rows the user added on
    white — FIN_EVAL/MA's locked / editable row surfaces. */
 .bp-row--locked,
 .bp-row--total {
-  background: #f3f4f6;
+  background: #f3f4f6 !important;
 }
 .bp-row--new {
-  background: white;
+  background: white !important;
 }
 .bp-row-label {
-  height: 40px;
-  padding: 0 12px;
-  overflow: hidden;
-  vertical-align: middle;
-  border-bottom: 1px solid #e5e7eb;
-  border-right: 1px solid #e5e7eb;
+  height: 40px !important;
+  padding: 0 12px !important;
+  overflow: hidden !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-right: 1px solid #e5e7eb !important;
 }
 /* Template line names bold #111827; long names ellipsed, full text on hover. */
 .bp-row-label-text {
-  font-size: 12px;
-  font-weight: 700;
-  color: #111827;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 .bp-row-label-text--calc {
-  color: #111;
+  color: #111 !important;
 }
 /* User-added row names: regular #1f2937, as MA's custom lines. */
 .bp-row-label-text--custom {
-  font-weight: 400;
-  color: #1f2937;
+  font-weight: 400 !important;
+  color: #1f2937 !important;
 }
 .bp-row-label-edit {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
 }
 .bp-row-label-input {
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  font: inherit;
-  font-size: 12px;
-  color: #1f2937;
-  text-overflow: ellipsis;
+  flex: 1 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  font: inherit !important;
+  font-size: 12px !important;
+  color: #1f2937 !important;
+  text-overflow: ellipsis !important;
 }
 .bp-row-label-input::placeholder {
-  color: #9ca3af;
+  color: #9ca3af !important;
 }
 .bp-row-delete {
-  display: inline-flex;
-  flex-shrink: 0;
-  padding: 2px;
-  border: none;
-  background: none;
-  color: #9ca3af;
+  display: inline-flex !important;
+  flex-shrink: 0 !important;
+  padding: 2px !important;
+  border: none !important;
+  background: none !important;
+  color: #9ca3af !important;
 }
 .bp-row-delete:hover {
-  color: #dc2626;
+  color: #dc2626 !important;
 }
 
 /* "+ Add Row" — MA's: 11px / 600 / black, bottom rule only. */
 .bp-add-row-cell {
-  padding: 6px 10px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 6px 10px !important;
+  border-bottom: 1px solid #e5e7eb !important;
 }
 .bp-add-row {
-  padding: 3px 8px;
-  border: none;
-  background: none;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  color: black;
+  padding: 3px 8px !important;
+  border: none !important;
+  background: none !important;
+  font: inherit !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: black !important;
 }
 .bp-add-row:disabled {
-  color: #9ca3af;
-  cursor: not-allowed;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
 }
 
 .bp-cell {
-  height: 40px;
-  padding: 0;
-  text-align: right;
-  vertical-align: middle;
-  border-bottom: 1px solid #e5e7eb;
-  border-right: 1px solid #e5e7eb;
+  height: 40px !important;
+  padding: 0 !important;
+  text-align: right !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-right: 1px solid #e5e7eb !important;
 }
 
 /* ── Grid cells — FIN_EVAL/MA's SpreadsheetCell ──
@@ -294,102 +316,150 @@ table.bp-table {
  * wider than its column is clipped; the full value is in the hover title.
  */
 .bp-grid-cell {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 40px;
-  padding: 0 12px;
-  border: none;
-  outline: none;
-  background: transparent;
-  font: inherit;
-  font-size: 13px;
-  line-height: 40px;
-  text-align: right;
-  color: #1f2937;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 40px !important;
+  padding: 0 12px !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  line-height: 40px !important;
+  text-align: right !important;
+  color: #1f2937 !important;
 }
 .bp-grid-cell::placeholder {
-  color: #9ca3af;
+  color: #9ca3af !important;
 }
 .bp-grid-cell--calc {
-  font-weight: 700;
-  color: #111;
+  font-weight: 700 !important;
+  color: #111 !important;
 }
 .bp-grid-cell--neg {
-  color: #dc2626;
+  color: #dc2626 !important;
 }
 
 /* ── Save / status ── */
 .bp-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  border: 1px solid rgba(0, 0, 0, 0.7);
-  border-radius: 6px;
-  background: white;
-  color: black;
-  transition: color 150ms, background-color 150ms, border-color 150ms, opacity 150ms;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+  border: 1px solid rgba(0, 0, 0, 0.7) !important;
+  border-radius: 6px !important;
+  background: white !important;
+  color: black !important;
+  transition: color 150ms, background-color 150ms, border-color 150ms, opacity 150ms !important;
 }
 .bp-btn--save {
-  padding: 8px 18px;
-  font-weight: 700;
+  padding: 8px 18px !important;
+  font-weight: 700 !important;
 }
 .bp-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
 }
 .bp-status {
-  max-width: 320px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
-  color: #64748b;
+  max-width: 320px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 14px !important;
+  color: #64748b !important;
 }
 .bp-status--error {
-  color: #dc2626;
+  color: #dc2626 !important;
 }
 
 /* ── Toast — FIN_EVAL/MA's Toast ── */
 .bp-toast {
-  position: fixed;
-  top: 50px;
-  right: 20px;
-  z-index: 400;
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 260px;
-  max-width: 472px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  position: fixed !important;
+  top: 50px !important;
+  right: 20px !important;
+  z-index: 400 !important;
+  margin-top: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 260px !important;
+  max-width: 472px !important;
+  padding: 12px 14px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
 }
 .bp-toast--success {
-  background: #f4fceb;
-  color: #436b1d;
+  background: #f4fceb !important;
+  color: #436b1d !important;
 }
 .bp-toast--error {
-  background: white;
-  color: #111827;
+  background: white !important;
+  color: #111827 !important;
 }
 .bp-toast-icon {
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
 }
 .bp-toast-message {
-  flex: 1;
+  flex: 1 !important;
 }
 .bp-toast-close {
-  display: flex;
-  padding: 0;
-  border: none;
+  display: flex !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: inherit !important;
+}
+
+/*
+ * Host-page neutraliser, scoped to the widget root (`.bp-root`, App.tsx — the
+ * APEX host id can vary, the class cannot).
+ *
+ * Covers decorations a host theme commonly puts on bare elements that the
+ * widget never sets itself (so the !important `bp-` rules alone cannot shield
+ * them): gradients, shadows, letter-spacing, fixed heights, rounded inputs.
+ * The toolbar-strip buttons and select get their own look from inline styles;
+ * those, and every `bp-` rule, still win over this block.
+ * No `font-family` on button / input / select: the strip toggles and the
+ * Number Format select keep the UA control font, as in Prod Dev's identical
+ * strip (the `bp-` controls already set `font: inherit` themselves).
+ * Deliberately NOT !important — it out-ranks ordinary host rules by
+ * specificity, while inline styles and `bp-` classes still win over it.
+ */
+.bp-root table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin: 0;
   background: transparent;
-  color: inherit;
+}
+.bp-root th,
+.bp-root td {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: normal;
+  font-family: inherit;
+  vertical-align: middle;
+}
+.bp-root button {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  min-height: 0;
+  line-height: inherit;
+}
+.bp-root input,
+.bp-root select,
+.bp-root textarea {
+  background-image: none;
+  box-shadow: none;
+  border-radius: 0;
+  min-height: 0;
 }
