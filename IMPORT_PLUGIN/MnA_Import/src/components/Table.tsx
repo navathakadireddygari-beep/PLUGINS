@@ -407,6 +407,34 @@ const tok = (s: string | null | undefined): string =>
 const sectionKeyOf = (row: Row): string =>
   row.sectionKey ?? `type:${tok(row.sectionType)}`;
 
+/**
+ * Whether `row`'s section is NON-FINANCIAL: every editable (non-calculated)
+ * line in it is NON_FINANCIAL. With no editable line left it follows
+ * `newRowIdentifier`, so a user-added section stays non-financial even once
+ * emptied, while an all-calculated template block (Returns Analysis) does not.
+ */
+const isNonFinancialSection = (rows: Row[], row: Row): boolean => {
+  const key = sectionKeyOf(row);
+  const editable = rows.filter(
+    (r) => sectionKeyOf(r) === key && !r.isCalculated,
+  );
+  if (editable.length === 0) return newRowIdentifier(row) === "NON_FINANCIAL";
+  return editable.every((r) => isNonFinancialRow(identityOf(r)));
+};
+
+/**
+ * Ids of the rows a grid does NOT render: the calculated (total) lines of a
+ * non-financial section, which shows no totals at all. They stay in state —
+ * so row indices, navigation and the save payload are untouched — and are only
+ * skipped when drawing, copying and pasting.
+ */
+const hiddenTotalIds = (rows: Row[]): Set<string> =>
+  new Set(
+    rows
+      .filter((r) => r.isCalculated && isNonFinancialSection(rows, r))
+      .map((r) => r.id),
+  );
+
 const SECTIONS_ALLOWING_ROWS: ReadonlySet<string> = new Set([
   "REVENUE",
   "COSTS",
@@ -1353,6 +1381,9 @@ const Table: React.FC = () => {
     if (isNoTotalRow(identityOf(row)) || isPercentRow(identityOf(row))) {
       return "—";
     }
+    // A cross-year growth of a count / metric is no more meaningful than a
+    // total of one — NON_FINANCIAL rows show no CAGR either.
+    if (isNonFinancialRow(identityOf(row))) return "—";
     // Only the server's `cagr_percent` is shown; a null means no CAGR, so the
     // client never derives one from the year values.
     // CAGR is M&A-only (Prod Dev has no such column), so it keeps its "%".
@@ -1489,6 +1520,7 @@ const Table: React.FC = () => {
     cagr = false,
   ) => {
     const span = gridColSpan(cols, cagr);
+    const hidden = hiddenTotalIds(rows);
     return rows.map((row, rowIdx) => {
       const collapsed = isSectionCollapsed(gridId, row);
       const locked = isRowLocked(row, isReadonly);
@@ -1505,7 +1537,9 @@ const Table: React.FC = () => {
       return (
         <React.Fragment key={row.id}>
           {sectionHeaderRow(gridId, rows, rowIdx, span)}
-          {!collapsed && (
+          {/* Only the line itself is dropped: the bar above and the
+              "+ Add Row" below still key off this row's index. */}
+          {!collapsed && !hidden.has(row.id) && (
             <tr
               className={rowBgClass(locked)}
               data-line-id={row.lineId ?? undefined}
@@ -1952,8 +1986,21 @@ const Table: React.FC = () => {
     writeCells(gridId, Math.min(r1, r2), Math.min(c1, c2), blank);
   };
 
+  /** Rows of `gridId` that are not drawn (see `hiddenTotalIds`), by index. */
+  const hiddenRowIndexes = (gridId: string): Set<number> => {
+    const rows = gridAdapters[gridId]?.rows ?? [];
+    const hidden = hiddenTotalIds(rows);
+    return new Set(
+      rows.flatMap((r, i) => (hidden.has(r.id) ? [i] : [])),
+    );
+  };
+
+  /** NPV block's hidden rows; it is drawn outside `gridRows`. */
+  const npvHidden = hiddenTotalIds(npvRows);
+
   const copySelection = () => {
     if (!selection) return;
+    const hidden = hiddenRowIndexes(selection.gridId);
     void writeClipboard(
       readSelectionTSV(
         selection.gridId,
@@ -1961,6 +2008,7 @@ const Table: React.FC = () => {
         selection.c1,
         selection.r2,
         selection.c2,
+        (r) => hidden.has(r),
       ),
     );
   };
@@ -1968,7 +2016,21 @@ const Table: React.FC = () => {
   const pasteInto = (p: CellPos) => {
     void readClipboard().then((text) => {
       if (!text) return;
-      writeCells(p.gridId, p.row, p.col, parseClipboardMatrix(text));
+      // Pasted lines go onto the rows the user SEES: an empty line is slotted
+      // in for every hidden total it would otherwise land on (they are
+      // calculated, so `writeCells` would have dropped the values anyway).
+      const hidden = hiddenRowIndexes(p.gridId);
+      const matrix: string[][] = [];
+      let r = p.row;
+      parseClipboardMatrix(text).forEach((line) => {
+        while (hidden.has(r)) {
+          matrix.push([]);
+          r += 1;
+        }
+        matrix.push(line);
+        r += 1;
+      });
+      writeCells(p.gridId, p.row, p.col, matrix);
     });
   };
 
@@ -2560,6 +2622,7 @@ const Table: React.FC = () => {
                 <tbody>
                   {npvRows.map((row, rowIdx) => {
                     const locked = isRowLocked(row, isReadonly);
+                    if (npvHidden.has(row.id)) return null;
                     return (
                       <tr key={row.id} className={rowBgClass(locked)}>
                         <td className="mna:h-10 mna:overflow-hidden mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:align-middle">

@@ -1667,10 +1667,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {/* Line rows: editable lines → add button → calculated lines */}
                   {group.expanded && (() => {
                     const editable = group.values.filter((v) => v.isCalculated !== "Y");
-                    const calc     = group.values.filter((v) => v.isCalculated === "Y");
-                    // Bypass scale on this section's own calculated TOTAL row only when every
-                    // editable line in it is NON_FINANCIAL (mixed sections still scale).
+                    // A section whose every editable line is NON_FINANCIAL shows no totals at all:
+                    // its calculated (column-wise TOTAL) rows are not rendered — they stay in
+                    // `data` and the save payload — and its TOTAL column is blank.
                     const groupAllNonFinancial = isAllNonFinancialGroup(group);
+                    const calc     = groupAllNonFinancial ? [] : group.values.filter((v) => v.isCalculated === "Y");
 
                     const renderEditable = (value: ValueRow, idx: number) => {
                       const acKey = `${group.id}|${value.id}`;

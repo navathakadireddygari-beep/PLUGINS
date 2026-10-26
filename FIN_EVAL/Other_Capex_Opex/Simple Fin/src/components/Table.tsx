@@ -1505,7 +1505,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
                   {/* Line rows: editable lines → add button → calculated lines */}
                   {group.expanded && (() => {
-                    const visibleValues = group.values.filter((v) => !isHiddenLine(v));
+                    // A non-financial section shows no totals at all: its calculated/total
+                    // rows are not rendered (display only — the data and save payload keep them).
+                    const hideTotalRows = isAllNonFinancialGroup(group);
+                    const visibleValues = group.values.filter((v) => !isHiddenLine(v) && !(hideTotalRows && v.isCalculated === "Y"));
                     const renderFinancialRow = (value: ValueRow) => {
                       const bold = value.isCalculated === "Y" || isTaxRateRow(value);
                       return (

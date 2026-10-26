@@ -1109,6 +1109,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return /NONFINANCIAL|NON FINANCIAL|ADDITIONAL ?METRIC/.test(kind) ? "NON_FINANCIAL" : "FINANCIAL";
   };
 
+  // A non-financial section shows no totals, row- or column-wise: its editable
+  // lines are all NON_FINANCIAL or, when it has none yet, a new line in it would
+  // be NON_FINANCIAL (custom section, Additional Metrics, …).
+  const isNonFinancialSection = (g: Group): boolean =>
+    isAllNonFinancialGroup(g) || (!g.values.some((v) => v.isCalculated !== "Y") && newRowIdentifier(g) === "NON_FINANCIAL");
+
   const addValueRow = (gId: string): void => setData((p) => p ? ({
     ...p,
     groups: p.groups.map((g) => g.id === gId ? { ...g, values: [...g.values, { ...blankRow(p), lineIdentifier: newRowIdentifier(g) }] } : g),
@@ -1617,21 +1623,24 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           )}
                         </th>
                       ))}
-                      <th style={TH({ textAlign: "right", whiteSpace: "nowrap", width: 90, background: "#e5e7eb" })}>{group.sectionType === "CUSTOM" || tok(group.sectionType) === "BALANCESHEET" || isAllNonFinancialGroup(group) ? "" : "TOTAL"}</th>
+                      <th style={TH({ textAlign: "right", whiteSpace: "nowrap", width: 90, background: "#e5e7eb" })}>{group.sectionType === "CUSTOM" || tok(group.sectionType) === "BALANCESHEET" || isNonFinancialSection(group) ? "" : "TOTAL"}</th>
                     </tr>
                   )}
 
                   {/* Line rows: editable lines → add button → calculated lines */}
                   {group.expanded && (() => {
                     const editable = group.values.filter((v) => v.isCalculated !== "Y");
-                    const calc     = group.values.filter((v) => v.isCalculated === "Y");
+                    // Non-financial sections hide their calculated/total rows (render only —
+                    // the rows stay in data and in the save payload).
+                    const groupNonFinancialSection = isNonFinancialSection(group);
+                    const calc     = groupNonFinancialSection ? [] : group.values.filter((v) => v.isCalculated === "Y");
                     // Bypass scale on this section's calculated/total rows only when every
                     // editable line in it is NON_FINANCIAL (mixed sections still scale).
                     const groupAllNonFinancial = editable.length > 0 && editable.every(isNonFinancialRow);
                     // User-added custom sections bypass K/M/B scale entirely, for every row.
                     const groupIsCustomSection = group.sectionType === "CUSTOM";
                     // Balance Sheet and custom sections never show a real cross-year TOTAL — always "—".
-                    const groupNoTotal = groupIsCustomSection || tok(group.sectionType) === "BALANCESHEET" || groupAllNonFinancial;
+                    const groupNoTotal = groupIsCustomSection || tok(group.sectionType) === "BALANCESHEET" || groupAllNonFinancial || groupNonFinancialSection;
                     const sub = isSubSection(group);
 
                     const renderEditable = (value: ValueRow, _idx: number) => {

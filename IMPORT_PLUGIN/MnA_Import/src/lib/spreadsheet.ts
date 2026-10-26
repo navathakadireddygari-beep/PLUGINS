@@ -155,7 +155,8 @@ const cellValue = (el: HTMLElement | null): string =>
 /**
  * Read a rectangular block of cells and serialize it as tab/newline TSV — the
  * format Excel and Google Sheets expect on the clipboard. Missing cells become
- * empty strings so alignment is preserved.
+ * empty strings so alignment is preserved. Rows `skipRow` names (lines the grid
+ * does not draw) are left out entirely.
  */
 export const readSelectionTSV = (
   gridId: string,
@@ -163,6 +164,7 @@ export const readSelectionTSV = (
   c1: number,
   r2: number,
   c2: number,
+  skipRow: (row: number) => boolean = () => false,
 ): string => {
   const rowMin = Math.min(r1, r2);
   const rowMax = Math.max(r1, r2);
@@ -170,6 +172,7 @@ export const readSelectionTSV = (
   const colMax = Math.max(c1, c2);
   const lines: string[] = [];
   for (let r = rowMin; r <= rowMax; r++) {
+    if (skipRow(r)) continue;
     const cells: string[] = [];
     for (let c = colMin; c <= colMax; c++) {
       cells.push(cellValue(findEl(gridId, r, c)));

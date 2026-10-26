@@ -1621,8 +1621,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 }, {});
                 const sectionTotal = data.years.reduce((s, y) => s + (sectionValues[y] || 0), 0);
                 const { hasAny: sectionHasValues, allNonFinancial: sectionAllNonFinancial } = isSectionNonFinancial(group);
-                // A custom section with no lines is non-financial by default, so it
-                // shows no TOTAL either (before save as well as after reload).
+                // A non-financial section shows no totals: its header bar has no per-year
+                // sums and no TOTAL. A custom section with no lines is non-financial by
+                // default, so it shows none either (before save as well as after reload).
                 const sectionBypassScale = sectionHasValues ? sectionAllNonFinancial : isCustomSection(group);
                 const addSource    = getAddSource(group);
                 const isNetTab     = activeTab === 'net';
@@ -1652,7 +1653,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         </td>
                         {data.years.map((year: number) => (
                           <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                            {isNetTab ? netFmt(sectionValues[year] || 0) : sectionBypassScale ? formatNonFinancialValue(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                            {sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
@@ -1674,7 +1675,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         </td>
                         {data.years.map((year: number) => (
                           <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                            {isNetTab ? netFmt(sectionValues[year] || 0) : sectionBypassScale ? formatNonFinancialValue(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                            {sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
@@ -1741,7 +1742,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               </td>
                             );
                           }); })()}
-                          {(() => { const t = lineTotal(value, data.years); return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: (t ?? 0) < 0 ? "#DC2626" : "#1f2937" }}>{isNonFinancialRow(value) || t == null ? "" : displayFmt(t, isUnscaledRow(value))}</td>; })()}
+                          {(() => { const t = lineTotal(value, data.years); return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: (t ?? 0) < 0 ? "#DC2626" : "#1f2937" }}>{sectionBypassScale || isNonFinancialRow(value) || t == null ? "" : displayFmt(t, isUnscaledRow(value))}</td>; })()}
                         </tr>
                       );
                     })}
@@ -1758,9 +1759,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     )}
 
                     {/* Calculated / summary line rows — read-only, but still keyboard-navigable.
-                        A custom section's own "Total <name>" row bypasses scale too when every
-                        editable sibling in the section is NON_FINANCIAL (same flag as the header bar). */}
-                    {group.expanded && calculated.map(({ value }) => {
+                        A non-financial section (same flag as the header bar) shows no totals, so its
+                        "Total <name>" rows are not rendered at all — they stay in data/save payloads,
+                        and skipping them here keeps nav row numbers contiguous. */}
+                    {group.expanded && !sectionBypassScale && calculated.map(({ value }) => {
                       const navRow = navRowCounter++;
                       const rowBypassScale = sectionBypassScale || isUnscaledRow(value);
                       return (

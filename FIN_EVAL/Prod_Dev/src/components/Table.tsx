@@ -1614,10 +1614,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   {/* Line rows: editable lines → add button → calculated lines */}
                   {group.expanded && (() => {
                     const editable = group.values.filter((v) => v.isCalculated !== "Y");
-                    const calc     = group.values.filter((v) => v.isCalculated === "Y");
                     // Bypass scale on this section's calculated/total rows only when every
                     // editable line in it is NON_FINANCIAL (mixed sections still scale).
                     const groupAllNonFinancial = editable.length > 0 && editable.every(isNonFinancialRow);
+                    // Non-financial sections (incl. a custom section, non-financial by
+                    // default even when emptied) show no totals at all: their calculated/
+                    // total rows are not rendered (data and save payload untouched).
+                    const groupNonFinancial = groupAllNonFinancial || (isCustomGroup(group) && editable.every(isNonFinancialRow));
+                    const calc     = groupNonFinancial ? [] : group.values.filter((v) => v.isCalculated === "Y");
                     // Balance Sheet and custom sections never show a cross-year TOTAL — empty cell.
                     const groupNoTotal = isNoTotalGroup(group) || groupAllNonFinancial;
                     const sub = isSubSection(group);
