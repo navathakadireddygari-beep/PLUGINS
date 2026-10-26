@@ -46,7 +46,11 @@ import {
   nonFinancialPlain,
   trimNonFinancial,
 } from "@/lib/number-format";
-import { actualsCountOf, fyNumberOf } from "@/lib/fiscal-years";
+import {
+  actualsCountOf,
+  currentFiscalYear,
+  fyNumberOf,
+} from "@/lib/fiscal-years";
 import {
   collectGridRows,
   newSectionsError,
@@ -572,16 +576,23 @@ const Table: React.FC = () => {
   const allYearIdx = Array.from({ length: visibleCols }, (_, i) => i);
   const projYearIdx = allYearIdx.slice(actualsCount); // projection-only
   /**
-   * Consideration columns: the fiscal years its own lines carry (e.g. fy27-fy29),
-   * not the full grid. Falls back to the first three projection years when the
-   * response sends no Consideration buckets.
+   * Consideration columns: the fiscal years its own lines carry (e.g. fy26-fy29),
+   * not the full grid — starting at the CURRENT fiscal year. Consideration has
+   * no actuals, so years before the current one are never shown, and the grid
+   * draws no actuals/projections partition. Falls back to the first three years
+   * from the current one when the response sends no Consideration buckets.
    */
   const conYearIdx = (() => {
+    const currentFy = currentFiscalYear();
+    const fromCurrent = (i: number) => {
+      const fy = fyNumberOf(fyKeys[i] ?? "");
+      return fy === null || fy >= currentFy;
+    };
     const idx = conFyKeys
       .map((fy) => fyKeys.indexOf(fy))
-      .filter((i) => i >= 0)
+      .filter((i) => i >= 0 && fromCurrent(i))
       .sort((a, b) => a - b);
-    return idx.length > 0 ? idx : projYearIdx.slice(0, 3);
+    return idx.length > 0 ? idx : allYearIdx.filter(fromCurrent).slice(0, 3);
   })();
   /**
    * Projection columns actually on screen. This — not the raw `years` state —
@@ -1610,7 +1621,7 @@ const Table: React.FC = () => {
               {cols.map((i) => (
                 <td
                   key={i}
-                  className={`mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:p-0 mna:text-right mna:align-middle${partitionClass(i, actualsCount)}`}
+                  className={`mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:p-0 mna:text-right mna:align-middle${gridId === "con" ? "" : partitionClass(i, actualsCount)}`}
                 >
                   <SpreadsheetCell
                     gridId={gridId}
