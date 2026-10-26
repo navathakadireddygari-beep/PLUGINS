@@ -69,7 +69,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, fxMultiplie
         <div style={{ ...cardShell, borderLeftColor: ORANGE }}>
           <div style={labelStyle}>Terms</div>
           <div style={valueStyle}>{term != null ? `${term} Years` : "—"}</div>
-          <div style={subStyle}>Lease Duration</div>
+          <div style={subStyle}>Lease duration derived from proposal proposed term field</div>
         </div>
       </div>
     </div>
