@@ -124,6 +124,12 @@ type Row = {
   isCustom?: boolean;
   /** Server-computed CAGR (`cagr_percent`); shown as "—" when absent. */
   cagrPercent?: number | null;
+  /**
+   * Always a money row (FX + K/M/B scale), whatever its label says. Set on the
+   * NPV block, whose labels carry the discount rate ("NPV @ 10% Discount
+   * Rate") — a "%" that would otherwise mark the row as a percentage.
+   */
+  money?: boolean;
 };
 
 // The year columns come from the response's own `fiscalYears` (see `fyKeys`),
@@ -220,6 +226,7 @@ const npvRowFromApi = (component: FinEvalNpvRow, index: number): Row => ({
   isMandatory: component.isMandatory,
   isCustom: false,
   apiKey: component.key,
+  money: true,
 });
 
 // The reference renders every table row on white with a faint grey hover
@@ -275,7 +282,8 @@ const GridColgroup: React.FC<{
 const identityOf = (row: Row): RowIdentity => ({
   lineIdentifier: row.lineIdentifier,
   lineType: row.lineType,
-  name: row.label,
+  // A money row's label is not consulted, so a "%" in it cannot unscale it.
+  name: row.money ? undefined : row.label,
 });
 
 /**
