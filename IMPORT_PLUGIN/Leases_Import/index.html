@@ -25,11 +25,10 @@
         proposal_id:      673,                         // number | null
         spc_type_id:      104,                        // number | null
         template_type_id: 307,                        // number | null
-        app_user:         "arvind.tammineni@test.exp.com",      // string
+        app_user:         "%VITE_DEV_APP_USER%",      // from PLUGINS/.env
         app_roles:        "APP_FIN_GIS_SPC_AUTHOR_PROPERTY_LEASES,APP_FIN_GIS_RLS_NA_AUTOMOTIVE_PROPERTY_LEASES", // string
         is_readonly:      false,                        // boolean
-        api_endpoint:     "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
-        //api_endpoint:     "https://eappsysdmone.eappsys.com:8443/ords/test/xxexp_gis",
+        api_endpoint:     "%VITE_DEV_API_ENDPOINT%",  // from PLUGINS/.env
         // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
         // ajaxId:   "ajaxId",
         // flowId:   "flowId",

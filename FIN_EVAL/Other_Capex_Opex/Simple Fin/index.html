@@ -13,11 +13,11 @@
         proposal_id:  562,                // number | null  e.g. 1234
         spc_type_id:  null,                // number | null  e.g. 1062  (101=PRODUCT_DEVELOPMENT template)
         template_type_id: null,            // number | null  template selector for new evaluations
-        app_user:     "satish.Mallagundla@test.exp.com",
+        app_user:     "%VITE_DEV_APP_USER%",      // from PLUGINS/.env
         // Use the Vite proxy path "/api" so requests don't hit the remote server
         // directly from the browser — avoids CORS preflight failures for custom
         // headers (user_email, role, Authorization). The proxy (vite.config.ts)
-        api_endpoint: "/api",
+        api_endpoint: "%VITE_DEV_API_ENDPOINT%",  // from PLUGINS/.env
         // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
         // ajaxId:   "ajaxId",
         // flowId:   "flowId",

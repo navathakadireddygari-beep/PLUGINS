@@ -13,8 +13,8 @@
         proposal_id:  1188,                // number | null  e.g. 1234
         spc_type_id:  null,                // number | null  e.g. 1062  (101=PRODUCT_DEVELOPMENT template)
         // app_user:     "vineet.karwa@experian.com",
-        app_user:     "514504331627480",
-        api_endpoint: "https://gisdev.uk.experian.com/ords/xxexp_gis_v1",
+        app_user:     "%VITE_DEV_APP_USER%",      // from PLUGINS/.env
+        api_endpoint: "%VITE_DEV_API_ENDPOINT%",  // from PLUGINS/.env
         // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
         // ajaxId:   "ajaxId",
         // flowId:   "flowId",

@@ -55,7 +55,7 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
     accessToken: import.meta.env.VITE_DEV_ACCESS_TOKEN ?? "",
     token_type: "Bearer",
     expiration_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    app_user: "Navatha.Kadireddygari@test.exp.com",
+    app_user: import.meta.env.VITE_DEV_APP_USER ?? "",
   }
 }
 

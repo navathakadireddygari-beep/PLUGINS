@@ -13,9 +13,9 @@
         proposal_id:  578,               // number | null  e.g. 1234
         file_id: 443,
         spc_type_id:  null,                // number | null  e.g. 1062  (101=PRODUCT_DEVELOPMENT template)
-        app_user:     "500310481545760",
+        app_user:     "%VITE_DEV_APP_USER%",      // from PLUGINS/.env
         // Direct ORDS endpoint (no Vite proxy) — CORS must be enabled server-side.
-        api_endpoint: "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
+        api_endpoint: "%VITE_DEV_API_ENDPOINT%",  // from PLUGINS/.env
         // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
         // ajaxId:   "ajaxId",
         // flowId:   "flowId",

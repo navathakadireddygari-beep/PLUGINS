@@ -19,10 +19,10 @@
         proposal_id:      1034,                         // number | null
         spc_type_id:      null,                        // number | null
         template_type_id: null,                        // number | null
-        app_user:         "satish.mallagundla@test.exp.com",      // string
+        app_user:         "%VITE_DEV_APP_USER%",      // from PLUGINS/.env
         is_readonly:      false,                       // boolean — dev: editable (prod sets this via p_render)
         app_roles:        "APP_FIN_GIS_SPC_AUTHOR_SPC_ALL,APP_FIN_GIS_RLS_NA_AUTOMOTIVE_SPC_ALL",                    // string — V('G_APP_ROLES') in prod
-        api_endpoint:     "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
+        api_endpoint:     "%VITE_DEV_API_ENDPOINT%",  // from PLUGINS/.env
         // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
         // ajaxId:   "ajaxId",
         // flowId:   "flowId",

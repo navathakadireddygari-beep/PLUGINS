@@ -94,7 +94,7 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
     accessToken: ACCESS_TOKEN,
     token_type: "Bearer",
     expiration_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    app_user: "laxmi.kasam@test.exp.com"
+    app_user: import.meta.env.VITE_DEV_APP_USER ?? ""
   }
 }
 

@@ -17,13 +17,12 @@
         proposal_id:      1087,   // number | null
         spc_type_id:      null,   // number | null  e.g. 105
         template_type_id: null,   // number | null  e.g. 301
-        app_user:     "13989975702806",
+        app_user:     "%VITE_DEV_APP_USER%",      // from PLUGINS/.env
         app_roles:    "APP_FIN_GIS_SPC_AUTHOR_SPC_ALL,APP_FIN_GIS_RLS_NA_AUTOMOTIVE_SPC_ALL",
         app_language: "en",
         // Use the direct GIS ORDS base so the frontend builds the exact remote
         // endpoint without passing through the local Vite proxy.
-        // api_endpoint: "https://gisdev.uk.experian.eeco/ords/xxexp_gis_v1",
-        api_endpoint: "https://gisuat.uk.experian.com/ords/xxexp_gis_v1",
+        api_endpoint: "%VITE_DEV_API_ENDPOINT%",  // from PLUGINS/.env
         // Optional — APEX OAuth AJAX call (src/api/auth-api.ts)
         // ajaxId:   "ajaxId",
         // flowId:   "flowId",
