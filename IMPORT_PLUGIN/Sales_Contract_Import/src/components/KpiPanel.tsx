@@ -96,7 +96,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, fxMultiplier, numFmt }: P
         <div style={{ ...cardShell, borderLeftColor: PURPLE }}>
           <div style={labelStyle}>Contract Duration</div>
           <div style={valueStyle}>{rawHeader.contract_duration ?? rawHeader.number_of_years ?? "—"}</div>
-          <div style={subStyle}>Years</div>
+          <div style={subStyle}>Contract duration derived from proposal setup contract duration field</div>
         </div>
       </div>
     </div>
