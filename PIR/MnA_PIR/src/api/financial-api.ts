@@ -608,7 +608,17 @@ function buildLineInsertBody(
   };
 }
 
-async function postJson(cfg: AppConfig, path: string, body: object): Promise<any> {
+/** The parts of a /Financial insert response the callers read. */
+type InsertResponse = {
+  api_status?:          string;
+  api_message?:         string;
+  fin_eval_section_id?: number | null;
+  fin_eval_line_id?:    number | null;
+  data?: Array<{ fin_eval_section_id?: number | null; fin_eval_line_id?: number | null }>;
+  [k: string]: unknown;
+};
+
+async function postJson(cfg: AppConfig, path: string, body: object): Promise<InsertResponse> {
   const token = await getBearerToken(cfg);
   const url   = `${cfg.api_endpoint}${path}`;
 
@@ -625,7 +635,7 @@ async function postJson(cfg: AppConfig, path: string, body: object): Promise<any
   });
 
   const text = await res.text().catch(() => "");
-  let json: { api_status?: string; api_message?: string; [k: string]: unknown } = {};
+  let json: InsertResponse = {};
   try { json = text ? JSON.parse(text) : {}; } catch { /* non-JSON */ }
 
   console.log("[financial-api] ← POST response", res.status, json || text);
@@ -645,7 +655,7 @@ export async function insertSection(
   cfg:   AppConfig,
   group: Group,
   displayOrder = 1,
-): Promise<{ sectionId: number | null; raw: any }> {
+): Promise<{ sectionId: number | null; raw: InsertResponse }> {
   const body = buildSectionInsertBody(group, cfg.app_user, displayOrder);
   const json = await postJson(cfg, `/Financial/section/${cfg.proposal_id}`, body);
   const sectionId: number | null =
@@ -663,7 +673,7 @@ export async function insertLine(
   years:        number[],
   columnLabels: Record<number, string>,
   displayOrder = 1,
-): Promise<{ lineId: number | null; raw: any }> {
+): Promise<{ lineId: number | null; raw: InsertResponse }> {
   const body = buildLineInsertBody(value, sectionId, years, columnLabels, cfg.app_user, displayOrder);
   const json = await postJson(cfg, `/Financial/line/${cfg.proposal_id}`, body);
   const lineId: number | null =

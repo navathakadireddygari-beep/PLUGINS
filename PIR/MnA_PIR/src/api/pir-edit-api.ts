@@ -39,7 +39,7 @@ function devToken(): string | undefined {
     typeof window !== "undefined"
       ? (window as unknown as { __APP_CONFIG__?: { dev_token?: string } }).__APP_CONFIG__?.dev_token
       : undefined;
-  const fromEnv = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_PIR_TOKEN;
+  const fromEnv = import.meta.env.DEV ? import.meta.env.VITE_PIR_TOKEN : undefined;
   return fromCfg || fromEnv;
 }
 
@@ -77,7 +77,7 @@ async function sendJson(cfg: AppConfig, method: "POST" | "PUT", path: string, pa
   } catch (err) {
     if (controller.signal.aborted) {
       const reason = controller.signal.reason as unknown;
-      throw new Error(reason instanceof Error || reason instanceof DOMException ? reason.message : "Request timed out after 5 minutes");
+      throw new Error(reason instanceof Error || reason instanceof DOMException ? reason.message : "Request timed out after 5 minutes", { cause: err });
     }
     throw err instanceof Error ? err : new Error(String(err));
   } finally {

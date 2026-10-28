@@ -222,7 +222,7 @@ function devToken(): string | undefined {
     typeof window !== "undefined"
       ? (window as unknown as { __APP_CONFIG__?: { dev_token?: string } }).__APP_CONFIG__?.dev_token
       : undefined;
-  const fromEnv = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_PIR_TOKEN;
+  const fromEnv = import.meta.env.DEV ? import.meta.env.VITE_PIR_TOKEN : undefined;
   return fromCfg || fromEnv;
 }
 
@@ -304,6 +304,7 @@ export async function recapturePirSnapshots(
         reason instanceof Error || reason instanceof DOMException
           ? reason.message
           : "Request timed out after 5 minutes",
+        { cause: err },
       );
     }
     throw err instanceof Error ? err : new Error(String(err));
@@ -317,7 +318,7 @@ export async function recapturePirSnapshots(
     throw new Error(extractApiErrorMessage(text) || `HTTP ${res.status}: ${res.statusText}${text ? ` — ${text.slice(0, 300)}` : ""}`);
   }
 
-  let json: RecaptureResponse = {};
+  let json: RecaptureResponse;
   try {
     json = text.trim() ? (JSON.parse(text) as RecaptureResponse) : {};
   } catch {

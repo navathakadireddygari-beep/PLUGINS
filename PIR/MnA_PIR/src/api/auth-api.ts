@@ -22,8 +22,7 @@ export type AuthTokenResponse =
 // never race — the production bundle always resolves true (real APEX), the
 // dev server always resolves false (local token endpoint).
 function isApexEnvironment(): boolean {
-  const env = (import.meta as unknown as { env?: { DEV?: boolean } }).env;
-  return env?.DEV !== true;
+  return !import.meta.env.DEV;
 }
 
 export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse> {
@@ -59,11 +58,19 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
       app_user:        json.app_user,
     };
   }
+  // ── Local dev token ──
+  // Only reached by the dev server (production builds always take the APEX
+  // branch above, so Vite drops this code from the bundle). Set
+  // VITE_DEV_ACCESS_TOKEN / VITE_DEV_APP_USER in PLUGINS/.env.local — never
+  // commit a real token here.
+  if (!import.meta.env.DEV) {
+    throw new Error("No APEX context: an auth token is only available inside APEX.");
+  }
   return {
-    accessToken: "nluGveFBn8-wRGzZs-_EQg",
+    accessToken: import.meta.env.VITE_DEV_ACCESS_TOKEN ?? "",
     token_type: "Bearer",
     expiration_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    app_user: "john.doe@eappsys.com",
+    app_user: import.meta.env.VITE_DEV_APP_USER ?? "",
   }
 }
 

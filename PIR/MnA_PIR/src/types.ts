@@ -29,11 +29,6 @@ interface IEntry {
   billability: string;
 }
 
-interface IEntryProps
-{
-  onDuplicate: (entry: any) => void;
-}
-
 interface IDragAndDropKitContainer {
   id: UniqueIdentifier;
   title: string;
@@ -84,10 +79,6 @@ interface EntryOptionsProps {
   billability: string;
 }
 
-interface EntryViewProps
-{
-
-}
 
 
 export type {
@@ -95,7 +86,5 @@ export type {
   IEntry,
   IDragAndDropKitContainer,
   IDragAndDropKitItem,
-  IEntryProps,
   EntryOptionsProps,
-  EntryViewProps
 }
