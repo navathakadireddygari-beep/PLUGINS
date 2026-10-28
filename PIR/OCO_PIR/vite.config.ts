@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
+  // Every plugin reads the one shared env file at the repo root (PLUGINS/.env).
+  envDir: "../..",
   plugins: [react()],
 
   server: {
@@ -19,7 +21,7 @@ export default defineConfig(({ command }) => ({
 
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
 
