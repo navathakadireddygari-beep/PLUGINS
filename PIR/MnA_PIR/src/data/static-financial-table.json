@@ -1,0 +1,175 @@
+{
+  "years": [
+    { "key": "fy26", "label": "FY26", "tone": "purple" },
+    { "key": "fy27", "label": "FY27", "tone": "blue" },
+    { "key": "fy28", "label": "FY28", "tone": "green" },
+    { "key": "fy29", "label": "FY29", "tone": "pink" }
+  ],
+  "sections": [
+    {
+      "title": "CAPITAL EXPENDITURE (CAPEX)",
+      "rows": [
+        {
+          "label": "Infrastructure",
+          "values": {
+            "fy26": { "spcProjected": 500000, "ytdActualsForecast": 500000, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 0, "ytdActualsForecast": 500000, "variance": "0.0%", "varianceTone": "red" },
+            "fy28": { "spcProjected": 0, "ytdActualsForecast": 500000, "variance": "0.0%", "varianceTone": "red" },
+            "fy29": { "spcProjected": 0, "ytdActualsForecast": 500000, "variance": "0.0%", "varianceTone": "red" }
+          }
+        },
+        {
+          "label": "Development - Internal Labour",
+          "values": {
+            "fy26": { "spcProjected": 0, "ytdActualsForecast": 0, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 0, "ytdActualsForecast": 0, "variance": "0.0%", "varianceTone": "red" },
+            "fy28": { "spcProjected": 0, "ytdActualsForecast": 0, "variance": "0.0%", "varianceTone": "red" },
+            "fy29": { "spcProjected": 0, "ytdActualsForecast": 0, "variance": "0.0%", "varianceTone": "red" }
+          }
+        },
+        {
+          "label": "Development - 3rd Party Labour",
+          "values": {
+            "fy26": { "spcProjected": 2500000, "ytdActualsForecast": 2800000, "variance": "(12.0%)", "varianceTone": "red" },
+            "fy27": { "spcProjected": 0, "ytdActualsForecast": 2800000, "variance": "0.0%", "varianceTone": "red" },
+            "fy28": { "spcProjected": 0, "ytdActualsForecast": 2800000, "variance": "0.0%", "varianceTone": "red" },
+            "fy29": { "spcProjected": 0, "ytdActualsForecast": 2800000, "variance": "0.0%", "varianceTone": "red" }
+          }
+        },
+        {
+          "label": "+ New Line",
+          "type": "new",
+          "values": {
+            "fy26": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" },
+            "fy27": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" },
+            "fy28": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" },
+            "fy29": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" }
+          }
+        },
+        {
+          "label": "Subtotal CAPEX",
+          "type": "subtotal",
+          "values": {
+            "fy26": { "spcProjected": 3000000, "ytdActualsForecast": 3300000, "variance": "(10.0%)", "varianceTone": "red" },
+            "fy27": { "spcProjected": 0, "ytdActualsForecast": null, "variance": "0.0%", "varianceTone": "red" },
+            "fy28": { "spcProjected": 0, "ytdActualsForecast": null, "variance": "0.0%", "varianceTone": "red" },
+            "fy29": { "spcProjected": 0, "ytdActualsForecast": null, "variance": "0.0%", "varianceTone": "red" }
+          }
+        }
+      ]
+    },
+    {
+      "title": "OPERATING EXPENDITURE (OPEX)",
+      "rows": [
+        {
+          "label": "Research / Feasibility Costs",
+          "values": {
+            "fy26": { "spcProjected": 100000, "ytdActualsForecast": 100000, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 0, "ytdActualsForecast": 100000, "variance": "0.0%", "varianceTone": "red" },
+            "fy28": { "spcProjected": 0, "ytdActualsForecast": 100000, "variance": "0.0%", "varianceTone": "red" },
+            "fy29": { "spcProjected": 0, "ytdActualsForecast": 100000, "variance": "0.0%", "varianceTone": "red" }
+          }
+        },
+        {
+          "label": "Build / Initial Set-up Costs",
+          "values": {
+            "fy26": { "spcProjected": 100000, "ytdActualsForecast": 100000, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 0, "ytdActualsForecast": 100000, "variance": "0.0%", "varianceTone": "red" },
+            "fy28": { "spcProjected": 0, "ytdActualsForecast": 100000, "variance": "0.0%", "varianceTone": "red" },
+            "fy29": { "spcProjected": 0, "ytdActualsForecast": 100000, "variance": "0.0%", "varianceTone": "red" }
+          }
+        },
+        {
+          "label": "Cloud Costs",
+          "values": {
+            "fy26": { "spcProjected": 650000, "ytdActualsForecast": 600000, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 150000, "ytdActualsForecast": 600000, "variance": "100.0%", "varianceTone": "green" },
+            "fy28": { "spcProjected": 200000, "ytdActualsForecast": 600000, "variance": "100.0%", "varianceTone": "green" },
+            "fy29": { "spcProjected": 250000, "ytdActualsForecast": 600000, "variance": "100.0%", "varianceTone": "green" }
+          }
+        },
+        {
+          "label": "Internal Support Heads",
+          "values": {
+            "fy26": { "spcProjected": 550000, "ytdActualsForecast": 550000, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 50000, "ytdActualsForecast": 550000, "variance": "100.0%", "varianceTone": "green" },
+            "fy28": { "spcProjected": 100000, "ytdActualsForecast": 550000, "variance": "100.0%", "varianceTone": "green" },
+            "fy29": { "spcProjected": 100000, "ytdActualsForecast": 550000, "variance": "100.0%", "varianceTone": "green" }
+          }
+        },
+        {
+          "label": "Depreciation",
+          "values": {
+            "fy26": { "spcProjected": 350000, "ytdActualsForecast": 350000, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 150000, "ytdActualsForecast": 350000, "variance": "100.0%", "varianceTone": "green" },
+            "fy28": { "spcProjected": 150000, "ytdActualsForecast": 350000, "variance": "100.0%", "varianceTone": "green" },
+            "fy29": { "spcProjected": 150000, "ytdActualsForecast": 350000, "variance": "100.0%", "varianceTone": "green" }
+          }
+        },
+        {
+          "label": "Amortisation",
+          "values": {
+            "fy26": { "spcProjected": 400000, "ytdActualsForecast": 450000, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 400000, "ytdActualsForecast": 450000, "variance": "100.0%", "varianceTone": "green" },
+            "fy28": { "spcProjected": 400000, "ytdActualsForecast": 450000, "variance": "100.0%", "varianceTone": "green" },
+            "fy29": { "spcProjected": 400000, "ytdActualsForecast": 450000, "variance": "100.0%", "varianceTone": "green" }
+          }
+        },
+        {
+          "label": "+ New Line",
+          "type": "new",
+          "values": {
+            "fy26": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" },
+            "fy27": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" },
+            "fy28": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" },
+            "fy29": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" }
+          }
+        },
+        {
+          "label": "Subtotal OPEX",
+          "type": "subtotal",
+          "values": {
+            "fy26": { "spcProjected": 2150000, "ytdActualsForecast": 2150000, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 750000, "ytdActualsForecast": null, "variance": "100.0%", "varianceTone": "green" },
+            "fy28": { "spcProjected": 850000, "ytdActualsForecast": null, "variance": "100.0%", "varianceTone": "green" },
+            "fy29": { "spcProjected": 900000, "ytdActualsForecast": null, "variance": "100.0%", "varianceTone": "green" }
+          }
+        }
+      ]
+    },
+    {
+      "title": "REVENUE",
+      "rows": [
+        {
+          "label": "Product Revenue",
+          "values": {
+            "fy26": { "spcProjected": 0, "ytdActualsForecast": 0, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 750000, "ytdActualsForecast": null, "variance": "100.0%", "varianceTone": "green" },
+            "fy28": { "spcProjected": 1250000, "ytdActualsForecast": null, "variance": "100.0%", "varianceTone": "green" },
+            "fy29": { "spcProjected": 1400000, "ytdActualsForecast": null, "variance": "100.0%", "varianceTone": "green" }
+          }
+        },
+        {
+          "label": "+ New Line",
+          "type": "new",
+          "values": {
+            "fy26": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" },
+            "fy27": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" },
+            "fy28": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" },
+            "fy29": { "spcProjected": null, "ytdActualsForecast": null, "variance": null, "varianceTone": "red" }
+          }
+        },
+        {
+          "label": "Subtotal REVENUE",
+          "type": "subtotal",
+          "values": {
+            "fy26": { "spcProjected": 0, "ytdActualsForecast": 0, "variance": "0.0%", "varianceTone": "red" },
+            "fy27": { "spcProjected": 750000, "ytdActualsForecast": null, "variance": "100.0%", "varianceTone": "green" },
+            "fy28": { "spcProjected": 1250000, "ytdActualsForecast": null, "variance": "100.0%", "varianceTone": "green" },
+            "fy29": { "spcProjected": 1400000, "ytdActualsForecast": null, "variance": "100.0%", "varianceTone": "green" }
+          }
+        }
+      ]
+    }
+  ]
+}

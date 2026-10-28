@@ -1,0 +1,76 @@
+{
+  "p_api_status": "S",
+  "p_api_status_msg": "PIR KPI variance calculated successfully for proposal 516",
+  "p_out_cursor": [
+    {
+      "kpi_code": "CAPEX",
+      "kpi_name": "Capex%",
+      "spc_approved": 1182650,
+      "actual": 18238710.57,
+      "variance": 1442.19,
+      "threshold": 10,
+      "operator": "Less Than",
+      "pass_fail": "FAIL"
+    },
+    {
+      "kpi_code": "OPEX",
+      "kpi_name": "Opex%",
+      "spc_approved": 300,
+      "actual": 0,
+      "variance": -100,
+      "threshold": 10,
+      "operator": "Less Than",
+      "pass_fail": "PASS"
+    },
+    {
+      "kpi_code": "IRR",
+      "kpi_name": "IRR%",
+      "spc_approved": -170.1297,
+      "actual": null,
+      "variance": -170.1297,
+      "threshold": 5,
+      "operator": "Less Than",
+      "pass_fail": "PASS"
+    },
+    {
+      "kpi_code": "YEAR5_PTR",
+      "kpi_name": "Year-5 PTR%",
+      "spc_approved": 0,
+      "actual": null,
+      "variance": 0,
+      "threshold": 5,
+      "operator": "Less Than",
+      "pass_fail": "PASS"
+    },
+    {
+      "kpi_code": "AVG3YR_PTR",
+      "kpi_name": "Avg 3-Yr PTR%",
+      "spc_approved": -29.7562,
+      "actual": null,
+      "variance": -29.7562,
+      "threshold": 5,
+      "operator": "Less Than",
+      "pass_fail": "PASS"
+    },
+    {
+      "kpi_code": "NPV",
+      "kpi_name": "NPV",
+      "spc_approved": -386467.48,
+      "actual": -3189993.22,
+      "variance": -2803525.74,
+      "threshold": 0,
+      "operator": "Greater Than",
+      "pass_fail": "FAIL"
+    },
+    {
+      "kpi_code": "PAYBACK",
+      "kpi_name": "Payback",
+      "spc_approved": null,
+      "actual": null,
+      "variance": 0,
+      "threshold": 0,
+      "operator": "Greater Than",
+      "pass_fail": "FAIL"
+    }
+  ]
+}

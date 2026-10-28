@@ -1,0 +1,151 @@
+{
+  "years": [
+    { "key": "fy26", "label": "FY26", "tone": "purple" },
+    { "key": "fy27", "label": "FY27", "tone": "blue" },
+    { "key": "fy28", "label": "FY28", "tone": "green" },
+    { "key": "fy29", "label": "FY29", "tone": "pink" },
+    { "key": "fy30", "label": "FY30", "tone": "orange" }
+  ],
+  "sections": [
+    {
+      "title": "CLIENT NUMBERS",
+      "icon": "👥",
+      "rows": [
+        {
+          "label": "Tier 1 bank",
+          "values": {
+            "fy26": { "spcProjected": 1, "actual": null },
+            "fy27": { "spcProjected": 2, "actual": null },
+            "fy28": { "spcProjected": 2, "actual": null },
+            "fy29": { "spcProjected": 3, "actual": null },
+            "fy30": { "spcProjected": 4, "actual": null }
+          }
+        },
+        {
+          "label": "Tier 2 'challenger' banks",
+          "values": {
+            "fy26": { "spcProjected": 6, "actual": null },
+            "fy27": { "spcProjected": 7, "actual": null },
+            "fy28": { "spcProjected": 9, "actual": null },
+            "fy29": { "spcProjected": 9, "actual": null },
+            "fy30": { "spcProjected": 11, "actual": null }
+          }
+        },
+        {
+          "label": "Telecommunications & utilities companies",
+          "values": {
+            "fy26": { "spcProjected": 0, "actual": null },
+            "fy27": { "spcProjected": 3, "actual": null },
+            "fy28": { "spcProjected": 4, "actual": null },
+            "fy29": { "spcProjected": 5, "actual": null },
+            "fy30": { "spcProjected": 6, "actual": null }
+          }
+        },
+        {
+          "label": "Automotive lenders",
+          "values": {
+            "fy26": { "spcProjected": 0, "actual": null },
+            "fy27": { "spcProjected": 0, "actual": null },
+            "fy28": { "spcProjected": 0, "actual": null },
+            "fy29": { "spcProjected": 4, "actual": null },
+            "fy30": { "spcProjected": 7, "actual": null }
+          }
+        },
+        {
+          "label": "Total Clients",
+          "type": "total",
+          "values": {
+            "fy26": { "spcProjected": 7, "actual": null },
+            "fy27": { "spcProjected": 11, "actual": null },
+            "fy28": { "spcProjected": 14, "actual": null },
+            "fy29": { "spcProjected": 18, "actual": null },
+            "fy30": { "spcProjected": 22, "actual": null }
+          }
+        }
+      ]
+    },
+    {
+      "title": "CLIENT ANNUAL LICENCE VALUES $'000",
+      "icon": "🔒",
+      "rows": [
+        {
+          "label": "Tier 1 bank",
+          "values": {
+            "fy26": { "spcProjected": 200, "actual": null },
+            "fy27": { "spcProjected": 200, "actual": null },
+            "fy28": { "spcProjected": 200, "actual": null },
+            "fy29": { "spcProjected": 200, "actual": null },
+            "fy30": { "spcProjected": 200, "actual": null }
+          }
+        },
+        {
+          "label": "Tier 2 'challenger' banks",
+          "values": {
+            "fy26": { "spcProjected": 100, "actual": null },
+            "fy27": { "spcProjected": 100, "actual": null },
+            "fy28": { "spcProjected": 100, "actual": null },
+            "fy29": { "spcProjected": 100, "actual": null },
+            "fy30": { "spcProjected": 100, "actual": null }
+          }
+        },
+        {
+          "label": "Telecommunications & utilities companies",
+          "values": {
+            "fy26": { "spcProjected": 50, "actual": null },
+            "fy27": { "spcProjected": 50, "actual": null },
+            "fy28": { "spcProjected": 50, "actual": null },
+            "fy29": { "spcProjected": 50, "actual": null },
+            "fy30": { "spcProjected": 50, "actual": null }
+          }
+        },
+        {
+          "label": "Automotive lenders",
+          "values": {
+            "fy26": { "spcProjected": 120, "actual": null },
+            "fy27": { "spcProjected": 120, "actual": null },
+            "fy28": { "spcProjected": 120, "actual": null },
+            "fy29": { "spcProjected": 120, "actual": null },
+            "fy30": { "spcProjected": 120, "actual": null }
+          }
+        }
+      ]
+    },
+    {
+      "title": "HEADCOUNT (MEASURED BY FTE)",
+      "icon": "👥",
+      "rows": [
+        {
+          "label": "FTE Type 1 (in-shore)",
+          "values": {
+            "fy26": { "spcProjected": null, "actual": null },
+            "fy27": { "spcProjected": 1, "actual": null },
+            "fy28": { "spcProjected": 1, "actual": null },
+            "fy29": { "spcProjected": 1, "actual": null },
+            "fy30": { "spcProjected": 1, "actual": null }
+          }
+        },
+        {
+          "label": "FTE Type 2 (off-shore)",
+          "values": {
+            "fy26": { "spcProjected": null, "actual": null },
+            "fy27": { "spcProjected": 1, "actual": null },
+            "fy28": { "spcProjected": 1, "actual": null },
+            "fy29": { "spcProjected": 2, "actual": null },
+            "fy30": { "spcProjected": 2, "actual": null }
+          }
+        },
+        {
+          "label": "Total FTE",
+          "type": "total",
+          "values": {
+            "fy26": { "spcProjected": 1, "actual": null },
+            "fy27": { "spcProjected": 2, "actual": null },
+            "fy28": { "spcProjected": 2, "actual": null },
+            "fy29": { "spcProjected": 3, "actual": null },
+            "fy30": { "spcProjected": 3, "actual": null }
+          }
+        }
+      ]
+    }
+  ]
+}

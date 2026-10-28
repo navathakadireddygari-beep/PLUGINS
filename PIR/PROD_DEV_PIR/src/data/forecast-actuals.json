@@ -1,0 +1,414 @@
+{
+  "apiStatus": "S",
+  "apiMessage": "Financial evaluation lines retrieved successfully",
+  "data": {
+    "fiscal_years": ["fy26", "fy27", "fy28", "fy29", "fy30", "fy31", "fy32", "fy33", "fy34"],
+    "sections": [
+      {
+        "section_name": "Capital Investment",
+        "section_type": "CAPITAL_INVESTMENT",
+        "display_order": 1,
+        "lines": [
+          {
+            "fin_eval_line_id": 9071,
+            "account": "10001000",
+            "item_description": "Cash and Cash Equivalents",
+            "display_order": 1,
+            "fy_data": {
+              "fy26": { "spc_projected": 500, "ytd_actuals_forecast": 9343577.33, "variance": 1868615.5 },
+              "fy27": { "spc_projected": 500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy28": { "spc_projected": 500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy29": { "spc_projected": 500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy30": { "spc_projected": 500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy31": { "spc_projected": 500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy32": { "spc_projected": 500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy33": { "spc_projected": 500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy34": { "spc_projected": 500, "ytd_actuals_forecast": 0, "variance": -100 }
+            }
+          },
+          {
+            "fin_eval_line_id": 8162,
+            "account": "20005000",
+            "item_description": "Long-term Investments",
+            "display_order": 1,
+            "fy_data": {
+              "fy26": { "spc_projected": 2650, "ytd_actuals_forecast": 1280335.53, "variance": 48214.5 },
+              "fy27": { "spc_projected": 500, "ytd_actuals_forecast": 7614797.71, "variance": 1522859.5 },
+              "fy28": { "spc_projected": 500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy29": { "spc_projected": 100500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy30": { "spc_projected": 200500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy31": { "spc_projected": 300500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy32": { "spc_projected": 400500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy33": { "spc_projected": 125500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy34": { "spc_projected": 55500, "ytd_actuals_forecast": 0, "variance": -100 }
+            }
+          },
+          {
+            "fin_eval_line_id": 8163,
+            "account": "60007500 – Office Furniture and Equipment",
+            "item_description": "On-going Investment",
+            "display_order": 2,
+            "fy_data": {
+              "fy26": { "spc_projected": 500, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy27": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          }
+        ],
+        "subtotal": {
+          "label": "Subtotal CAPEX",
+          "fy_data": {
+            "fy26": { "spc_projected": 3650, "ytd_actuals_forecast": 10623912.86, "variance": 290966.1 },
+            "fy27": { "spc_projected": 1000, "ytd_actuals_forecast": 7614797.71, "variance": 761379.8 },
+            "fy28": { "spc_projected": 1000, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy29": { "spc_projected": 101000, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy30": { "spc_projected": 201000, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy31": { "spc_projected": 301000, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy32": { "spc_projected": 401000, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy33": { "spc_projected": 126000, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy34": { "spc_projected": 56000, "ytd_actuals_forecast": 0, "variance": -100 }
+          }
+        }
+      },
+      {
+        "section_name": "P&L Investment OPEX Costs",
+        "section_type": "PL_INVESTMENT_OPEX",
+        "display_order": 2,
+        "lines": [
+          {
+            "fin_eval_line_id": 8433,
+            "account": "50001000 – General Operating Expenses",
+            "item_description": "P&L Item Cost",
+            "display_order": 2,
+            "fy_data": {
+              "fy26": { "spc_projected": 200000, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy27": { "spc_projected": 300000, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy28": { "spc_projected": 400000, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          },
+          {
+            "fin_eval_line_id": 8434,
+            "account": "50003000 – Professional Services Fees",
+            "item_description": "Planning Cost",
+            "display_order": 3,
+            "fy_data": {
+              "fy26": { "spc_projected": 300000, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy27": { "spc_projected": 400000, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy28": { "spc_projected": 500000, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          }
+        ],
+        "subtotal": {
+          "label": "Subtotal PL Investment",
+          "fy_data": {
+            "fy26": { "spc_projected": 500000, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy27": { "spc_projected": 700000, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy28": { "spc_projected": 900000, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+          }
+        }
+      },
+      {
+        "section_name": "Revenue",
+        "section_type": "REVENUE",
+        "display_order": 3,
+        "lines": [
+          {
+            "fin_eval_line_id": 8187,
+            "account": "40003000 – Service and Consulting Revenue",
+            "item_description": "Revenue",
+            "display_order": 2,
+            "fy_data": {
+              "fy26": { "spc_projected": 100, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy27": { "spc_projected": 200, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy28": { "spc_projected": 300, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          },
+          {
+            "fin_eval_line_id": 8435,
+            "account": "40005000",
+            "item_description": "Subscription Revenue",
+            "display_order": 3,
+            "fy_data": {
+              "fy26": { "spc_projected": 200000, "ytd_actuals_forecast": 5426694.9, "variance": 2613.3 },
+              "fy27": { "spc_projected": 300000, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy28": { "spc_projected": 400000, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          }
+        ],
+        "subtotal": {
+          "label": "Subtotal Revenue",
+          "fy_data": {
+            "fy26": { "spc_projected": 200100, "ytd_actuals_forecast": 5426694.9, "variance": 2612 },
+            "fy27": { "spc_projected": 300200, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy28": { "spc_projected": 400300, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+          }
+        }
+      },
+      {
+        "section_name": "OPEX Costs",
+        "section_type": "OPEX",
+        "display_order": 4,
+        "lines": [
+          {
+            "fin_eval_line_id": 8186,
+            "account": "30001000 – Salaries and Wages",
+            "item_description": "Cloud cost",
+            "display_order": 2,
+            "fy_data": {
+              "fy26": { "spc_projected": 200, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy27": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          },
+          {
+            "fin_eval_line_id": 8463,
+            "account": "30003000 – Utilities and Facilities",
+            "item_description": "Hardware cost",
+            "display_order": 3,
+            "fy_data": {
+              "fy26": { "spc_projected": 100, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy27": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          }
+        ],
+        "subtotal": {
+          "label": "Subtotal OPEX",
+          "fy_data": {
+            "fy26": { "spc_projected": 300, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy27": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+          }
+        }
+      },
+      {
+        "section_name": "Returns Analysis",
+        "section_type": "RETURNS_ANALYSIS",
+        "display_order": 5,
+        "lines": [
+          {
+            "fin_eval_line_id": 8170,
+            "account": "20003000",
+            "item_description": "Intangible Assets",
+            "display_order": 3,
+            "fy_data": {
+              "fy26": { "spc_projected": 12, "ytd_actuals_forecast": 3368871.69, "variance": 28073830.8 },
+              "fy27": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          }
+        ],
+        "subtotal": {
+          "label": "Subtotal Returns",
+          "fy_data": {
+            "fy26": { "spc_projected": 12, "ytd_actuals_forecast": 3368871.69, "variance": 28073830.8 },
+            "fy27": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+          }
+        }
+      },
+      {
+        "section_name": "Balance Sheet",
+        "section_type": "BALANCE_SHEET",
+        "display_order": 6,
+        "lines": [
+          {
+            "fin_eval_line_id": 8173,
+            "account": "30005000",
+            "item_description": "Travel and Lodging",
+            "display_order": 1,
+            "fy_data": {
+              "fy26": { "spc_projected": 100, "ytd_actuals_forecast": -430249.87, "variance": -430349.9 },
+              "fy27": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          },
+          {
+            "fin_eval_line_id": 8174,
+            "account": "60010000",
+            "item_description": "Buildings and Leasehold Improvements",
+            "display_order": 2,
+            "fy_data": {
+              "fy26": { "spc_projected": 0, "ytd_actuals_forecast": -1570000, "variance": null },
+              "fy27": { "spc_projected": 0, "ytd_actuals_forecast": -680000, "variance": null },
+              "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          },
+          {
+            "fin_eval_line_id": 8175,
+            "account": "50005000",
+            "item_description": "Marketing and Advertising",
+            "display_order": 3,
+            "fy_data": {
+              "fy26": { "spc_projected": 200, "ytd_actuals_forecast": -255000, "variance": -127600 },
+              "fy27": { "spc_projected": 0, "ytd_actuals_forecast": -110000, "variance": null },
+              "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          }
+        ],
+        "subtotal": {
+          "label": "Subtotal Balance Sheet",
+          "fy_data": {
+            "fy26": { "spc_projected": 300, "ytd_actuals_forecast": -2255249.87, "variance": -751850 },
+            "fy27": { "spc_projected": 0, "ytd_actuals_forecast": -790000, "variance": null },
+            "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+          }
+        }
+      },
+      {
+        "section_name": "Cash Flow",
+        "section_type": "CASH_FLOW",
+        "display_order": 7,
+        "lines": [],
+        "subtotal": {
+          "label": "Subtotal Cash Flow",
+          "fy_data": {
+            "fy26": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy27": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy28": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+          }
+        }
+      },
+      {
+        "section_name": "NEW SECTION",
+        "section_type": "CUSTOM",
+        "display_order": 8,
+        "lines": [
+          {
+            "fin_eval_line_id": 8189,
+            "account": "70003000",
+            "item_description": "Foreign Exchange Losses",
+            "display_order": 1,
+            "fy_data": {
+              "fy26": { "spc_projected": 73.5, "ytd_actuals_forecast": -1646453.89, "variance": -2240173.3 },
+              "fy27": { "spc_projected": 147, "ytd_actuals_forecast": -1346905.87, "variance": -916362.5 },
+              "fy28": { "spc_projected": 220.5, "ytd_actuals_forecast": 0, "variance": -100 },
+              "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+              "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+            }
+          }
+        ],
+        "subtotal": {
+          "label": "Subtotal NEW SECTION",
+          "fy_data": {
+            "fy26": { "spc_projected": 73.5, "ytd_actuals_forecast": -1646453.89, "variance": -2240173.3 },
+            "fy27": { "spc_projected": 147, "ytd_actuals_forecast": -1346905.87, "variance": -916362.5 },
+            "fy28": { "spc_projected": 220.5, "ytd_actuals_forecast": 0, "variance": -100 },
+            "fy29": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy30": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy31": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy32": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy33": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null },
+            "fy34": { "spc_projected": 0, "ytd_actuals_forecast": 0, "variance": null }
+          }
+        }
+      }
+    ]
+  }
+}
