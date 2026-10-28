@@ -12,7 +12,7 @@ import type { DrillContext } from "../api/actual-drilldown-api";
 import { postAdjustment, type SectionAdjustmentPayload } from "../api/adjustments-api";
 import { useRefreshToken } from "../lib/refresh-bus";
 import StatusBanner from "./StatusBanner";
-import { formatMagnitude, formatScaled, SCALES, useFormatSettings, type FormatSettings } from "../lib/format-settings";
+import { formatAmount, formatMagnitude, SCALES, useFormatSettings, type FormatSettings } from "../lib/format-settings";
 
 /** Draft state for the inline "+ New Line" form (one open at a time). */
 type NewLineDraft = {
@@ -78,8 +78,11 @@ const formatPercentCell = (n: number | null, settings: FormatSettings): string =
   return `${formatMagnitude(value, settings, Number.isInteger(value) ? 0 : 1)}%`;
 };
 
+/** Plain scaled number for the input box — the K/M/B unit is shown beside it, not typed in. */
 const editorValue = (value: number, settings: FormatSettings): string => {
-  return formatScaled(value, settings);
+  const scale = SCALES.find((item) => item.key === settings.scale) ?? SCALES[0];
+  const decimals = settings.scale === "K" ? 0 : settings.scale === "M" ? 1 : 2;
+  return (value / scale.divisor).toFixed(decimals);
 };
 
 const baseEditorValue = (value: string, settings: FormatSettings): number | null => {
@@ -95,7 +98,7 @@ const baseEditorValue = (value: string, settings: FormatSettings): number | null
 const cellText = (num: number | null | undefined, fallback: string, settings: FormatSettings): string => {
   if (num == null) return fallback;
   if (num === 0) return "0";
-  return formatScaled(num, settings);
+  return formatAmount(num, settings);
 };
 
 const toneClass: Record<string, string> = {
@@ -608,6 +611,7 @@ export default function ForecastActualsReport({ onActualClick }: ForecastActuals
                                       inputMode="decimal"
                                       aria-label={`${report.years[i].label} YTD actuals and forecast in ${fmt.scale}`}
                                     />
+                                    <span className="pir-pd-scaled-input-unit" aria-hidden="true">{fmt.scale}</span>
                                   </span>
                                 ) : (
                                   <span

@@ -21,12 +21,11 @@ export type FyCell = {
   variance:             number | null;
 };
 
-/** One year's (or the per-line "total") figures in the PUT `year_values` payload. */
+/** One year's figures in the PUT `year_values` payload. */
 type YearValueEntry = {
-  spc_projected_amount:  number | null;
-  ytd_budgeted_forecast: number;
-  ytd_actuals:           number | null;
-  variance:              number | null;
+  spc_projected_amount: number | null;
+  ytd_actuals?:         number | null;
+  variance:             number | null;
 };
 
 export type ApiLine = {
@@ -60,6 +59,18 @@ const sectionIdOf = (section: ApiSection): number | null => {
     if (v != null && v !== "" && Number.isFinite(Number(v))) return Number(v);
   }
   return null;
+};
+
+/** FY label (Apr→Mar, ending year) that "now" falls in — e.g. Sep 2026 → FY27. */
+const currentFiscalYearEnd = (): number => {
+  const now = new Date();
+  return now.getMonth() + 1 >= 4 ? now.getFullYear() + 1 : now.getFullYear();
+};
+
+/** True for fiscal years after the one currently in progress. */
+const isFutureFiscalYear = (key: string): boolean => {
+  const match = key.match(/^fy(\d{2})$/i);
+  return match != null && 2000 + Number(match[1]) > currentFiscalYearEnd();
 };
 
 export type ForecastActualsResponse = {
@@ -453,69 +464,33 @@ export async function saveForecastActuals(
   }
 
   const editsByCell = new Map(edits.map((edit) => [`${edit.rowId}::${edit.fiscalYear}`, edit.value]));
-  console.log("[ForecastActuals] future-year edit source from GET", {
-    getUrl: buildReportUrl(cfg),
-    edits: edits.map((edit) => {
-      const row = report.sections
-        .flatMap((section) => section.rows)
-        .find((candidate) => candidate.id === edit.rowId);
-      const yearIndex = report.years.findIndex((year) => year.key === edit.fiscalYear);
-      const cell = yearIndex >= 0 ? row?.cells[yearIndex] : undefined;
-      return {
-        rowId: edit.rowId,
-        fiscalYear: edit.fiscalYear,
-        getCell: cell
-          ? {
-              spcNum: cell.spcNum,
-              ytdNum: cell.ytdNum,
-              varianceNum: cell.varianceNum,
-            }
-          : null,
-        editedValue: edit.value,
-      };
-    }),
-  });
   const sections = report.sections
     .filter((section) => section.finEvalSectionId != null)
     .map((section) => ({
       fin_eval_section_id: section.finEvalSectionId,
       lines: section.rows
         .filter((row) => row.type === "line" && !row.isAdjustment && row.finEvalLineId != null)
-        .map((row) => {
-          const yearEntries: Array<[string, YearValueEntry]> = report.years.map((year, index) => {
-            const cell = row.cells[index];
-            const editKey = `${row.id}::${year.key}`;
-            const hasEdit = editsByCell.has(editKey);
-            const editedValue = hasEdit ? editsByCell.get(editKey) ?? null : null;
-            // Requirement: whatever is entered in the PIR reforecast column must be
-            // stored in ytd_actuals, regardless of whether the year is current or future.
-            const ytd_actuals = hasEdit ? editedValue : cell.ytdNum;
-            return [
-              year.key,
-              {
+        .map((row) => ({
+          fin_eval_line_id: row.finEvalLineId,
+          // Required by the backend even on an unrelated field update — omitting
+          // it reads as "missing" and rejects the whole line.
+          account: row.account ?? null,
+          year_values: Object.fromEntries(
+            report.years.map((year, index) => {
+              const cell = row.cells[index];
+              const editKey = `${row.id}::${year.key}`;
+              const entry: YearValueEntry = {
                 spc_projected_amount: cell.spcNum,
-                // Real budgeted-forecast figures aren't available yet — placeholder until the backend exposes them.
-                ytd_budgeted_forecast: 0,
-                ytd_actuals,
                 variance: cell.varianceNum,
-              },
-            ];
-          });
-          const total: YearValueEntry = {
-            spc_projected_amount: yearEntries.reduce((sum, [, v]) => sum + (v.spc_projected_amount ?? 0), 0),
-            ytd_budgeted_forecast: yearEntries.reduce((sum, [, v]) => sum + v.ytd_budgeted_forecast, 0),
-            ytd_actuals: yearEntries.reduce((sum, [, v]) => sum + (v.ytd_actuals ?? 0), 0),
-            variance: yearEntries.reduce((sum, [, v]) => sum + (v.variance ?? 0), 0),
-          };
-          return {
-            // Backend expects a numeric id, not a string.
-            fin_eval_line_id: row.finEvalLineId != null ? Number(row.finEvalLineId) : null,
-            // Required by the backend even on an unrelated field update — omitting
-            // it reads as "missing" and rejects the whole line.
-            account: row.account ?? null,
-            year_values: Object.fromEntries([...yearEntries, ["total", total]]),
-          };
-        }),
+              };
+              // An edited cell always sends what was typed. Otherwise future years
+              // leave ytd_actuals out entirely; past/current years resend the GET value.
+              if (editsByCell.has(editKey)) entry.ytd_actuals = editsByCell.get(editKey) ?? null;
+              else if (!isFutureFiscalYear(year.key)) entry.ytd_actuals = cell.ytdNum;
+              return [year.key, entry];
+            }),
+          ),
+        })),
     }));
 
   const url = `${cfg.api_endpoint}/GIS/proposalAuthoring/${proposalId}/financialEvaluation`;

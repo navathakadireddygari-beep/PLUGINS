@@ -1067,7 +1067,13 @@ export default function ForecastDashboard(): ReactElement {
             )}
             {kpiTiles.length > 0 && (
             <div className="pir-pd-kpi-grid">
-              {kpiTiles.map((tile) => {
+              {kpiTiles
+                // OCO shows only the CAPEX and OPEX tiles.
+                .filter((tile) => {
+                  const label = String(tile.label || "").toUpperCase();
+                  return label.includes("CAPEX") || label.includes("OPEX");
+                })
+                .map((tile) => {
                 // Money KPIs (CAPEX / OPEX / NPV) follow the SCALE selector and
                 // their "($M)" label is rewritten to match. IRR, PTR and Payback
                 // are percentages and years — they keep the API's own strings.
@@ -2278,9 +2284,10 @@ export default function ForecastDashboard(): ReactElement {
         }
 
         .pir-pd-kpi-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    width: 100%;
         }
 
         .pir-pd-kpi-tile {

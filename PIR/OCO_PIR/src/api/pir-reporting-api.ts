@@ -141,8 +141,8 @@ export function transformSnapshots(json: SnapshotApiResponse): Snapshot[] {
 
     const capexVar   = fmtVariance(item.capex_variance_pct);
     const opexVar     = fmtVariance(item.opex_variance_pct);
-    const revenueVar  = fmtVariance(item.revenue_variance_pct);
-    const totalVar     = fmtVariance(item.total_cost_variance_pct);
+    // OCO snapshots show CAPEX / OPEX only — no Revenue line.
+    const totalVar   = fmtVariance(item.total_cost_variance_pct);
     const footer       = isFuture ? { label: "🔒 Future", tone: "muted" as const } : footerFor(item.review_status);
 
     return {
@@ -173,15 +173,6 @@ export function transformSnapshots(json: SnapshotApiResponse): Snapshot[] {
           varianceTone: isFuture ? "muted" : opexVar.tone,
           valueNum: item.opex_spc_amount,
           actualsNum: isFuture ? null : item.opex_actual_amount,
-        },
-        {
-          label: "Revenue",
-          value: fmtMoney(item.revenue_spc_amount),
-          actuals: isFuture ? "—" : fmtMoney(item.revenue_actual_amount),
-          variance: isFuture ? "—" : revenueVar.text,
-          varianceTone: isFuture ? "muted" : revenueVar.tone,
-          valueNum: item.revenue_spc_amount,
-          actualsNum: isFuture ? null : item.revenue_actual_amount,
         },
       ],
       total:             fmtMoney(item.total_cost_spc_amount),
@@ -232,15 +223,14 @@ export async function getPirSnapshots(
   proposalId?: number | string,
 ): Promise<Snapshot[]> {
   const raw = proposalId ?? cfg.proposal_id;
-  // No proposal-id guard here: a missing/invalid id is sent through as the
-  // literal "NULL" header, and the endpoint answers with the 6/12/24-month
-  // template snapshots instead of 404ing — callers rely on that fallback.
-  const proposalHeader = Number.isFinite(Number(raw)) && Number(raw) > 0 ? String(raw) : "NULL";
+  if (!Number.isFinite(Number(raw)) || Number(raw) <= 0) {
+    throw new Error("A valid proposal_id is required to load snapshots");
+  }
   const override = devToken();
 
   const token = override || extractToken(await fetchAuthToken(cfg));
   const url = buildSnapshotsUrl(cfg);
-  const json = await fetchJson<SnapshotApiResponse>(url, token, undefined, { proposal_id: proposalHeader }, cfg);
+  const json = await fetchJson<SnapshotApiResponse>(url, token, undefined, { proposal_id: String(raw) }, cfg);
   return transformSnapshots(json);
 }
 
