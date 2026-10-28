@@ -25,14 +25,14 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "pir-flex pir-cursor-default pir-select-none pir-items-center pir-rounded-sm pir-px-2 pir-py-1.5 pir-text-sm pir-outline-none focus:pir-bg-accent data-[state=open]:pir-bg-accent",
-      inset && "pir-pl-8",
+      "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent",
+      inset && "pl-8",
       className
     )}
     {...props}
   >
     {children}
-    <ChevronRight className="pir-ml-auto pir-h-4 pir-w-4" />
+    <ChevronRight className="ml-auto h-4 w-4" />
   </DropdownMenuPrimitive.SubTrigger>
 ))
 DropdownMenuSubTrigger.displayName =
@@ -45,7 +45,7 @@ const DropdownMenuSubContent = React.forwardRef<
   <DropdownMenuPrimitive.SubContent
     ref={ref}
     className={cn(
-      "pir-z-50 pir-min-w-[8rem] pir-overflow-hidden pir-rounded-md pir-border pir-bg-popover pir-p-1 pir-text-popover-foreground pir-shadow-lg data-[state=open]:pir-animate-in data-[state=closed]:pir-animate-out data-[state=closed]:pir-fade-out-0 data-[state=open]:pir-fade-in-0 data-[state=closed]:pir-zoom-out-95 data-[state=open]:pir-zoom-in-95 data-[side=bottom]:pir-slide-in-from-top-2 data-[side=left]:pir-slide-in-from-right-2 data-[side=right]:pir-slide-in-from-left-2 data-[side=top]:pir-slide-in-from-bottom-2",
+      "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
       className
     )}
     {...props}
@@ -63,7 +63,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "pir-z-50 pir-min-w-[8rem] pir-overflow-hidden pir-rounded-md pir-border pir-bg-popover pir-p-1 pir-text-popover-foreground pir-shadow-md data-[state=open]:pir-animate-in data-[state=closed]:pir-animate-out data-[state=closed]:pir-fade-out-0 data-[state=open]:pir-fade-in-0 data-[state=closed]:pir-zoom-out-95 data-[state=open]:pir-zoom-in-95 data-[side=bottom]:pir-slide-in-from-top-2 data-[side=left]:pir-slide-in-from-right-2 data-[side=right]:pir-slide-in-from-left-2 data-[side=top]:pir-slide-in-from-bottom-2",
+        "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         className
       )}
       {...props}
@@ -81,8 +81,8 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "pir-relative pir-flex pir-cursor-default pir-select-none pir-items-center pir-rounded-sm pir-px-2 pir-py-1.5 pir-text-sm pir-outline-none pir-transition-colors focus:pir-bg-accent focus:pir-text-accent-foreground data-[disabled]:pir-pointer-events-none data-[disabled]:pir-opacity-50",
-      inset && "pir-pl-8",
+      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      inset && "pl-8",
       className
     )}
     {...props}
@@ -98,15 +98,15 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "pir-relative pir-flex pir-cursor-default pir-select-none pir-items-center pir-rounded-sm pir-py-1.5 pir-pl-8 pir-pr-2 pir-text-sm pir-outline-none pir-transition-colors focus:pir-bg-accent focus:pir-text-accent-foreground data-[disabled]:pir-pointer-events-none data-[disabled]:pir-opacity-50",
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     checked={checked}
     {...props}
   >
-    <span className="pir-absolute pir-left-2 pir-flex pir-h-3.5 pir-w-3.5 pir-items-center pir-justify-center">
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <Check className="pir-h-4 pir-w-4" />
+        <Check className="h-4 w-4" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
@@ -122,14 +122,14 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "pir-relative pir-flex pir-cursor-default pir-select-none pir-items-center pir-rounded-sm pir-py-1.5 pir-pl-8 pir-pr-2 pir-text-sm pir-outline-none pir-transition-colors focus:pir-bg-accent focus:pir-text-accent-foreground data-[disabled]:pir-pointer-events-none data-[disabled]:pir-opacity-50",
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     {...props}
   >
-    <span className="pir-absolute pir-left-2 pir-flex pir-h-3.5 pir-w-3.5 pir-items-center pir-justify-center">
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <Circle className="pir-h-2 pir-w-2 pir-fill-current" />
+        <Circle className="h-2 w-2 fill-current" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
@@ -146,8 +146,8 @@ const DropdownMenuLabel = React.forwardRef<
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(
-      "pir-px-2 pir-py-1.5 pir-text-sm pir-font-semibold",
-      inset && "pir-pl-8",
+      "px-2 py-1.5 text-sm font-semibold",
+      inset && "pl-8",
       className
     )}
     {...props}
@@ -161,7 +161,7 @@ const DropdownMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Separator
     ref={ref}
-    className={cn("-pir-mx-1 pir-my-1 pir-h-px pir-bg-muted", className)}
+    className={cn("-mx-1 my-1 h-px bg-muted", className)}
     {...props}
   />
 ))
@@ -173,7 +173,7 @@ const DropdownMenuShortcut = ({
 }: React.HTMLAttributes<HTMLSpanElement>) => {
   return (
     <span
-      className={cn("pir-ml-auto pir-text-xs pir-tracking-widest pir-opacity-60", className)}
+      className={cn("ml-auto text-xs tracking-widest opacity-60", className)}
       {...props}
     />
   )

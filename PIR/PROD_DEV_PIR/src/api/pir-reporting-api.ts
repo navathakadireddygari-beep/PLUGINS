@@ -232,15 +232,14 @@ export async function getPirSnapshots(
   proposalId?: number | string,
 ): Promise<Snapshot[]> {
   const raw = proposalId ?? cfg.proposal_id;
-  // No proposal-id guard here: a missing/invalid id is sent through as the
-  // literal "NULL" header, and the endpoint answers with the 6/12/24-month
-  // template snapshots instead of 404ing — callers rely on that fallback.
-  const proposalHeader = Number.isFinite(Number(raw)) && Number(raw) > 0 ? String(raw) : "NULL";
+  if (!Number.isFinite(Number(raw)) || Number(raw) <= 0) {
+    throw new Error("A valid proposal_id is required to load snapshots");
+  }
   const override = devToken();
 
   const token = override || extractToken(await fetchAuthToken(cfg));
   const url = buildSnapshotsUrl(cfg);
-  const json = await fetchJson<SnapshotApiResponse>(url, token, undefined, { proposal_id: proposalHeader }, cfg);
+  const json = await fetchJson<SnapshotApiResponse>(url, token, undefined, { proposal_id: String(raw) }, cfg);
   return transformSnapshots(json);
 }
 

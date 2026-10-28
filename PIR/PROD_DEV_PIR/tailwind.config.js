@@ -1,8 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
-  // Scopes generated utility classes so they never collide with the host page's own CSS.
-  prefix: "pir-",
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
