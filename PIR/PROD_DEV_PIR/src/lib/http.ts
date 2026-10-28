@@ -103,7 +103,7 @@ export async function fetchJson<T>(
         reason instanceof Error || reason instanceof DOMException
           ? reason.message
           : `Request timed out after ${secs}s`;
-      throw new Error(msg);
+      throw new Error(msg, { cause: err });
     }
     throw err instanceof Error ? err : new Error(String(err));
   } finally {
