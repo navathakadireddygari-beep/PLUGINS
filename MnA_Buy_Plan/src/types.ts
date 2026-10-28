@@ -52,6 +52,9 @@ export interface BuyPlanProposalInfo {
   proration_months: number | null;
   /** First fiscal year the Buy Plan covers, e.g. `fy26`. */
   first_fy_key: string | null;
+  /** ISO date, e.g. "2026-04-15". */
+  actual_acquisition_date?: string | null;
+  fin_eval_header_id?: number | null;
 }
 
 /** The `data` object of GET /GIS/MA/buyPlan. */
@@ -59,6 +62,9 @@ export interface BuyPlanResponse {
   proposal_info: BuyPlanProposalInfo | null;
   fiscal_years: string[] | null;
   sections: BuyPlanSection[] | null;
+  /** Also read at the top level when not nested in proposal_info. */
+  actual_acquisition_date?: string | null;
+  fin_eval_header_id?: number | null;
 }
 
 /** Body of POST /GIS/MA/buyPlan/adjustment. */
@@ -85,6 +91,8 @@ export interface Figures {
   forecast: number | null;
   buyPlan: number | null;
   variance: number | null;
+  /** EBIT margin % from the server (EBIT section only). */
+  ebitMarginPct?: number | null;
 }
 
 /** Fiscal-year bucket -> figures. */
@@ -107,6 +115,10 @@ export interface BuyPlanHeaderInfo {
   /** The proposal's local currency, null when the payload states none. */
   localCurrency: string | null;
   fxRate: number | null;
+  /** As sent by the server (ISO), null when not set. */
+  actualAcquisitionDate: string | null;
+  /** Needed to PUT the Actual Acquisition Date. */
+  finEvalHeaderId: number | null;
 }
 
 export interface BuyPlanDataset {

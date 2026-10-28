@@ -28,7 +28,7 @@ export default function FxCard({
   loading = false,
   error = null,
 }: Props) {
-  const local = (localCurrency ?? "").trim().toUpperCase() || STORAGE_CURRENCY;
+  const local = String(localCurrency ?? "").trim().toUpperCase() || STORAGE_CURRENCY;
   const rate = Number(fxRate);
   const valid = Number.isFinite(rate) && rate > 0;
 

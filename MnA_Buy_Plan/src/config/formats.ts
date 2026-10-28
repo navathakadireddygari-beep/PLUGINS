@@ -61,7 +61,7 @@ export const currencyLabel = (code: string): string =>
 export const currenciesFor = (
   localCurrency: string | null | undefined,
 ): CurrencyCode[] => {
-  const local = (localCurrency ?? "").trim().toUpperCase();
+  const local = String(localCurrency ?? "").trim().toUpperCase();
   if (!local) return [];
   return local === "USD" ? ["USD"] : [local, "USD"];
 };
@@ -71,7 +71,7 @@ export const currenciesFor = (
  * KNOWN, non-USD local currency. An unknown one describes nothing.
  */
 export const showFxFor = (localCurrency: string | null | undefined): boolean => {
-  const local = (localCurrency ?? "").trim().toUpperCase();
+  const local = String(localCurrency ?? "").trim().toUpperCase();
   return local !== "" && local !== "USD";
 };
 
@@ -82,12 +82,10 @@ export const CURRENCY_CODES: CurrencyCode[] = ["EUR", "USD"];
  * underlying magnitude by a fixed factor for display; stored values are never
  * mutated.
  *
- * IMPORTANT — matches the reference project (Prod Dev → src/config/formats.ts):
- * API year values arrive ALREADY IN THOUSANDS, so K is the base and is shown
- * as-is; M and B divide down from there.
- *   "K" -> ÷ 1            (as-is)
- *   "M" -> ÷ 1,000
- *   "B" -> ÷ 1,000,000
+ * IMPORTANT: API year values are stored in UNITS, so every scale divides:
+ *   "K" -> ÷ 1,000
+ *   "M" -> ÷ 1,000,000
+ *   "B" -> ÷ 1,000,000,000
  *
  * Decimals shown per scale: K = 0, M = 1, B = 2 (the `decimals` field below,
  * read through `scaleDecimals`). This matches the rest of the GIS plugin suite
@@ -119,9 +117,9 @@ export interface ScaleMeta {
 }
 
 export const SCALES: ScaleMeta[] = [
-  { id: "K", label: "K", suffix: "K", divisor: 1, decimals: 0 },
-  { id: "M", label: "M", suffix: "M", divisor: 1_000, decimals: 1 },
-  { id: "B", label: "B", suffix: "B", divisor: 1_000_000, decimals: 2 },
+  { id: "K", label: "K", suffix: "K", divisor: 1_000, decimals: 0 },
+  { id: "M", label: "M", suffix: "M", divisor: 1_000_000, decimals: 1 },
+  { id: "B", label: "B", suffix: "B", divisor: 1_000_000_000, decimals: 2 },
 ];
 
 const SCALE_BY_ID: Record<ScaleId, ScaleMeta> = SCALES.reduce(

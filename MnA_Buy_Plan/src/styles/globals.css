@@ -1,465 +1,827 @@
 /*
  * Buy Plan has no Tailwind utilities: everything is a hand-written `bp-`
- * class (plus inline styles on the toolbar strip), so there is no utilities
- * import to mark `important` here.
+ * class (plus inline styles on the toolbar strip).
  *
- * The widget is mounted inside an APEX page whose global stylesheet styles
- * bare elements (th, td, button, input, table …) and theme classes. So every
- * `bp-` declaration below is !important: an APEX rule can then never win over
- * the widget's own look, whatever its specificity or source order.
- *
- * Consequence: a `bp-` class now also beats an inline `style` on the same
- * element, so never set the same property both ways. Where two `bp-` rules
- * set the same property on one element, source order (or specificity, see
- * `.bp-border-var`) still decides, exactly as before.
- *
- * The bare-element rules just below (`*`, `body`, `button`) are left NOT
- * !important: they are page-level defaults, not plugin-owned, and inside APEX
- * they would otherwise force the widget's base font / colours onto the host.
+ * The bare-element rules just below (`*`, `body`, `button`) are page-level
+ * defaults, not plugin-owned. Rules that must beat the host APEX theme carry
+ * an explicit !important.
  */
 * {
   box-sizing: border-box;
 }
-
 body {
-  margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: #f8fafc;
   color: #0f172a;
+  background: #f8fafc;
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
   font-size: 13px;
 }
-
-/* Every enabled control gets a pointer, as in FIN_EVAL/MA. */
 button:not(:disabled),
 [role="button"]:not(:disabled) {
   cursor: pointer;
 }
 
 .bp-page {
-  padding: 28px 32px !important;
-  max-width: 1400px !important;
-  margin: 0 auto !important;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 28px 32px;
 }
 
-/* ── Header card ── */
+/* HEADER */
 .bp-header-card {
-  background: white !important;
-  border: 1px solid #e9ecef !important;
-  border-radius: 10px !important;
-  padding: 18px 22px !important;
-  margin-bottom: 20px !important;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  padding: 18px 22px;
 }
 .bp-header-top {
-  display: flex !important;
-  align-items: flex-start !important;
-  justify-content: space-between !important;
-  gap: 16px !important;
-  flex-wrap: wrap !important;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+.bp-header-main {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 .bp-badge {
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  color: #1a2b4b !important;
-  letter-spacing: 0.8px !important;
-  text-transform: uppercase !important;
-  margin-bottom: 4px !important;
+  color: #1a2b4b;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
 }
 .bp-title {
-  font-size: 19px !important;
-  font-weight: 800 !important;
-  color: #1a2b4b !important;
-  margin: 0 0 3px !important;
+  color: #1a2b4b;
+  margin: 0 0 3px;
+  font-size: 19px;
+  font-weight: 800;
 }
 .bp-subtitle {
-  font-size: 12px !important;
-  color: #6c757d !important;
+  color: #6c757d;
+  font-size: 12px;
 }
 .bp-ebs {
-  text-align: right !important;
+  text-align: right;
 }
 .bp-ebs-label {
-  font-size: 10px !important;
-  color: #adb5bd !important;
-  margin-bottom: 3px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
+  color: #adb5bd;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+  font-size: 10px;
 }
 .bp-ebs-code {
-  background: #eef3fa !important;
-  color: #1a2b4b !important;
-  border-radius: 6px !important;
-  padding: 6px 14px !important;
-  font-size: 14px !important;
-  font-weight: 700 !important;
+  color: #1a2b4b;
+  background: #eef3fa;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 700;
 }
 .bp-meta-row {
-  margin-top: 12px !important;
-  padding-top: 12px !important;
-  border-top: 1px solid #e9ecef !important;
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: 18px !important;
-  font-size: 12px !important;
-  color: #6c757d !important;
+  color: #6c757d;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 12px;
+  padding-top: 12px;
+  font-size: 12px;
 }
 .bp-meta-row strong {
-  color: #495057 !important;
+  color: #495057;
+}
+.bp-header-save {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  min-height: 42px;
+  padding: 9px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: auto;
+  position: relative;
+  z-index: 5;
 }
 
-/* ── Top bar (copied from FIN_EVAL/MA Header) ── */
+/* CONTROLS */
 .bp-topbar {
-  background: white !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 24px !important;
-  overflow: hidden !important;
-  margin-bottom: 12px !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  margin-bottom: 12px;
+  overflow: visible !important;
+  box-shadow: 0 1px 2px #0000000d;
 }
-.bp-topbar-actions {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  flex-wrap: wrap !important;
-  gap: 8px !important;
-  padding: 16px 24px !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+.bp-toolbar-message-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px 0;
+}
+.bp-controls-row {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 20px;
+  min-width: 0;
+  overflow: visible !important;
+}
+.bp-controls-left {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: visible !important;
+}
+.bp-controls-right {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  margin-left: auto;
+  overflow: visible !important;
 }
 .bp-topbar-strip {
-  margin: 16px 24px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  max-width: 100%;
+  overflow: visible !important;
+  border: 0 !important;
+}
+.bp-controls-left .bp-topbar-strip > div {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex-wrap: wrap !important;
 }
 
-/* ── Tables — FIN_EVAL/MA colour code ──
- * title / group bars #2d3748 white · column headers #e5e7eb / #374151 (#d1d5db rules)
- * cells white, 1px #e5e7eb rules, 40px rows, 13px #1f2937
- * calculated rows #f3f4f6 bold #111 · negatives #DC2626
- * year partitions 2px #4b5563 · label col 180px · value cols 120px
- */
+/* TABLE */
 .bp-table-card {
-  margin-bottom: 24px !important;
+  margin-bottom: 24px;
 }
 .bp-table-title {
-  background: #2d3748 !important;
-  color: white !important;
-  padding: 8px 12px !important;
-  font-size: 12px !important;
+  color: #fff;
+  background: #2d3748;
+  border-radius: 4px 4px 0 0;
+  padding: 10px;
+  font-size: 14px !important;
   font-weight: 700 !important;
-  border-radius: 4px 4px 0 0 !important;
+  line-height: 1.35;
 }
 .bp-table-scroll {
-  overflow: auto !important;
-  border: 1px solid #e2e8f0 !important;
-  border-top: none !important;
-  border-radius: 0 0 4px 4px !important;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  overflow: auto;
 }
-
 table.bp-table {
-  width: 100% !important;
-  min-width: 700px !important;
-  border-collapse: collapse !important;
-  table-layout: fixed !important;
-  font-size: 14px !important;
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  min-width: 700px;
+  font-size: 14px;
 }
-/* Fixed layout: the table grows to the sum of these widths and the wrapper
-   scrolls sideways, rather than squeezing big figures into narrow columns. */
 .bp-col-label {
-  width: 180px !important;
+  width: 180px;
 }
 .bp-col-value {
-  width: 120px !important;
+  width: 120px;
 }
-
 .bp-th-corner,
 .bp-th-fy,
 .bp-th-sub {
-  height: 35px !important;
-  padding: 6px 8px !important;
-  background: #e5e7eb !important;
-  color: #374151 !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  text-transform: uppercase !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  border-bottom: 1px solid #d1d5db !important;
-  border-right: 1px solid #d1d5db !important;
+  color: #374151;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: #e5e7eb;
+  border-bottom: 1px solid #d1d5db;
+  border-right: 1px solid #d1d5db;
+  height: 35px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
 }
 .bp-th-corner,
 .bp-th-sub--corner {
-  text-align: left !important;
+  text-align: left;
 }
 .bp-th-fy {
-  text-align: center !important;
+  text-align: center;
 }
 .bp-th-sub {
-  text-align: right !important;
+  text-align: right;
 }
-
-/* Year partition. Element-qualified (0,1,1) so it out-ranks the cell's own
-   `.bp-cell` / `.bp-th-*` border-right, which are equally !important. */
-th.bp-border-var,
-td.bp-border-var {
+.bp-border-var {
   border-right: 2px solid #4b5563 !important;
 }
-
 .bp-group-header {
-  padding: 10px 14px !important;
-  background: #2d3748 !important;
-  color: white !important;
-  font-size: 12px !important;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #2d3748;
+  padding: 10px;
+  font-size: 15px !important;
   font-weight: 700 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
+  line-height: 1.3;
 }
-
-/* No row hover colour — FIN_EVAL/MA has none. */
 .bp-row {
-  background: white !important;
+  background: #fff;
 }
-/* Locked rows (server figures, totals) on #f3f4f6; rows the user added on
-   white — FIN_EVAL/MA's locked / editable row surfaces. */
 .bp-row--locked,
 .bp-row--total {
-  background: #f3f4f6 !important;
+  background: #f3f4f6;
 }
 .bp-row--new {
-  background: white !important;
+  background: #fff;
 }
 .bp-row-label {
-  height: 40px !important;
-  padding: 0 12px !important;
-  overflow: hidden !important;
-  vertical-align: middle !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  border-right: 1px solid #e5e7eb !important;
+  vertical-align: middle;
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  height: 40px;
+  padding: 0 12px;
+  overflow: hidden;
 }
-/* Template line names bold #111827; long names ellipsed, full text on hover. */
 .bp-row-label-text {
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  color: #111827 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  color: #111827;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
 }
 .bp-row-label-text--calc {
-  color: #111 !important;
+  color: #111;
 }
-/* User-added row names: regular #1f2937, as MA's custom lines. */
 .bp-row-label-text--custom {
-  font-weight: 400 !important;
-  color: #1f2937 !important;
+  color: #1f2937;
+  font-weight: 400;
 }
 .bp-row-label-edit {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .bp-row-label-input {
-  flex: 1 !important;
-  min-width: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  outline: none !important;
-  background: transparent !important;
-  font: inherit !important;
-  font-size: 12px !important;
-  color: #1f2937 !important;
-  text-overflow: ellipsis !important;
+  min-width: 0;
+  font: inherit;
+  color: #1f2937;
+  text-overflow: ellipsis;
+  background: transparent;
+  border: none;
+  outline: none;
+  flex: 1;
+  padding: 0;
+  font-size: 12px;
 }
 .bp-row-label-input::placeholder {
-  color: #9ca3af !important;
+  color: #9ca3af;
 }
 .bp-row-delete {
-  display: inline-flex !important;
-  flex-shrink: 0 !important;
-  padding: 2px !important;
-  border: none !important;
-  background: none !important;
-  color: #9ca3af !important;
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  flex-shrink: 0;
+  padding: 2px;
+  display: inline-flex;
 }
 .bp-row-delete:hover {
-  color: #dc2626 !important;
+  color: #dc2626;
 }
-
-/* "+ Add Row" — MA's: 11px / 600 / black, bottom rule only. */
 .bp-add-row-cell {
-  padding: 6px 10px !important;
-  border-bottom: 1px solid #e5e7eb !important;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 6px 10px;
 }
 .bp-add-row {
-  padding: 3px 8px !important;
-  border: none !important;
-  background: none !important;
-  font: inherit !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  color: black !important;
+  font: inherit;
+  color: #000;
+  background: transparent;
+  border: none;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
 }
 .bp-add-row:disabled {
-  color: #9ca3af !important;
-  cursor: not-allowed !important;
+  color: #9ca3af;
+  cursor: not-allowed;
 }
-
 .bp-cell {
-  height: 40px !important;
-  padding: 0 !important;
-  text-align: right !important;
-  vertical-align: middle !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  border-right: 1px solid #e5e7eb !important;
+  text-align: right;
+  vertical-align: middle;
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  height: 40px;
+  padding: 0;
 }
-
-/* ── Grid cells — FIN_EVAL/MA's SpreadsheetCell ──
- * Every cell is a borderless input: transparent at rest so the row surface
- * shows through, no border or fill when focused (just the caret). A figure
- * wider than its column is clipped; the full value is in the hover title.
- */
 .bp-grid-cell {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 40px !important;
-  padding: 0 12px !important;
-  border: none !important;
-  outline: none !important;
-  background: transparent !important;
-  font: inherit !important;
-  font-size: 13px !important;
-  line-height: 40px !important;
-  text-align: right !important;
-  color: #1f2937 !important;
+  width: 100%;
+  height: 100%;
+  min-height: 40px;
+  font: inherit;
+  text-align: right;
+  color: #1f2937;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0 12px;
+  font-size: 13px;
+  line-height: 40px;
+  display: block;
 }
 .bp-grid-cell::placeholder {
-  color: #9ca3af !important;
+  color: #9ca3af;
 }
 .bp-grid-cell--calc {
-  font-weight: 700 !important;
-  color: #111 !important;
+  color: #111;
+  font-weight: 700;
 }
 .bp-grid-cell--neg {
-  color: #dc2626 !important;
+  color: #dc2626;
 }
 
-/* ── Save / status ── */
+/* BUTTONS / STATUS */
 .bp-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  padding: 8px 14px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  font-family: inherit !important;
-  border: 1px solid rgba(0, 0, 0, 0.7) !important;
-  border-radius: 6px !important;
-  background: white !important;
-  color: black !important;
-  transition: color 150ms, background-color 150ms, border-color 150ms, opacity 150ms !important;
+  color: #000;
+  background: #fff;
+  border: 1px solid #000000b3;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s,
+    opacity 0.15s;
 }
 .bp-btn--save {
-  padding: 8px 18px !important;
-  font-weight: 700 !important;
+  min-height: 40px;
+  padding: 8px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 .bp-btn:disabled {
-  opacity: 0.7 !important;
-  cursor: not-allowed !important;
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 .bp-status {
-  max-width: 320px !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-  font-size: 14px !important;
-  color: #64748b !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  max-width: 240px;
+  font-size: 13px;
+  overflow: hidden;
 }
 .bp-status--error {
-  color: #dc2626 !important;
+  color: #dc2626;
 }
 
-/* ── Toast — FIN_EVAL/MA's Toast ── */
+/* TOP-RIGHT API NOTIFICATION */
 .bp-toast {
-  position: fixed !important;
-  top: 50px !important;
-  right: 20px !important;
-  z-index: 400 !important;
-  margin-top: 10px !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  min-width: 260px !important;
-  max-width: 472px !important;
-  padding: 12px 14px !important;
-  border-radius: 8px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 100000;
+  width: auto;
+  min-width: 420px;
+  max-width: min(650px, calc(100vw - 36px));
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.bp-toast--error,
+.bp-toast--warning {
+  background: #fffaf3;
+  border-color: #eadfce;
 }
 .bp-toast--success {
-  background: #f4fceb !important;
-  color: #436b1d !important;
-}
-.bp-toast--error {
-  background: white !important;
-  color: #111827 !important;
+  background: #f4fceb;
+  border-color: #d9ebc9;
+  color: #365314;
 }
 .bp-toast-icon {
-  flex-shrink: 0 !important;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.bp-toast--error .bp-toast-icon,
+.bp-toast--warning .bp-toast-icon {
+  color: #8a4b08;
+}
+.bp-toast--success .bp-toast-icon {
+  color: #436b1d;
+}
+.bp-toast-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.bp-toast-title {
+  margin: 0 0 7px;
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+.bp-toast--error .bp-toast-title,
+.bp-toast--warning .bp-toast-title {
+  color: #8a4b08;
+}
+.bp-toast--success .bp-toast-title {
+  color: #436b1d;
 }
 .bp-toast-message {
-  flex: 1 !important;
+  position: relative;
+  padding-left: 15px;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.bp-toast-message::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  background: currentColor;
 }
 .bp-toast-close {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -4px -4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #6b7280;
+}
+.bp-toast-close:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111827;
+}
+@media (max-width: 700px) {
+  .bp-toast {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+}
+/* ACTUAL ACQUISITION DATE */
+.bp-acquisition-date {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  min-width: 218px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible !important;
+}
+.bp-acquisition-date-label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.bp-acquisition-date-control {
+  position: relative !important;
+  display: flex;
+  align-items: center;
+  width: 218px;
+  height: 40px;
+  overflow: visible !important;
+}
+.bp-acquisition-date-input {
+  width: 100%;
+  height: 40px;
+  box-sizing: border-box;
+  color: #1a2b4b;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 0 44px 0 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+.bp-acquisition-date-input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+.bp-acquisition-date-input:focus {
+  border-color: #1a2b4b;
+  box-shadow: 0 0 0 2px rgba(26, 43, 75, 0.1);
+}
+.bp-acquisition-date-input:disabled {
+  color: #94a3b8;
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+.bp-calendar-btn {
+  position: absolute !important;
+  right: 7px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 20px !important;
+  height: 20px !important;
   display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   padding: 0 !important;
-  border: none !important;
+  border: 0 !important;
+  border-radius: 4px !important;
   background: transparent !important;
-  color: inherit !important;
+  color: #000 !important;
+  cursor: pointer !important;
+  z-index: 20 !important;
+  pointer-events: auto !important;
+}
+.bp-calendar-btn svg {
+  stroke: #000 !important;
+  pointer-events: none !important;
+}
+.bp-calendar-btn:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+}
+.bp-calendar-btn:focus-visible {
+  outline: 2px solid #1a2b4b;
+  outline-offset: 1px;
+}
+.bp-calendar-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.bp-native-date-input {
+  display: none !important;
 }
 
-/*
- * Host-page neutraliser, scoped to the widget root (`.bp-root`, App.tsx — the
- * APEX host id can vary, the class cannot).
- *
- * Covers decorations a host theme commonly puts on bare elements that the
- * widget never sets itself (so the !important `bp-` rules alone cannot shield
- * them): gradients, shadows, letter-spacing, fixed heights, rounded inputs.
- * The toolbar-strip buttons and select get their own look from inline styles;
- * those, and every `bp-` rule, still win over this block.
- * No `font-family` on button / input / select: the strip toggles and the
- * Number Format select keep the UA control font, as in Prod Dev's identical
- * strip (the `bp-` controls already set `font: inherit` themselves).
- * Deliberately NOT !important — it out-ranks ordinary host rules by
- * specificity, while inline styles and `bp-` classes still win over it.
- */
-.bp-root table {
-  border-collapse: collapse;
-  border-spacing: 0;
-  margin: 0;
+/* CUSTOM CALENDAR POPUP */
+.bp-calendar-popup {
+  position: absolute;
+  top: 46px;
+  right: 0;
+  width: 220px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  padding: 12px;
+  z-index: 99999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  color: #0f172a;
+}
+.bp-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.bp-cal-nav {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
   background: transparent;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
 }
-.bp-root th,
-.bp-root td {
-  background-image: none;
-  box-shadow: none;
-  text-shadow: none;
-  letter-spacing: normal;
+.bp-cal-nav:hover {
+  background: #f1f5f9;
+}
+.bp-calendar-weekdays,
+.bp-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+.bp-calendar-weekdays span {
+  text-align: center;
+  padding: 5px 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+.bp-cal-day,
+.bp-cal-empty {
+  width: 100%;
+  height: 32px;
+}
+.bp-cal-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: #fff;
+  color: #111827;
   font-family: inherit;
-  vertical-align: middle;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
-.bp-root button {
-  background-image: none;
-  box-shadow: none;
-  text-shadow: none;
-  text-transform: none;
-  letter-spacing: normal;
-  min-height: 0;
-  line-height: inherit;
+.bp-cal-day:hover {
+  background: #f1f5f9;
 }
-.bp-root input,
-.bp-root select,
-.bp-root textarea {
-  background-image: none;
-  box-shadow: none;
-  border-radius: 0;
-  min-height: 0;
+.bp-cal-day--selected {
+  color: #fff !important;
+  background: #1e293b !important;
+}
+.bp-calendar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.bp-calendar-clear,
+.bp-calendar-close {
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #111827;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bp-calendar-clear:hover,
+.bp-calendar-close:hover {
+  background: #f1f5f9;
+}
+
+/* RESPONSIVE / FLUID APEX LAYOUT */
+.bp-root {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+.bp-page {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0px;
+}
+.bp-header-card,
+.bp-topbar,
+.bp-table-card {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+@media (min-width: 981px) {
+  .bp-controls-row {
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .bp-controls-left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .bp-controls-right {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+  .bp-controls-row,
+  .bp-controls-left,
+  .bp-topbar-strip {
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .bp-page {
+    width: 100%;
+    max-width: none;
+    padding: 12px;
+  }
+  .bp-header-card {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  .bp-header-top {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .bp-header-save {
+    margin-left: auto;
+  }
+  .bp-controls-row {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+  }
+  .bp-controls-left {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+  .bp-controls-right {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+  .bp-topbar-strip {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .bp-controls-left .bp-topbar-strip > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+}
+
+@media (max-width: 650px) {
+  .bp-page {
+    padding: 8px;
+  }
+  .bp-header-card {
+    padding: 14px;
+  }
+  .bp-header-top {
+    gap: 10px;
+  }
+  .bp-header-save {
+    margin-left: 0;
+  }
+  .bp-controls-row {
+    padding: 10px;
+  }
+  .bp-controls-right {
+    width: 100%;
+    margin-left: 0;
+  }
+  .bp-acquisition-date {
+    width: 100%;
+    min-width: 0;
+  }
+  .bp-acquisition-date-control {
+    width: 100% !important;
+  }
+  .bp-calendar-popup {
+    right: 0;
+    max-width: calc(100vw - 32px);
+  }
 }

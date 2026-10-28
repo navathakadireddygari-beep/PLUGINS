@@ -19,7 +19,6 @@ import {
   scaleDivisor,
   type MoneySettings,
 } from "@/lib";
-import { percentVariance } from "@/lib/variance";
 
 type Props = {
   dataset: BuyPlanDataset;
@@ -235,7 +234,10 @@ export default function BuyPlanTable({
     );
   };
 
-  /** EBIT Margin % — EBIT over Revenue, each side including any new rows. */
+  /**
+   * EBIT Margin % — EBIT over Revenue, each side including any new rows. The
+   * variance column shows the server's `ebit_margin_pct` as-is.
+   */
   const marginRow = (ebit: BuyPlanSectionView) => {
     const r = rowIdx++;
     return (
@@ -248,13 +250,21 @@ export default function BuyPlanTable({
           const rev = totalOf(revenue, fy);
           const forecast = marginOf(e.forecast, rev.forecast);
           const buyPlan = marginOf(e.buyPlan, rev.buyPlan);
-          const v = percentVariance(forecast, buyPlan);
+          const marginDelta = ebit.values[side][fy]?.ebitMarginPct;
           const pct = (n: number | null) => formatPercent(n, settings.numberFormat, PERCENT_CELL_DECIMALS);
           return (
             <Fragment key={fy}>
               <td className="bp-cell">{readOnlyCell(r, i * 3, pct(forecast), (forecast ?? 0) < 0, true)}</td>
               <td className="bp-cell">{readOnlyCell(r, i * 3 + 1, pct(buyPlan), (buyPlan ?? 0) < 0, true)}</td>
-              <td className={varClass(i)}>{readOnlyCell(r, i * 3 + 2, v.text, v.tone === "neg", true)}</td>
+              <td className={varClass(i)}>
+                {readOnlyCell(
+                  r,
+                  i * 3 + 2,
+                  marginDelta == null ? "—" : `${Math.abs(marginDelta)}%`,
+                  (marginDelta ?? 0) < 0,
+                  true
+                )}
+              </td>
             </Fragment>
           );
         })}
@@ -294,9 +304,9 @@ export default function BuyPlanTable({
               </th>
               {fiscalYears.map((fy, i) => (
                 <Fragment key={fy}>
-                  <th className="bp-th-sub">FORECAST</th>
+                  <th className="bp-th-sub">SPC</th>
                   <th className="bp-th-sub">BUY PLAN</th>
-                  <th className={`bp-th-sub${i === lastIndex ? "" : " bp-border-var"}`}>VAR</th>
+                  <th className={`bp-th-sub${i === lastIndex ? "" : " bp-border-var"}`}>VARIANCE</th>
                 </Fragment>
               ))}
             </tr>

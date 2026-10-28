@@ -5,6 +5,8 @@
  *
  *   GET  {api}/GIS/MA/buyPlan              headers: proposal_id [, currency]
  *   POST {api}/GIS/MA/buyPlan/adjustment   body: BuyPlanAdjustmentPayload
+ *   PUT  {api}/proposalAuthoring/{proposal_id}/financialEvaluation
+ *        body: { fin_eval_header_id, actual_acquisition_date }
  *
  * The GET is sent WITHOUT a `currency` header, so it answers both the local
  * (`*_local`) and USD (`*_usd`) figures in one call — one per table. Forecast,
@@ -27,6 +29,8 @@ import type {
 
 export const BUY_PLAN_PATH = "/GIS/MA/buyPlan";
 export const BUY_PLAN_ADJUSTMENT_PATH = "/GIS/MA/buyPlan/adjustment";
+export const financialEvaluationPath = (proposalId: number | string) =>
+  `/proposalAuthoring/${encodeURIComponent(proposalId)}/financialEvaluation`;
 
 const FY_BUCKET = /^fy\d{2}$/i;
 
@@ -41,8 +45,18 @@ const num = (v: unknown): number | null =>
 
 const figuresOf = (data: BuyPlanFyData | null, side: CurrencySide): Figures =>
   side === "local"
-    ? { forecast: num(data?.forecast_local), buyPlan: num(data?.buyplan_local), variance: num(data?.variance_local) }
-    : { forecast: num(data?.forecast_usd), buyPlan: num(data?.buyplan_usd), variance: num(data?.variance_usd) };
+    ? {
+        forecast: num(data?.forecast_local),
+        buyPlan: num(data?.buyplan_local),
+        variance: num(data?.variance_local),
+        ebitMarginPct: num(data?.ebit_margin_pct),
+      }
+    : {
+        forecast: num(data?.forecast_usd),
+        buyPlan: num(data?.buyplan_usd),
+        variance: num(data?.variance_usd),
+        ebitMarginPct: num(data?.ebit_margin_pct),
+      };
 
 /**
  * Fiscal years to show: the payload's list (or every bucket it carries),
@@ -89,6 +103,8 @@ export const mapBuyPlan = (data: BuyPlanResponse): BuyPlanDataset => {
       targetYearEnd: info?.target_year_end ?? null,
       localCurrency: info?.currency_code ?? null,
       fxRate: num(info?.fx_rate),
+      actualAcquisitionDate: info?.actual_acquisition_date ?? data?.actual_acquisition_date ?? null,
+      finEvalHeaderId: num(info?.fin_eval_header_id ?? data?.fin_eval_header_id),
     },
     fiscalYears: visibleFiscalYears(data),
     sections,
@@ -110,4 +126,41 @@ export async function fetchBuyPlan(
 export async function createBuyPlanAdjustment(payload: BuyPlanAdjustmentPayload): Promise<void> {
   console.log("[buy-plan-api] POST", BUY_PLAN_ADJUSTMENT_PATH, payload);
   await requestJson("POST", BUY_PLAN_ADJUSTMENT_PATH, { body: payload });
+}
+
+/** Save the proposal's Actual Acquisition Date (ISO `yyyy-mm-dd`, or null to clear it). */
+export async function updateActualAcquisitionDate(
+  proposalId: number | string,
+  finEvalHeaderId: number,
+  actualAcquisitionDate: string | null
+): Promise<void> {
+  const payload = { fin_eval_header_id: finEvalHeaderId, actual_acquisition_date: actualAcquisitionDate };
+  console.log("[Actual Acquisition Date] PUT URL:", financialEvaluationPath(proposalId));
+  console.log("[Actual Acquisition Date] Request Payload:", payload);
+  console.log("[Actual Acquisition Date] Request Payload JSON:", JSON.stringify(payload));
+  await requestJson("PUT", financialEvaluationPath(proposalId), { headers: { language: "en" }, body: payload });
+}
+
+const MONTH_NUMBERS: Record<string, string> = {
+  Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+  Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+};
+
+/** "dd-Mon-yyyy" -> "yyyy-mm-dd"; null for blank or unrecognised input. */
+export function acquisitionDateToIso(value: string): string | null {
+  if (!value) return null;
+  const match = value.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})$/);
+  if (!match) return null;
+  const month = MONTH_NUMBERS[match[2]];
+  return month ? `${match[3]}-${month}-${match[1]}` : null;
+}
+
+/** ISO date from the server -> "dd-Mon-yyyy" for the date input; "—" when absent/invalid. */
+export function formatAcquisitionDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = date.toLocaleString("en-GB", { month: "short" });
+  return `${day}-${month}-${date.getFullYear()}`;
 }

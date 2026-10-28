@@ -1,3 +1,4 @@
+import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles/globals.css";
@@ -145,18 +146,15 @@ function init(
   };
 
   /*
-   * app_user/app_roles come from the exact same APEX config object M&A
-   * receives — logged once per mount so the value APEX handed over can be
-   * checked in the console (and compared against created_by, derived from
-   * app_user in src/config/app-config.ts).
+   * session_id (falling back to app_user) is what goes out as the user_email
+   * header — logged once per mount so the value APEX handed over can be
+   * checked in the console.
    */
   console.log(
-    "[InvestmentReport] app_user:",
-    getAppConfig().app_user || "(none)",
+    "[InvestmentReport] session_id:",
+    getAppConfig().session_id || "(none — falling back to app_user)",
     "| user_email sent as:",
-    getApiUserEmail(),
-    "| user_id (created_by):",
-    getAppConfig().user_id
+    getApiUserEmail()
   );
 
 
@@ -200,9 +198,9 @@ function init(
    * Render React application.
    */
   _reactRoot.render(
-    // <React.StrictMode>
+    <React.StrictMode>
       <App />
-    // </React.StrictMode>
+    </React.StrictMode>
   );
 
 

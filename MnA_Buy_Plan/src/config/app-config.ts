@@ -3,11 +3,11 @@
  * Same shape/resolution order as the rest of the FinEval suite (see
  * FIN_EVAL/MA/src/config/app-config.ts) — APEX runs the exact same page code
  * for M&A and Buy Plan, so both widgets receive an identical host config
- * object (`app_user`, `app_roles`, `app_language`, `api_endpoint`,
- * ajaxId/flowId/stepId/instance). Buy Plan additionally needs a numeric user
- * id for `created_by` on adjustments; APEX does not send a dedicated
- * `user_id` field (M&A has no such field either), so it's derived from
- * `app_user` — the same numeric GIS user id M&A sends as its `user_email`.
+ * object (`app_user`, `app_roles`, `api_endpoint`, `session_id`,
+ * ajaxId/flowId/stepId/instance). Buy Plan additionally needs a numeric
+ * `user_id` for `created_by` on adjustments, read from the host config or
+ * `?user_id=`. The `user_email` header carries `session_id` (falling back to
+ * the APEX `instance`), else `app_user`.
  */
 
 export type AppConfig = {
@@ -16,8 +16,9 @@ export type AppConfig = {
   /** Numeric GIS user id, sent as `created_by` on Buy Plan adjustments. */
   user_id: number | null;
   app_user: string;
+  /** APEX session id — sent as `user_email` when present (see getApiUserEmail). */
+  session_id: string;
   app_roles: string;
-  app_language: string;
   api_endpoint: string;
   /** APEX OAuth AJAX callback context — only present/used inside APEX. */
   ajaxId?: string;
@@ -31,8 +32,8 @@ export interface HostAppConfig {
   /** Explicit override for local testing — APEX itself never sends this. */
   user_id?: string | number | null;
   app_user?: string;
+  session_id?: string | number | null;
   app_roles?: string;
-  app_language?: string;
   api_endpoint?: string;
   ajaxId?: string;
   flowId?: string;
@@ -43,7 +44,6 @@ export interface HostAppConfig {
 const LOCAL_DEV_ROLES =
   "APP_FIN_GIS_SPC_AUTHOR_SPC_ALL,APP_FIN_GIS_RLS_NA_AUTOMOTIVE_SPC_ALL";
 const LOCAL_DEV_USER_EMAIL = "arvind.tammineni@test.exp.com";
-const LOCAL_DEV_LANGUAGE = "en";
 
 /** OAuth2 token endpoint, relative to `api_endpoint`. */
 export const TOKEN_PATH = "/oauth/token";
@@ -104,23 +104,19 @@ export const getAppConfig = (): AppConfig => {
       : undefined) ?? {};
   const local = isLocalhost();
 
-  // Same resolution order as M&A's app_user/app_roles (host value, then the
-  // matching query param, then a local-dev-only fallback).
-  const app_user = firstOf(
-    cfg.app_user,
-    queryParam("user_email"),
-    local ? LOCAL_DEV_USER_EMAIL : undefined
-  );
-
   return {
     proposal_id: numericId(cfg.proposal_id, queryParam("proposal_id")),
-    // No dedicated host field for this (see the file header) — fall back to
-    // the same numeric id APEX already sends as `app_user`.
-    user_id: numericId(cfg.user_id, queryParam("user_id"), app_user),
-    app_user,
-    app_roles: firstOf(cfg.app_roles, queryParam("role"), local ? LOCAL_DEV_ROLES : undefined),
-    app_language: firstOf(cfg.app_language, queryParam("language"), LOCAL_DEV_LANGUAGE),
-    api_endpoint: firstOf(cfg.api_endpoint, queryParam("api_endpoint")).replace(/\/+$/, ""),
+    user_id: numericId(cfg.user_id, queryParam("user_id")),
+    // Host value, then a local-dev-only fallback.
+    app_user: firstOf(cfg.app_user, local ? LOCAL_DEV_USER_EMAIL : undefined),
+    // Host value, then ?session_id=, then the APEX session (`instance`).
+    session_id: firstOf(
+      cfg.session_id == null ? undefined : String(cfg.session_id),
+      queryParam("session_id"),
+      cfg.instance
+    ),
+    app_roles: firstOf(cfg.app_roles, local ? LOCAL_DEV_ROLES : undefined),
+    api_endpoint: (cfg.api_endpoint ?? "").toString().replace(/\/+$/, ""),
     ajaxId: cfg.ajaxId,
     flowId: cfg.flowId,
     stepId: cfg.stepId,
@@ -140,11 +136,11 @@ export const API_BASE_URL = getApiBaseUrl();
 /** Comma-separated APEX roles for the `role` header. */
 export const getApiRole = (): string | undefined => getAppConfig().app_roles || undefined;
 
-/** UI language for the `language` header. */
-export const getApiLanguage = (): string | undefined => getAppConfig().app_language || undefined;
-
-/** Value sent as `user_email` (header and save body) — same as M&A sends. */
-export const getApiUserEmail = (): string | undefined => getAppConfig().app_user || undefined;
+/** Value sent as the `user_email` header: the session id, else app_user. */
+export const getApiUserEmail = (): string | undefined => {
+  const cfg = getAppConfig();
+  return cfg.session_id || cfg.app_user || undefined;
+};
 
 /** Auth/identity headers every GIS call carries. */
 export const authHeaders = (token: string): Record<string, string> => {

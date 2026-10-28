@@ -8,7 +8,7 @@
 
 /** Strip any non-numeric (text) characters from a numeric cell's draft value. */
 export const sanitizeNumericInput = (s: string): string =>
-  s.replace(/[^0-9.,'()%\s-]/g, "");
+  String(s ?? "").replace(/[^0-9.,'()%\s-]/g, "");
 
 const findEl = (gridId: string, row: number, col: number): HTMLElement | null =>
   document.querySelector<HTMLElement>(

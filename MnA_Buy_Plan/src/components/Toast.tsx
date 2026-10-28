@@ -1,13 +1,14 @@
 /**
- * Transient success / error notice, ported from FIN_EVAL/MA
+ * Transient success / warning / error notice, ported from FIN_EVAL/MA
  * src/components/Toast.tsx so save feedback looks and behaves the same.
- * Fixed to the top-right and auto-dismisses. Icons are lucide's
- * CheckCircle2 / AlertCircle / X, inlined (Buy Plan has no lucide dependency).
+ * Fixed to the top-right. Success auto-dismisses; warnings and errors stay
+ * until closed. Icons are lucide's CheckCircle2 / AlertCircle / X, inlined
+ * (Buy Plan has no lucide dependency).
  */
 
 import { useEffect } from "react";
 
-export type ToastKind = "success" | "error";
+export type ToastKind = "success" | "warning" | "error";
 
 export type ToastState = { kind: ToastKind; message: string } | null;
 
@@ -27,9 +28,9 @@ const iconProps = {
   "aria-hidden": true,
 };
 
-export default function Toast({ toast, onClose, autoDismissMs = 3500 }: Props) {
+export default function Toast({ toast, onClose, autoDismissMs = 5000 }: Props) {
   useEffect(() => {
-    if (!toast) return;
+    if (!toast || toast.kind !== "success") return;
     const timer = setTimeout(onClose, autoDismissMs);
     return () => clearTimeout(timer);
   }, [toast, autoDismissMs, onClose]);
@@ -37,10 +38,16 @@ export default function Toast({ toast, onClose, autoDismissMs = 3500 }: Props) {
   if (!toast) return null;
 
   const isSuccess = toast.kind === "success";
+  const isWarning = toast.kind === "warning";
+  const title = isSuccess ? "Saved successfully" : isWarning ? "Warning" : "1 error has occurred";
 
   return (
-    <div role="status" className={`bp-toast ${isSuccess ? "bp-toast--success" : "bp-toast--error"}`}>
-      <svg width={18} height={18} className="bp-toast-icon" {...iconProps}>
+    <div
+      role={isSuccess ? "status" : "alert"}
+      aria-live={isSuccess ? "polite" : "assertive"}
+      className={`bp-toast ${isSuccess ? "bp-toast--success" : isWarning ? "bp-toast--warning" : "bp-toast--error"}`}
+    >
+      <svg width={20} height={20} className="bp-toast-icon" {...iconProps}>
         <circle cx="12" cy="12" r="10" />
         {isSuccess ? (
           <path d="m9 12 2 2 4-4" />
@@ -51,9 +58,12 @@ export default function Toast({ toast, onClose, autoDismissMs = 3500 }: Props) {
           </>
         )}
       </svg>
-      <span className="bp-toast-message">{toast.message}</span>
+      <div className="bp-toast-content">
+        <div className="bp-toast-title">{title}</div>
+        <div className="bp-toast-message">{toast.message}</div>
+      </div>
       <button type="button" onClick={onClose} aria-label="Close" className="bp-toast-close">
-        <svg width={14} height={14} {...iconProps}>
+        <svg width={16} height={16} {...iconProps}>
           <path d="M18 6 6 18" />
           <path d="m6 6 12 12" />
         </svg>

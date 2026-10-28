@@ -169,8 +169,8 @@ export function CurrencyFormatProvider({ children }: { children: ReactNode }) {
       // `display_currency` still tells us what to show, so either one is
       // enough. Neither means the header carried no currency at all, and the
       // toggle stays hidden rather than inventing one.
-      const localCode = (local ?? "").trim().toUpperCase();
-      const displayCode = (display ?? "").trim().toUpperCase();
+      const localCode = String(local ?? "").trim().toUpperCase();
+      const displayCode = String(display ?? "").trim().toUpperCase();
       const anchor = localCode || displayCode;
       if (!anchor) {
         setLocalCurrencyState(null);

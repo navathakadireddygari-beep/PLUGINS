@@ -60,7 +60,7 @@ export default function CurrencyToggle({
   currencies,
   localCurrency,
 }: Props) {
-  const local = (localCurrency ?? "").trim().toUpperCase();
+  const local = String(localCurrency ?? "").trim().toUpperCase();
   const currencyOptions = currencies.map((code) => ({
     id: code,
     label: currencyLabel(code),
@@ -110,7 +110,7 @@ export default function CurrencyToggle({
       </div>
       <InfoDot
         label="Scale info"
-        tip="Switch the denomination for all financial values. Values arrive in thousands: K = thousands (as-is), M = millions (÷1,000), B = billions (÷1,000,000)."
+        tip="Switch the denomination for all financial values. Source values are stored in units: K = thousands (÷1,000), M = millions (÷1,000,000), B = billions (÷1,000,000,000)."
       />
     </>
   );
