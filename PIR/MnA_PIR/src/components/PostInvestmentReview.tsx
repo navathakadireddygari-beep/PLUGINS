@@ -254,9 +254,9 @@ function ReviewHeader({ title, subtitle, rating, label }: { title: string; subti
 
 function Toolbar({ currency, onCurrency, scale, onScale }: { currency: Currency; onCurrency: (c: Currency) => void; scale: Scale; onScale: (s: Scale) => void }): ReactElement {
   const scales: { value: Scale; label: string; title: string }[] = [
-    { value: "K", label: "'00", title: "Thousand" },
-    { value: "M", label: "'000", title: "Million" },
-    { value: "B", label: "'0000", title: "Billion" },
+    { value: "K", label: "K", title: "Thousand" },
+    { value: "M", label: "M", title: "Million" },
+    { value: "B", label: "B", title: "Billion" },
   ];
   return (
     <section className="pir-rv-card pir-rv-toolbar">
@@ -1851,7 +1851,7 @@ const PIR_RV_CSS = `
 .pir-rv-fin-table { width:100%; border-collapse:collapse; font-size:12px; table-layout:fixed; }
 .pir-rv-fin-compact .pir-rv-fin-table { font-size:11px; }
 .pir-rv-fin-unit {
-  padding:8px 14px; text-align:left; font-size:11px; font-weight:700;
+  padding:8px 14px; text-align:left; font-size:12px; font-weight:700;
   color:var(--navy-d); background:var(--g50); white-space:nowrap;
 }
 .pir-rv-fin-group {
@@ -1859,7 +1859,7 @@ const PIR_RV_CSS = `
   color:var(--navy-d); background:var(--g50); white-space:nowrap;
 }
 .pir-rv-fin-rowhdr {
-  padding:7px 14px; text-align:left; font-size:11px; font-weight:700;
+  padding:7px 14px; text-align:left; font-size:12px; font-weight:700;
   color:var(--navy-d); background:var(--light); vertical-align:middle; height:42px;
 }
 .pir-rv-fin-colhdr {
@@ -1868,11 +1868,11 @@ const PIR_RV_CSS = `
 }
 .pir-rv-fin-sep { border-right:2px solid var(--navy-d); }
 .pir-rv-fin-sec {
-  padding:6px 14px; font-size:10px; font-weight:700; color:#fff; background:var(--navy-d);
+  padding:6px 14px; font-size:13px; font-weight:700; color:#fff; background:var(--navy-d);
   text-transform:uppercase; letter-spacing:.5px;
 }
 .pir-rv-fin-label { padding:7px 14px; color:var(--g600); white-space:nowrap; }
-.pir-rv-fin-bold { font-weight:600; }
+.pir-rv-fin-bold { font-size:12px; font-weight:600; }
 .pir-rv-fin-indent { padding-left:26px; }
 .pir-rv-fin-cell { padding:7px 9px; text-align:right; }
 .pir-rv-fin-act { color:var(--navy-d); background:var(--act); }
