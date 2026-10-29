@@ -1439,7 +1439,8 @@ const Table: React.FC = () => {
    *
    * `yearsInSections`: the grid repeats the LINE ITEM / fiscal-year row under
    * every section bar instead (see `sectionYearRow`), as the other plugins do,
-   * so the header keeps only the ACTUALS / PROJECTIONS banner.
+   * so the header keeps only the ACTUALS / PROJECTIONS banner and the CAGR
+   * heading (shown once, as in the wireframe).
    */
   const gridHead = (cagr: boolean, yearsInSections = false) => (
     <thead>
@@ -1467,7 +1468,7 @@ const Table: React.FC = () => {
             rowSpan={yearsInSections ? 1 : 2}
             className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]"
           >
-            {yearsInSections ? "" : "CAGR"}
+            CAGR
           </th>
         )}
       </tr>
@@ -1480,7 +1481,8 @@ const Table: React.FC = () => {
    * the ACTUALS / PROJECTIONS banner; with `gridRows(..., yearsInSections)` it
    * is repeated under each section's bar, as Prod Dev's per-section column
    * sub-header does, so every section shows which column is which year.
-   * `cagr` adds the CAGR heading (the header's own CAGR cell spans down instead).
+   * `cagr` keeps the CAGR column aligned with an empty cell: as in the
+   * wireframe, the CAGR heading appears once, in the grid header, not per section.
    */
   const sectionYearRow = (cols: number[], cagr: boolean) => (
     <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
@@ -1496,11 +1498,7 @@ const Table: React.FC = () => {
           {fyLabel(i)}
         </th>
       ))}
-      {cagr && (
-        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
-          CAGR
-        </th>
-      )}
+      {cagr && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
     </tr>
   );
 
