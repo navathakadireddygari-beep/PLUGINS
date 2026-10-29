@@ -1,2 +1,9 @@
 # Local env overrides with real credentials (see .env).
 *.local
+
+# Claude Code local settings / locks (per machine)
+.claude/
+
+# Dev-server logs
+*.err
+*.log
