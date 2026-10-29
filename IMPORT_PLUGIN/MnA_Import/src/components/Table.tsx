@@ -1436,8 +1436,12 @@ const Table: React.FC = () => {
    * gutter all have to agree with the BODY those grids render through
    * `gridRows` — three hand-maintained copies is how a header ends up claiming
    * a column the body never draws.
+   *
+   * `yearsInSections`: the grid repeats the LINE ITEM / fiscal-year row under
+   * every section bar instead (see `sectionYearRow`), as the other plugins do,
+   * so the header keeps only the ACTUALS / PROJECTIONS banner.
    */
-  const gridHead = (cagr: boolean) => (
+  const gridHead = (cagr: boolean, yearsInSections = false) => (
     <thead>
       <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
         {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
@@ -1460,28 +1464,44 @@ const Table: React.FC = () => {
         )}
         {cagr && (
           <th
-            rowSpan={2}
+            rowSpan={yearsInSections ? 1 : 2}
             className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]"
           >
-            CAGR
+            {yearsInSections ? "" : "CAGR"}
           </th>
         )}
       </tr>
-      <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
-        {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
-        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
-          LINE ITEM
-        </th>
-        {allYearIdx.map((i) => (
-          <th
-            key={i}
-            className={`mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]${partitionClass(i, actualsCount)}`}
-          >
-            {fyLabel(i)}
-          </th>
-        ))}
-      </tr>
+      {!yearsInSections && sectionYearRow(allYearIdx, false)}
     </thead>
+  );
+
+  /**
+   * The LINE ITEM / fiscal-year column row. In the grid header it sits under
+   * the ACTUALS / PROJECTIONS banner; with `gridRows(..., yearsInSections)` it
+   * is repeated under each section's bar, as Prod Dev's per-section column
+   * sub-header does, so every section shows which column is which year.
+   * `cagr` adds the CAGR heading (the header's own CAGR cell spans down instead).
+   */
+  const sectionYearRow = (cols: number[], cagr: boolean) => (
+    <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
+      {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
+      <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
+        LINE ITEM
+      </th>
+      {cols.map((i) => (
+        <th
+          key={i}
+          className={`mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]${partitionClass(i, actualsCount)}`}
+        >
+          {fyLabel(i)}
+        </th>
+      ))}
+      {cagr && (
+        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
+          CAGR
+        </th>
+      )}
+    </tr>
   );
 
   /**
@@ -1526,6 +1546,7 @@ const Table: React.FC = () => {
     setRows: (r: Row[]) => void,
     cols: number[],
     cagr = false,
+    yearsInSections = false,
   ) => {
     const span = gridColSpan(cols, cagr);
     const hidden = hiddenTotalIds(rows);
@@ -1536,6 +1557,8 @@ const Table: React.FC = () => {
       // that section's LAST row rather than at the foot of the table.
       const next = rows[rowIdx + 1];
       const endsSection = !next || sectionKeyOf(next) !== sectionKeyOf(row);
+      const prev = rowIdx > 0 ? rows[rowIdx - 1] : undefined;
+      const startsSection = !prev || sectionKeyOf(prev) !== sectionKeyOf(row);
       const showAdd =
         !isReadonly &&
         !collapsed &&
@@ -1545,6 +1568,8 @@ const Table: React.FC = () => {
       return (
         <React.Fragment key={row.id}>
           {sectionHeaderRow(gridId, rows, rowIdx, span)}
+          {/* Per-section LINE ITEM / year row, under the section's bar. */}
+          {yearsInSections && startsSection && !collapsed && sectionYearRow(cols, cagr)}
           {/* Only the line itself is dropped: the bar above and the
               "+ Add Row" below still key off this row's index. */}
           {!collapsed && !hidden.has(row.id) && (
@@ -2552,9 +2577,9 @@ const Table: React.FC = () => {
             <div className="mna:overflow-auto mna:rounded-b">
               <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={allYearIdx.length} cagr />
-                {gridHead(true)}
+                {gridHead(true, true)}
                 <tbody>
-                  {gridRows("cor", corRows, corRows, setCorRows, allYearIdx, true)}
+                  {gridRows("cor", corRows, corRows, setCorRows, allYearIdx, true, true)}
                   {missingSectionRows("cor", gridColSpan(allYearIdx, true), true)}
                 </tbody>
               </table>
@@ -2688,9 +2713,9 @@ const Table: React.FC = () => {
                     yearCount={allYearIdx.length}
                     cagr
                   />
-                  {gridHead(true)}
+                  {gridHead(true, true)}
                   <tbody>
-                    {gridRows("cus", cusRows, cusRows, setCusRows, allYearIdx, true)}
+                    {gridRows("cus", cusRows, cusRows, setCusRows, allYearIdx, true, true)}
                   </tbody>
                 </table>
               </div>
