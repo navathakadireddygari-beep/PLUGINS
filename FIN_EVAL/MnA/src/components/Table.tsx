@@ -1503,8 +1503,10 @@ const Table: React.FC = () => {
 
   /**
    * The two-row column header the year-by-year grids share: the ACTUALS /
-   * PROJECTIONS banners over the fiscal-year labels, with the CAGR column
-   * spanning both rows where the grid carries one.
+   * PROJECTIONS banners over the fiscal-year labels. As in the wireframe, the
+   * CAGR column reads "<n>YR" in the banner row and "CAGR" in the year row,
+   * where <n> is the number of projection years shown (the PROJECTIONS span),
+   * e.g. "7YR" for FY26–FY32.
    *
    * One copy, because `actualsColSpan`, `partitionClass` and the read-only
    * gutter all have to agree with the BODY those grids render through
@@ -1513,8 +1515,7 @@ const Table: React.FC = () => {
    *
    * `yearsInSections`: the grid repeats the LINE ITEM / fiscal-year row under
    * every section bar instead (see `sectionYearRow`), as the other plugins do,
-   * so the header keeps only the ACTUALS / PROJECTIONS banner and the CAGR
-   * heading (shown once, as in the wireframe).
+   * so the header keeps only the ACTUALS / PROJECTIONS / <n>YR banner row.
    */
   const gridHead = (cagr: boolean, yearsInSections = false) => (
     <thead>
@@ -1538,15 +1539,12 @@ const Table: React.FC = () => {
           </th>
         )}
         {cagr && (
-          <th
-            rowSpan={yearsInSections ? 1 : 2}
-            className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]"
-          >
-            CAGR
+          <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
+            {projYearIdx.length > 0 ? `${projYearIdx.length}YR` : ""}
           </th>
         )}
       </tr>
-      {!yearsInSections && sectionYearRow(allYearIdx, false)}
+      {!yearsInSections && sectionYearRow(allYearIdx, cagr)}
     </thead>
   );
 
@@ -1555,8 +1553,8 @@ const Table: React.FC = () => {
    * the ACTUALS / PROJECTIONS banner; with `gridRows(..., yearsInSections)` it
    * is repeated under each section's bar, as Prod Dev's per-section column
    * sub-header does, so every section shows which column is which year.
-   * `cagr` keeps the CAGR column aligned with an empty cell: as in the
-   * wireframe, the CAGR heading appears once, in the grid header, not per section.
+   * `cagr` ends the row with the "CAGR" heading, under the banner's "<n>YR",
+   * exactly where the wireframe puts it.
    */
   const sectionYearRow = (cols: number[], cagr: boolean) => (
     <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
@@ -1572,7 +1570,11 @@ const Table: React.FC = () => {
           {fyLabel(i)}
         </th>
       ))}
-      {cagr && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
+      {cagr && (
+        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
+          CAGR
+        </th>
+      )}
     </tr>
   );
 
