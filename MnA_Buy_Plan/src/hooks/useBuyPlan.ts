@@ -37,7 +37,7 @@ export function useBuyPlan() {
   const load = useCallback(
     async (signal?: AbortSignal) => {
       if (!proposalId) {
-        setError("No proposal_id configured — set it in window.__APP_CONFIG__ or the URL.");
+        setError("No proposal_id configured — set it in window.__BUYPLAN_CONFIG__ or the URL.");
         return;
       }
       setLoading(true);
@@ -108,7 +108,7 @@ export function useBuyPlan() {
       rows.find((r) => !r.description.trim()) !== undefined
         ? "Enter a description for every new row before saving."
         : !userId
-          ? "No user_id configured — set it in window.__APP_CONFIG__ (sent as created_by)."
+          ? "No user_id configured — set it in window.__BUYPLAN_CONFIG__ (sent as created_by)."
           : null;
     if (problem) {
       setError(problem);

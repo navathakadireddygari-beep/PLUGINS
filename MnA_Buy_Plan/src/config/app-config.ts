@@ -1,5 +1,5 @@
 /**
- * App configuration injected via index.html -> window.__APP_CONFIG__.
+ * App configuration injected via index.html -> window.__BUYPLAN_CONFIG__.
  * Same shape/resolution order as the rest of the FinEval suite (see
  * FIN_EVAL/MA/src/config/app-config.ts) — APEX runs the exact same page code
  * for M&A and Buy Plan, so both widgets receive an identical host config
@@ -100,7 +100,7 @@ const firstOf = (...values: Array<string | undefined>): string => {
 export const getAppConfig = (): AppConfig => {
   const cfg: HostAppConfig =
     (typeof window !== "undefined"
-      ? (window as unknown as { __APP_CONFIG__?: HostAppConfig }).__APP_CONFIG__
+      ? (window as unknown as { __BUYPLAN_CONFIG__?: HostAppConfig }).__BUYPLAN_CONFIG__
       : undefined) ?? {};
   const local = isLocalhost();
 

@@ -12,7 +12,7 @@
       // Inside APEX, also set ajaxId/flowId/stepId/instance so the auth
       // callback can mint a token; outside APEX, the OAuth path is used
       // instead (see src/api/auth-api.ts) and needs no host-supplied secret.
-      window.__APP_CONFIG__ = {
+      window.__BUYPLAN_CONFIG__ = {
         proposal_id: 890,
         // Explicit override for local testing only — APEX doesn't send this;
         // created_by normally falls back to the numeric app_user below.

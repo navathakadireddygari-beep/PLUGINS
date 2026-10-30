@@ -22,9 +22,9 @@ with a local/USD currency toggle, K/M/B scale and number-format toggles.
 Forecast, Buy Plan and Var on the server's rows are read-only (Var is the
 server's forecast − buy plan). Only rows added with "+ Add Row" are editable
 (description + Buy Plan amounts); saving POSTs them as adjustments and
-re-fetches. `proposal_id` comes from `window.__APP_CONFIG__` or
+re-fetches. `proposal_id` comes from `window.__BUYPLAN_CONFIG__` or
 `?proposal_id=`. `user_id` (sent as `created_by`) comes from an explicit
-`window.__APP_CONFIG__.user_id` / `?user_id=` (local-testing-only overrides —
+`window.__BUYPLAN_CONFIG__.user_id` / `?user_id=` (local-testing-only overrides —
 APEX doesn't send this), falling back to the numeric `app_user` id APEX
 already injects (the same config object it hands to FIN_EVAL/MA).
 

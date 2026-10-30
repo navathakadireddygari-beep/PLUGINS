@@ -60,7 +60,7 @@ export async function fetchAuthToken(cfg: AppConfig): Promise<AuthTokenResponse>
   if (isApexHost()) {
     if (!cfg.ajaxId || !cfg.flowId || !cfg.stepId || !cfg.instance) {
       throw new Error(
-        "Missing APEX context (ajaxId, flowId, stepId, instance) in window.__APP_CONFIG__"
+        "Missing APEX context (ajaxId, flowId, stepId, instance) in window.__BUYPLAN_CONFIG__"
       );
     }
 

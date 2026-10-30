@@ -10,11 +10,11 @@ import {
 
 declare global {
   interface Window {
-    __APP_CONFIG__?: AppConfig;
+    __BUYPLAN_CONFIG__?: AppConfig;
 
-    __GIS_INVEST_INIT_DONE__?: boolean;
+    __GIS_BUYPLAN_INIT_DONE__?: boolean;
 
-    InvestmentReportWidget?: {
+    BuyPlanWidget?: {
       init: (
         hostId: string,
         config: AppConfig
@@ -101,7 +101,7 @@ function destroy(hostId: string): void {
     container.innerHTML = "";
   }
 
-  window.__GIS_INVEST_INIT_DONE__ =
+  window.__GIS_BUYPLAN_INIT_DONE__ =
     false;
 }
 
@@ -141,7 +141,7 @@ function init(
    * Use a fresh object so React gets the
    * latest proposal information.
    */
-  window.__APP_CONFIG__ = {
+  window.__BUYPLAN_CONFIG__ = {
     ...config,
   };
 
@@ -204,7 +204,7 @@ function init(
   );
 
 
-  window.__GIS_INVEST_INIT_DONE__ =
+  window.__GIS_BUYPLAN_INIT_DONE__ =
     true;
 
 
@@ -214,7 +214,7 @@ function init(
       hostId,
 
       proposal_id:
-        window.__APP_CONFIG__
+        window.__BUYPLAN_CONFIG__
           ?.proposal_id,
     }
   );
@@ -225,13 +225,13 @@ function init(
  * EXPOSE API FOR APEX
  * ============================================================ */
 
-window.InvestmentReportWidget = {
+window.BuyPlanWidget = {
   init,
   destroy,
 };
 
 console.log(
-  "[InvestmentReportWidget] " +
+  "[BuyPlanWidget] " +
   "Bundle loaded. Widget API registered."
 );
 
@@ -243,7 +243,7 @@ console.log(
  * ============================================================ */
 
 const _initialConfig =
-  window.__APP_CONFIG__;
+  window.__BUYPLAN_CONFIG__;
 
 const _hasInitialConfig =
   // Buy Plan loads by proposal_id only (no spc/template fallback).

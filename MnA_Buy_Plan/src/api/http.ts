@@ -24,7 +24,7 @@ export async function requestJson<T = unknown>(
   } = {}
 ): Promise<T> {
   const { api_endpoint } = getAppConfig();
-  if (!api_endpoint) throw new Error("Missing api_endpoint in window.__APP_CONFIG__.");
+  if (!api_endpoint) throw new Error("Missing api_endpoint in window.__BUYPLAN_CONFIG__.");
 
   const query = options.params
     ? `?${new URLSearchParams(
