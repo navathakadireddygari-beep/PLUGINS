@@ -259,6 +259,18 @@ const YEAR_COL_MIN_WIDTH = 120;
 const CAGR_COL_WIDTH = 140;
 
 /**
+ * The only lines that show a CAGR value (by `line_item_code`), per the M&A
+ * wireframe: Standalone Revenues, Revenue (Total), Total Costs, EBIT, EBITDA.
+ */
+const CAGR_LINE_CODES = new Set([
+  "STANDALONE_REVENUES",
+  "REVENUE_TOTAL",
+  "COSTS_TOTAL",
+  "EBIT",
+  "EBITDA",
+]);
+
+/**
  * The <colgroup> shared by every year-by-year grid: actions (when the screen is
  * editable), the wide label column, one column per visible year, and optionally
  * the trailing CAGR column.
@@ -1460,6 +1472,9 @@ const Table: React.FC = () => {
   };
 
   const cagrText = (row: Row): string => {
+    // As in the wireframe, CAGR is shown only on these five lines; every
+    // other row keeps an empty CAGR cell (blank, not "—").
+    if (!CAGR_LINE_CODES.has(row.lineType ?? "")) return "";
     if (isNoTotalRow(identityOf(row)) || isPercentRow(identityOf(row))) {
       return "—";
     }
