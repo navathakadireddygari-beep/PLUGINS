@@ -2,10 +2,11 @@
  * Delete API — removes a line or a section from the Financial evaluation.
  *
  * Backend endpoint (single proc for both):
- *   DELETE {api_endpoint}/Financial/delete/{proposal_id}
+ *   DELETE {api_endpoint}/GIS/proposalAuthoring/{proposal_id}/financialEvaluation
  *
- * Request body (matches XXEX_GIS_FIN_EVAL_PKG.delete_fin_eval_prc):
- *   { user_email, section_id, line_id }   // pass null for the one you're not targeting
+ * Request body:
+ *   { fin_eval_line_id }      // deleting a line
+ *   { fin_eval_section_id }   // deleting a section
  *
  * Response body:
  *   { api_status: "S" | "E", api_message: "..." }
@@ -26,11 +27,9 @@ async function extractApiError(res: Response, fallback: string): Promise<string>
   return text || fallback;
 }
 
-type DeleteBody = {
-  user_email: string;
-  section_id: number | null;
-  line_id:    number | null;
-};
+type DeleteBody =
+  | { fin_eval_line_id: number }
+  | { fin_eval_section_id: number };
 
 type DeleteResponse = {
   api_status?:  string;
@@ -76,20 +75,12 @@ async function sendDelete(cfg: AppConfig, body: DeleteBody): Promise<DeleteRespo
   return json;
 }
 
-/** Delete a single line. Pass null for section_id. */
+/** Delete a single line. */
 export async function deleteLine(cfg: AppConfig, lineId: number): Promise<DeleteResponse> {
-  return sendDelete(cfg, {
-    user_email: cfg.app_user,
-    section_id: null,
-    line_id:    lineId,
-  });
+  return sendDelete(cfg, { fin_eval_line_id: lineId });
 }
 
-/** Delete an entire section. Pass null for line_id. */
+/** Delete an entire section. */
 export async function deleteSection(cfg: AppConfig, sectionId: number): Promise<DeleteResponse> {
-  return sendDelete(cfg, {
-    user_email: cfg.app_user,
-    section_id: sectionId,
-    line_id:    null,
-  });
+  return sendDelete(cfg, { fin_eval_section_id: sectionId });
 }
