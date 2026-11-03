@@ -1478,7 +1478,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
           onChange={onKpiChange}
           displayScale={displayScale}
           numberFormat={numberFormat}
-          dateFormat={dateFormat}
           isReadonly={isReadonly}
           fxRate={fxRate}
         />

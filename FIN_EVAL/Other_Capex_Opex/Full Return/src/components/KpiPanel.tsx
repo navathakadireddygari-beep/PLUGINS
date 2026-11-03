@@ -1,14 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Calendar } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { computeDisplayMultiplier, type ApiHeader, type HurdleCheck } from "../api/financial-api";
-import { applyScale, decimalsForScale, formatNumber, formatDate, type Scale, type NumberFormatKey, type DateFormatKey } from "../lib/format";
+import { applyScale, decimalsForScale, formatNumber, type Scale, type NumberFormatKey } from "../lib/format";
 
 type Props = {
   rawHeader:    ApiHeader;
   onChange:     (patch: Partial<ApiHeader>) => void;
   displayScale: Scale;
   numberFormat: NumberFormatKey;
-  dateFormat:   DateFormatKey;
   isReadonly:   boolean;
   fxRate:       number | null;
 };
@@ -74,15 +72,9 @@ const isValidPercentInput = (s: string): boolean => {
 const clampPercent = (n: number): number =>
   Math.min(100, Math.max(0, Math.round(n * 100) / 100));
 
-// Amortization period: whole months only, max 4 digits (0–9999), no decimals.
-const isValidYearsInput = (s: string): boolean => s === "" || /^\d{0,4}$/.test(s);
-const clampYears = (n: number): number =>
-  Math.min(9999, Math.max(0, Math.trunc(n)));
-
-function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, dateFormat, isReadonly, fxRate }: Props): React.ReactElement {
+function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly, fxRate }: Props): React.ReactElement {
   const pm = rawHeader.performance_metrics;
   const metrics: HurdleCheck[] = pm?.hurdle_checks ?? [];
-  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // In-progress text for guarded numeric fields, so partial entries like "12."
   // survive re-renders while the committed parent value stays a number.
@@ -133,17 +125,33 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, dateFormat,
     onChange({ performance_metrics: { ...pm, hurdle_checks: updated } });
   };
 
-  const statusPill = (pass: boolean | undefined) => {
-    const ok = pass === true;
+  // `status` ("Pass"/"Fail") is the only source of truth for the pill;
+  // anything else (null/missing) means the metric hasn't been evaluated
+  // yet — show neutral, not fail.
+  const statusPill = (m: HurdleCheck) => {
+    const status = (m.status ?? "").trim().toUpperCase();
+    const isPass = status === "PASS";
+    const isFail = status === "FAIL";
+    if (!isPass && !isFail) {
+      return (
+        <span style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          width: 22, height: 22, borderRadius: 999,
+          background: "#f3f4f6", color: "#9ca3af", fontSize: 12, fontWeight: 700,
+        }}>
+          —
+        </span>
+      );
+    }
     return (
       <span style={{
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         width: 22, height: 22, borderRadius: 999,
-        background: ok ? "#dcfce7" : "#fee2e2",
-        color: ok ? "#15803d" : "#b91c1c",
+        background: isPass ? "#dcfce7" : "#fee2e2",
+        color: isPass ? "#15803d" : "#b91c1c",
         fontSize: 12, fontWeight: 700,
       }}>
-        {ok ? "✓" : "×"}
+        {isPass ? "✓" : "×"}
       </span>
     );
   };
@@ -232,7 +240,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, dateFormat,
                     {(() => { const { text, negative } = fmtPercent(m.actual_value); return <span style={{ color: negative ? "#DC2626" : GREEN }}>{text}</span>; })()}
                   </td>
                   <td style={{ padding: "10px 0", textAlign: "center" }}>
-                    {statusPill(m.pass)}
+                    {statusPill(m)}
                   </td>
                 </tr>
               ))}
@@ -250,7 +258,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, dateFormat,
         {/* Columns stretch evenly when there's room (1fr) but never shrink below
             their label's natural width (max-content floor) — so labels never
             wrap and break row alignment; the wrapper above scrolls instead. */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(max-content, 1fr))", gap: 12, minWidth: "100%" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(max-content, 1fr))", gap: 12, minWidth: "100%" }}>
           <div style={fieldWrap}>
             <label style={fieldLabel}>Hurdle Rate (%)</label>
             <input type="text" inputMode="decimal"
@@ -277,47 +285,6 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, dateFormat,
               style={{ ...fieldInput, background: isReadonly ? "#f3f4f6" : "#fff", cursor: isReadonly ? "default" : "text" }}
               {...guardedField("share_repurchase_percent", rawHeader.share_repurchase_percent, isValidPercentInput, clampPercent)}
             />
-          </div>
-          <div style={fieldWrap}>
-            <label style={fieldLabel}>Amortization Period (Months)</label>
-            <input type="text" inputMode="numeric"
-              style={{ ...fieldInput, background: isReadonly ? "#f3f4f6" : "#fff", cursor: isReadonly ? "default" : "text" }}
-              {...guardedField("amortization_period", rawHeader.amortization_period, isValidYearsInput, clampYears)}
-            />
-          </div>
-          <div style={fieldWrap}>
-            <label style={fieldLabel}>Date Placed in Service</label>
-            {/* Display-only formatting: the value stored/sent to the API stays
-                ISO (yyyy-mm-dd). A visible text field shows the chosen format;
-                a transparent native date input on top provides the calendar. */}
-            <div
-              style={{ position: "relative" }}
-              onClick={() => {
-                const el = dateInputRef.current;
-                if (!el || isReadonly) return;
-                if (typeof el.showPicker === "function") el.showPicker();
-                else el.focus();
-              }}
-            >
-              <input type="text" readOnly
-                value={formatDate(rawHeader.date_placed_in_service, dateFormat)}
-                placeholder={dateFormat}
-                style={{ ...fieldInput, width: "100%", boxSizing: "border-box", paddingRight: 32, background: isReadonly ? "#f3f4f6" : "#fff", cursor: isReadonly ? "default" : "pointer" }}
-              />
-              <Calendar
-                size={16}
-                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}
-              />
-              {!isReadonly && (
-                <input type="date"
-                  ref={dateInputRef}
-                  aria-label="Date Placed in Service"
-                  value={rawHeader.date_placed_in_service ?? ""}
-                  onChange={(e) => onChange({ date_placed_in_service: e.target.value })}
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer", border: "none", padding: 0, margin: 0 }}
-                />
-              )}
-            </div>
           </div>
         </div>
         </div>

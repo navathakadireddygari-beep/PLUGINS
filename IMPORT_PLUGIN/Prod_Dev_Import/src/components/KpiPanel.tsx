@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { ApiHeader, HurdleCheck } from "../api/financial-api";
 import { formatNumberByStyle, decimalsForScale, type NumberFormatId } from "../lib/number-format";
-import { formatDateByStyle, type DateFormatId } from "../lib/date-helper";
 
 type Props = {
   rawHeader:      ApiHeader;
@@ -9,7 +8,6 @@ type Props = {
   displayScale:   number;
   isReadonly:     boolean;
   numberFormat:   NumberFormatId;
-  dateFormat:     DateFormatId;
   fxMultiplier:   number;
   // Field key to scroll to + flash, set by a validation-error click in Table.tsx.
   highlightField?: string | null;
@@ -76,12 +74,7 @@ const isValidPercentInput = (s: string): boolean => {
 const clampPercent = (n: number): number =>
   Math.min(100, Math.max(0, Math.round(n * 100) / 100));
 
-// Amortization period: whole months only, max 4 digits (0–9999), no decimals.
-const isValidYearsInput = (s: string): boolean => s === "" || /^\d{0,4}$/.test(s);
-const clampYears = (n: number): number =>
-  Math.min(9999, Math.max(0, Math.trunc(n)));
-
-function KpiPanel({ rawHeader, onChange, displayScale, isReadonly, numberFormat, dateFormat, fxMultiplier, highlightField }: Props): React.ReactElement {
+function KpiPanel({ rawHeader, onChange, displayScale, isReadonly, numberFormat, fxMultiplier, highlightField }: Props): React.ReactElement {
   const highlightStyle: React.CSSProperties = { border: "2px solid #f59e0b", boxShadow: "0 0 0 3px #fde68a" };
   const fieldStyle = (key: string): React.CSSProperties => ({
     ...fieldInput,
@@ -268,7 +261,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, isReadonly, numberFormat,
           Financial Parameters
         </div>
         <div style={{ overflowX: "auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, minWidth: 820 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, minWidth: 500 }}>
           <div style={fieldWrap}>
             <label style={fieldLabel}>Hurdle Rate (%)</label>
             <input type="text" inputMode="decimal"
@@ -298,29 +291,6 @@ function KpiPanel({ rawHeader, onChange, displayScale, isReadonly, numberFormat,
               data-kpi-field="share_repurchase_percent"
               {...guardedField("share_repurchase_percent", rawHeader.share_repurchase_percent, isValidPercentInput, clampPercent)}
             />
-          </div>
-          <div style={fieldWrap}>
-            <label style={fieldLabel}>Amortization Period (Months)</label>
-            <input type="text" inputMode="numeric"
-              style={fieldStyle("amortizationPeriod")}
-              data-kpi-field="amortizationPeriod"
-              {...guardedField("amortizationPeriod", rawHeader.amortizationPeriod, isValidYearsInput, clampYears)}
-            />
-          </div>
-          <div style={fieldWrap}>
-            <label style={fieldLabel}>Date Placed in Service</label>
-            <input type="date"
-              style={fieldStyle("date_placed_in_service")}
-              data-kpi-field="date_placed_in_service"
-              value={rawHeader.date_placed_in_service ?? ""}
-              readOnly={isReadonly}
-              onChange={isReadonly ? undefined : (e) => onChange({ date_placed_in_service: e.target.value })}
-            />
-            {rawHeader.date_placed_in_service && (
-              <span style={{ fontSize: 11, color: "#9ca3af" }}>
-                {formatDateByStyle(rawHeader.date_placed_in_service, dateFormat)}
-              </span>
-            )}
           </div>
         </div>
         </div>
