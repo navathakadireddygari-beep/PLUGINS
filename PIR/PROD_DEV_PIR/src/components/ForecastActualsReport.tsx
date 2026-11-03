@@ -5,6 +5,7 @@ import {
   getSectionIdsByName,
   applySectionIds,
   saveForecastActuals,
+  toThousands,
   type ForecastReport,
   type ForecastCellEdit,
 } from "../api/forecast-actuals-api";
@@ -12,7 +13,7 @@ import type { DrillContext } from "../api/actual-drilldown-api";
 import { postAdjustment, type SectionAdjustmentPayload } from "../api/adjustments-api";
 import { useRefreshToken } from "../lib/refresh-bus";
 import StatusBanner from "./StatusBanner";
-import { formatAmount, formatMagnitude, SCALES, useFormatSettings, type FormatSettings } from "../lib/format-settings";
+import { formatAmount, formatMagnitude, SCALES, useFormatSettings, type FormatSettings, type ScaleKey } from "../lib/format-settings";
 
 /** Draft state for the inline "+ New Line" form (one open at a time). */
 type NewLineDraft = {
@@ -125,7 +126,9 @@ export default function ForecastActualsReport({ onActualClick }: ForecastActuals
   const [report, setReport] = useState<ForecastReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [futureForecastEdits, setFutureForecastEdits] = useState<Record<string, string>>({});
+  // Each edit keeps the scale it was typed in, so a later K/M/B switch can't
+  // change the amount it stands for.
+  const [futureForecastEdits, setFutureForecastEdits] = useState<Record<string, { text: string; scale: ScaleKey }>>({});
 
   const [saving, setSaving] = useState(false);
 
@@ -263,9 +266,9 @@ export default function ForecastActualsReport({ onActualClick }: ForecastActuals
 
   const futureForecastEditKey = (rowId: string, fiscalYear: string): string => `${rowId}::${fiscalYear}`;
 
-  const futureForecastPayloads: ForecastCellEdit[] = Object.entries(futureForecastEdits).map(([key, value]) => {
+  const futureForecastPayloads: ForecastCellEdit[] = Object.entries(futureForecastEdits).map(([key, edit]) => {
     const [rowId, fiscalYear] = key.split("::");
-    return { rowId, fiscalYear, value: baseEditorValue(value, fmt) };
+    return { rowId, fiscalYear, value: toThousands(baseEditorValue(edit.text, { ...fmt, scale: edit.scale })) };
   });
 
   const pendingSaveCount = draftPayloads.length + futureForecastPayloads.length;
@@ -580,9 +583,17 @@ export default function ForecastActualsReport({ onActualClick }: ForecastActuals
                             !isPercent &&
                             row.type === "line" &&
                             !row.isAdjustment &&
+                            row.finEvalLineId != null &&
+                            row.finEvalLineId !== "" &&
                             isFutureFiscalYear(report.years[i].key);
                           const editKey = futureForecastEditKey(row.id, report.years[i].key);
                           const editedValue = futureForecastEdits[editKey];
+                          // Re-show an edit typed at another scale in the current one;
+                          // leave it as typed while the scale is unchanged or it won't parse.
+                          const editedAmount = editedValue ? baseEditorValue(editedValue.text, { ...fmt, scale: editedValue.scale }) : null;
+                          const editedText = editedValue
+                            ? editedValue.scale === fmt.scale || editedAmount == null ? editedValue.text : editorValue(editedAmount, fmt)
+                            : undefined;
                           // The drilldown is keyed on fin_eval_line_id, so a line
                           // without one (e.g. the Section Adjustments rollup) can't
                           // be drilled even though it has values.
@@ -603,10 +614,10 @@ export default function ForecastActualsReport({ onActualClick }: ForecastActuals
                                   <span className="pir-pd-scaled-input">
                                     <input
                                       className="pir-pd-editable-cell-input pir-pd-amount-input"
-                                      value={editedValue ?? (cell.ytdNum == null ? "" : editorValue(cell.ytdNum, fmt))}
+                                      value={editedText ?? (cell.ytdNum == null ? "" : editorValue(cell.ytdNum, fmt))}
                                       onChange={(e) => setFutureForecastEdits((current) => ({
                                         ...current,
-                                        [editKey]: sanitiseAmount(e.target.value),
+                                        [editKey]: { text: sanitiseAmount(e.target.value), scale: fmt.scale },
                                       }))}
                                       inputMode="decimal"
                                       aria-label={`${report.years[i].label} YTD actuals and forecast in ${fmt.scale}`}

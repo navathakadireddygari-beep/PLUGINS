@@ -68,3 +68,15 @@
     }
   }
 }
+
+/* PIR/OCO: keep save and error messages clear of the APEX page header */
+#pir-investment-report-root .pir-pd-status-banner,
+#pir-investment-report-root .pir-pd-toast,
+#pir-investment-report-root .pir-pd-narrative-toast {
+  top: calc(var(--ut-header-height, 3rem) + 16px);
+  z-index: 1001;
+}
+
+#pir-investment-report-root .pir-pd-status-banner-header {
+  align-items: flex-start;
+}

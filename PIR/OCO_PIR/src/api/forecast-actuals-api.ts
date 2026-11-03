@@ -61,17 +61,9 @@ const sectionIdOf = (section: ApiSection): number | null => {
   return null;
 };
 
-/** FY label (Apr→Mar, ending year) that "now" falls in — e.g. Sep 2026 → FY27. */
-const currentFiscalYearEnd = (): number => {
-  const now = new Date();
-  return now.getMonth() + 1 >= 4 ? now.getFullYear() + 1 : now.getFullYear();
-};
-
-/** True for fiscal years after the one currently in progress. */
-const isFutureFiscalYear = (key: string): boolean => {
-  const match = key.match(/^fy(\d{2})$/i);
-  return match != null && 2000 + Number(match[1]) > currentFiscalYearEnd();
-};
+/** The save endpoint takes amounts in thousands — base units ÷ 1,000, kept to 6 dp. */
+export const toThousands = (value: number | null): number | null =>
+  value == null ? null : Number((value / 1e3).toFixed(6));
 
 export type ForecastActualsResponse = {
   apiStatus:  string;
@@ -480,13 +472,13 @@ export async function saveForecastActuals(
               const cell = row.cells[index];
               const editKey = `${row.id}::${year.key}`;
               const entry: YearValueEntry = {
-                spc_projected_amount: cell.spcNum,
-                variance: cell.varianceNum,
+                spc_projected_amount: toThousands(cell.spcNum),
+                variance: toThousands(cell.varianceNum),
               };
-              // An edited cell always sends what was typed. Otherwise future years
-              // leave ytd_actuals out entirely; past/current years resend the GET value.
+              // An edited cell sends what was typed (already in thousands);
+              // every other year resends the GET value.
               if (editsByCell.has(editKey)) entry.ytd_actuals = editsByCell.get(editKey) ?? null;
-              else if (!isFutureFiscalYear(year.key)) entry.ytd_actuals = cell.ytdNum;
+              else entry.ytd_actuals = toThousands(cell.ytdNum);
               return [year.key, entry];
             }),
           ),
