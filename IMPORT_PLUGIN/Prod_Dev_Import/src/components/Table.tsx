@@ -1604,8 +1604,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         </th>
                       )}
                       {isCapitalInvestmentGroup(group) && (<>
-                        <th style={TH({ textAlign: "left", background: "#e5e7eb" })}>AMORTIZATION PERIOD (MONTHS)</th>
-                        <th style={TH({ textAlign: "left", background: "#e5e7eb" })}>DATE PLACED IN SERVICE</th>
+                        <th style={TH({ textAlign: "left", background: "#e5e7eb" })}>AMORTIZATION PERIOD (MONTHS) <span style={{ color: "#ef4444" }}>*</span></th>
+                        <th style={TH({ textAlign: "left", background: "#e5e7eb" })}>DATE PLACED IN SERVICE <span style={{ color: "#ef4444" }}>*</span></th>
                       </>)}
                       {data.years.map((year: number, yi: number) => (
                         <th key={year} style={TH({ textAlign: "right", whiteSpace: "nowrap", position: "relative", background: "#e5e7eb" })}
