@@ -263,7 +263,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, isReadonly, numberFormat,
         <div style={{ overflowX: "auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, minWidth: 500 }}>
           <div style={fieldWrap}>
-            <label style={fieldLabel}>Hurdle Rate (%)</label>
+            <label style={fieldLabel}>Hurdle Rate (%) <span style={{ color: "#ef4444" }}>*</span></label>
             <input type="text" inputMode="decimal"
               style={fieldStyle("hurdle_rate_percent")}
               data-kpi-field="hurdle_rate_percent"
@@ -272,7 +272,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, isReadonly, numberFormat,
           </div>
           <div style={fieldWrap}>
             <label style={{ ...fieldLabel, display: "flex", alignItems: "center", gap: 4 }}>
-              Discount Rate (%)
+              Discount Rate (%) <span style={{ color: "#ef4444" }}>*</span>
               <span id="discount_rate_info" style={{ color: "#111827", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
             </label>
             <input type="text" inputMode="decimal"
@@ -283,7 +283,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, isReadonly, numberFormat,
           </div>
           <div style={fieldWrap}>
             <label style={{ ...fieldLabel, display: "flex", alignItems: "center", gap: 4 }}>
-              Share Repurchase (%)
+              Share Repurchase (%) <span style={{ color: "#ef4444" }}>*</span>
               <span id="share_purchase_info" style={{ color: "#111827", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
             </label>
             <input type="text" inputMode="decimal"

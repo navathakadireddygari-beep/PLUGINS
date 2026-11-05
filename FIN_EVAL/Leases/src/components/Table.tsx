@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Download, Upload, Save } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, X, RefreshCw, Download, Upload, Save } from "lucide-react";
 import { getAppConfig } from "../config/app-config";
 import {
   getFinancialData,
@@ -106,12 +106,6 @@ const stripRowStyle: React.CSSProperties = {
   marginBottom: 16,
 };
 
-const yearMenuItem: React.CSSProperties = {
-  width: "100%", padding: "7px 12px", textAlign: "left", fontSize: 12,
-  color: "#374151", background: "none", border: "none", cursor: "pointer",
-  display: "flex", alignItems: "center", gap: 6,
-};
-
 const generateId  = (): string => `id-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
 
@@ -198,7 +192,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [autocompleteSearch, setAutocompleteSearch] = useState<string>("");
   const [activeTab,          setActiveTab]          = useState<'current' | 'proposed' | 'net'>('current');
   const [hoveredColIdx,      setHoveredColIdx]      = useState<number | null>(null);
-  const [openYearMenuIdx,    setOpenYearMenuIdx]    = useState<{ gId: string; yi: number } | null>(null);
   const [editingYearIdx,     setEditingYearIdx]     = useState<{ gId: string; yi: number } | null>(null);
   const [editingYearLabel,   setEditingYearLabel]   = useState<string>("");
   const [editingYearError,   setEditingYearError]   = useState<boolean>(false);
@@ -300,7 +293,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const dataRef = useRef<PivotTableData | null>(null);
   useEffect(() => { dataRef.current = data; });
 
-  const yearMenuRef     = useRef<HTMLDivElement>(null);
   const hoverTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (hoverTimer.current) clearTimeout(hoverTimer.current); }, []);
   // Stable, so the memoised KpiPanel only re-renders when its data changes.
@@ -563,12 +555,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // Only one toast-style notification should be visible at a time.
   useEffect(() => { if (toast) setPasteToast(null); }, [toast]);
   useEffect(() => { if (pasteToast) setToast(null); }, [pasteToast]);
-
-  useEffect(() => {
-    const h = (e: MouseEvent): void => { if (yearMenuRef.current && !yearMenuRef.current.contains(e.target as Node)) setOpenYearMenuIdx(null); };
-    if (openYearMenuIdx !== null) document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [openYearMenuIdx]);
 
   // Live USD→local FX rate (usd_fbr), fetched once per local_currency.
   // Skipped entirely for USD-only proposals. Loading / error states drive
@@ -874,7 +860,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const increaseYears   = (): void => { if (isReadonly) return; setData((p) => { if (!p) return p; const y = Math.max(...p.years) + 1; return { ...p, years: [...p.years, y], columnLabels: { ...p.columnLabels, [y]: `FY${String(y).slice(2)}` }, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => ({ ...v, yearValues: { ...v.yearValues, [y]: 0 } })) })) }; }); };
   const decreaseYears   = (): void => { if (isReadonly || data.years.length <= 1) return; setData((p) => { if (!p) return p; const y = p.years[p.years.length - 1]; const lbl = { ...p.columnLabels }; delete lbl[y]; return { ...p, years: p.years.slice(0, -1), columnLabels: lbl, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => { const nv = { ...v.yearValues }; delete nv[y]; return { ...v, yearValues: nv }; }) })) }; }); };
   const insertYearAfter = (idx: number): void => { if (isReadonly) return; setData((p) => { if (!p) return p; const y = Math.max(...p.years) + 1; return { ...p, years: [...p.years.slice(0, idx + 1), y, ...p.years.slice(idx + 1)], columnLabels: { ...p.columnLabels, [y]: `FY${String(y).slice(2)}` }, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => ({ ...v, yearValues: { ...v.yearValues, [y]: 0 } })) })) }; }); setHoveredColIdx(null); };
-  const removeYear = (year: number): void => { if (isReadonly || data.years.length <= 1) return; setData((p) => { if (!p) return p; const lbl = { ...p.columnLabels }; delete lbl[year]; return { ...p, years: p.years.filter((y) => y !== year), columnLabels: lbl, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => { const nv = { ...v.yearValues }; delete nv[year]; return { ...v, yearValues: nv }; }) })) }; }); setConfirmDeleteYear(null); setOpenYearMenuIdx(null); };
+  const removeYear = (year: number): void => { if (isReadonly || data.years.length <= 1) return; setData((p) => { if (!p) return p; const lbl = { ...p.columnLabels }; delete lbl[year]; return { ...p, years: p.years.filter((y) => y !== year), columnLabels: lbl, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => { const nv = { ...v.yearValues }; delete nv[year]; return { ...v, yearValues: nv }; }) })) }; }); setConfirmDeleteYear(null); };
   const updateColumnLabel = (year: number, lbl: string): void => {
     if (isReadonly) return;
     const trimmed = lbl.trim();
@@ -891,8 +877,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
     setEditingYearIdx(null);
     setEditingYearLabel("");
   };
-  const moveYearLeft  = (i: number): void => { if (isReadonly || i <= 0) return; setData((p) => { if (!p) return p; const y = [...p.years]; [y[i-1], y[i]] = [y[i], y[i-1]]; return { ...p, years: y }; }); setOpenYearMenuIdx(null); };
-  const moveYearRight = (i: number): void => { if (isReadonly || i >= data.years.length - 1) return; setData((p) => { if (!p) return p; const y = [...p.years]; [y[i], y[i+1]] = [y[i+1], y[i]]; return { ...p, years: y }; }); setOpenYearMenuIdx(null); };
 
   /* ── Group / row CRUD ───────────────────────────────────────── */
   const blankRow    = (p: PivotTableData): ValueRow => ({ id: generateId(), name: "", yearValues: p.years.reduce((a: YearValues, y) => ({ ...a, [y]: 0 }), {}), lineType: "CUSTOM", lineIdentifier: "FINANCIAL", isCalculated: "N", isCustom: "Y", status: "ACTIVE", languageCode: "EN" });
@@ -1571,34 +1555,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     ) : (
                       <div
                         style={{ cursor: isReadonly ? "default" : "pointer" }}
-                        onClick={() => { if (isReadonly) return; setOpenYearMenuIdx(openYearMenuIdx?.yi === yi ? null : { gId: "table", yi }); }}
                         onDoubleClick={() => {
                           if (isReadonly) return;
-                          setOpenYearMenuIdx(null);
                           setEditingYearIdx({ gId: "table", yi });
                           setEditingYearLabel(data.columnLabels[year] || `FY${String(year).slice(2)}`);
                         }}
                       >
                         {data.columnLabels[year] || `FY${String(year).slice(2)}`}
-                      </div>
-                    )}
-                    {openYearMenuIdx?.yi === yi && (
-                      <div ref={yearMenuRef} style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, width: 160, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,.1)", zIndex: 50, textAlign: "left" }}>
-                        <button type="button" onClick={() => {
-                          setOpenYearMenuIdx(null);
-                          setEditingYearIdx({ gId: "table", yi });
-                          setEditingYearLabel(data.columnLabels[year] || `FY${String(year).slice(2)}`);
-                        }} style={yearMenuItem}>Rename</button>
-                        {yi > 0 && <button type="button" onClick={() => moveYearLeft(yi)} style={yearMenuItem}><ChevronLeft size={12} /> Move Left</button>}
-                        {yi < data.years.length - 1 && <button type="button" onClick={() => moveYearRight(yi)} style={yearMenuItem}><ChevronRight size={12} /> Move Right</button>}
-                        <button type="button" onClick={() => {
-                          setOpenYearMenuIdx(null);
-                          if (dbYearsRef.current.has(year)) {
-                            setToast({ kind: "error", message: "This year is saved in the database and cannot be deleted." });
-                          } else {
-                            setConfirmDeleteYear({ year, label: data.columnLabels[year] || `FY${String(year).slice(2)}` });
-                          }
-                        }} style={{ ...yearMenuItem, borderTop: "1px solid #f3f4f6", color: "#b91c1c" }}><Trash2 size={12} /> Delete</button>
                       </div>
                     )}
                   </th>

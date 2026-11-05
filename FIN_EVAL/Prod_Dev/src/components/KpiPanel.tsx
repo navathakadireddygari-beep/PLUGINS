@@ -263,7 +263,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly,
             wrap and break row alignment; the wrapper above scrolls instead. */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(max-content, 1fr))", gap: 12, minWidth: "100%" }}>
           <div style={fieldWrap}>
-            <label style={fieldLabel}>Hurdle Rate (%)</label>
+            <label style={fieldLabel}>Hurdle Rate (%) <span style={{ color: "#ef4444" }}>*</span></label>
             <input type="text" inputMode="decimal"
               style={{ ...fieldInput, background: isReadonly ? "#f3f4f6" : "#fff", cursor: isReadonly ? "default" : "text" }}
               {...guardedField("hurdle_rate_percent", rawHeader.hurdle_rate_percent, isValidPercentInput, clampPercent)}
@@ -271,7 +271,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly,
           </div>
           <div style={fieldWrap}>
             <label style={{ ...fieldLabel, display: "flex", alignItems: "center", gap: 4 }}>
-              Discount Rate (%)
+              Discount Rate (%) <span style={{ color: "#ef4444" }}>*</span>
               <span id="discount_rate_info" style={{ color: "#111827", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
             </label>
             <input type="text" inputMode="decimal"
@@ -281,7 +281,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly,
           </div>
           <div style={fieldWrap}>
             <label style={{ ...fieldLabel, display: "flex", alignItems: "center", gap: 4 }}>
-              Share Repurchase (%)
+              Share Repurchase (%) <span style={{ color: "#ef4444" }}>*</span>
               <span id="share_purchase_info" style={{ color: "#111827", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
             </label>
             <input type="text" inputMode="decimal"
