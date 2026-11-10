@@ -576,8 +576,15 @@ export const fetchFinancialEvaluation = async (
 export interface FinancialEvaluationEdits {
   /** Row key -> `{ fy26: "<base>" }`. Only the years present are written. */
   yearValues?: Record<string, Record<string, string>>;
+  /**
+   * Row key -> line name as on screen. Written whenever it differs from the
+   * GET, so a renamed or cleared label is sent instead of the old name.
+   */
+  lineNames?: Record<string, string>;
   /** NPV row key -> [target standalone, Experian factor, total] in base units. */
   npv?: Record<string, [string, string, string]>;
+  /** NPV row key -> component label as on screen (same rule as `lineNames`). */
+  npvNames?: Record<string, string>;
   /** Key Inputs code -> percentage as typed, e.g. "10.5". */
   keyInputs?: Record<string, string>;
   /** Rows the user added on screen, to be inserted as brand-new lines. */
@@ -867,6 +874,17 @@ const applyYearValues = (
 };
 
 /**
+ * The name to send for a line the GET returned: the on-screen label when the
+ * user changed it (including clearing it to ""), otherwise the loaded name.
+ * An untouched label equals the loaded one, so it never rewrites anything.
+ */
+const editedName = (
+  onScreen: string | undefined,
+  loaded: string | null | undefined,
+): string | null | undefined =>
+  onScreen !== undefined && onScreen !== (loaded ?? "") ? onScreen : loaded;
+
+/**
  * Apply the screen's edits onto the payload the GET returned, producing the
  * body for the PUT. The endpoint replaces the whole evaluation, so everything
  * it sent — including fields this UI never renders — is echoed back untouched.
@@ -911,8 +929,10 @@ export const buildFinancialEvaluationPayload = (
           section.fin_eval_section_id ??
           null,
         line_type: lineType,
-        line_item_name:
-          (withValues.line_item_name as string | undefined) ?? "Line Item",
+        line_item_name: editedName(
+          edits.lineNames?.[lineKey(sectionIndex, lineIndex)],
+          withValues.line_item_name as string | null | undefined,
+        ) ?? "Line Item",
         line_identifier:
           ((withValues.line_identifier as string | undefined) ?? "FINANCIAL").toUpperCase(),
         is_calculated:
@@ -1076,10 +1096,12 @@ export const buildFinancialEvaluationPayload = (
   const components = (raw.m_a_npv_calculation?.components ?? []).map(
     (component, index) => {
       const edited = edits.npv?.[npvKey(index)];
-      if (!edited) return component;
+      const label = editedName(edits.npvNames?.[npvKey(index)], component.label) ?? component.label;
+      if (!edited) return label === component.label ? component : { ...component, label };
       const [target, factor, total] = edited;
       return {
         ...component,
+        label,
         target_standalone: fromBase(target),
         experian_factor: fromBase(factor),
         total: fromBase(total),

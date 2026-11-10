@@ -1051,7 +1051,18 @@ const Table: React.FC = () => {
       if (index !== null) sectionNames[String(index)] = row.sectionName ?? "";
     });
 
+    // Line names as on screen, for every line the server already knows about,
+    // so a renamed — or cleared — label reaches the PUT instead of the builder
+    // echoing the name from the GET.
+    const lineNames: Record<string, string> = {};
+    [conRows, corRows, fcfRows, ptrRows, cusRows].forEach((rows) =>
+      rows.forEach((row) => {
+        if (row.apiKey && typeof row.label === "string") lineNames[row.apiKey] = row.label;
+      }),
+    );
+
     const npv: Record<string, [string, string, string]> = {};
+    const npvNames: Record<string, string> = {};
     // The NPV components as loaded from the server (the backend recomputes
     // them on save; nothing is previewed locally).
     npvRows.forEach((row) => {
@@ -1061,11 +1072,14 @@ const Table: React.FC = () => {
         row.values[1] ?? "",
         row.values[2] ?? "",
       ];
+      if (typeof row.label === "string") npvNames[row.apiKey] = row.label;
     });
 
     const edits: FinancialEvaluationEdits = {
       yearValues,
+      lineNames,
       npv,
+      npvNames,
       keyInputs: Object.fromEntries(keyInputs.map((k) => [k.code, k.value])),
       newLines,
       newSections,

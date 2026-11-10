@@ -153,6 +153,7 @@ function AccountCodeSelect({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search account..."
+              data-no-revalidate=""
               style={{
                 width: "100%", fontSize: 12, padding: "4px 8px",
                 border: "1px solid #d1d5db", borderRadius: 4,
@@ -1000,6 +1001,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   // Validate → (clean) → Save Model. Unchanged data after a clean validate
   // keeps Validate disabled; any edit re-enables it and locks Save Model again.
+  // Typing in any editable field un-validates right away: Validate re-enables
+  // and Save Model locks before the edit is even committed (cells commit on blur).
+  const onAnyInput = (e: React.FormEvent<HTMLDivElement>): void => {
+    const target = e.target as HTMLInputElement;
+    if (target.readOnly || target.closest?.("[data-no-revalidate]")) return;
+    if (validatedSnapshot !== null) setValidatedSnapshot(null);
+  };
   const isValidated       = validatedSnapshot !== null && !!rawHeader && validatedSnapshot === payloadSnapshot(data, rawHeader);
   const validateDisabled  = validating || savingDraft || loading || isValidated;
   const saveModelDisabled = savingDraft || validating || loading || !isValidated;
@@ -1105,7 +1113,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ────────────────────────────── JSX ────────────────────────── */
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} onInputCapture={onAnyInput}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       {/* Sentinel — IntersectionObserver watches this to detect when header should pin */}
       <div ref={sentinelRef} style={{ height: 1, marginBottom: -1 }} />

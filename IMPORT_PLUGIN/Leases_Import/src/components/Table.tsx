@@ -861,6 +861,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
   /* ── Validate → (clean) → Save Model ───────────────────────────
      Unchanged data after a clean validate keeps Validate disabled; any edit
      re-enables it and locks Save Model again. */
+  // Typing in any editable field un-validates right away: Validate re-enables
+  // and Save Model locks before the edit is even committed (cells commit on blur).
+  const onAnyInput = (e: React.FormEvent<HTMLDivElement>): void => {
+    const target = e.target as HTMLInputElement;
+    if (target.readOnly || target.closest?.("[data-no-revalidate]")) return;
+    if (validatedSnapshot !== null) setValidatedSnapshot(null);
+  };
   const isValidated       = validatedSnapshot !== null && !!rawHeader && validatedSnapshot === payloadSnapshot(data, rawHeader);
   const validateDisabled  = validating || savingDraft || loading || isValidated;
   const saveModelDisabled = savingDraft || validating || loading || !isValidated;
@@ -1060,7 +1067,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ────────────────────────────── JSX ────────────────────────── */
   return (
-    <div ref={containerRef} style={{ width: "100%", maxWidth: WIDGET_MAX_WIDTH, margin: "0 auto", background: "#fff" }}>
+    <div ref={containerRef} onInputCapture={onAnyInput} style={{ width: "100%", maxWidth: WIDGET_MAX_WIDTH, margin: "0 auto", background: "#fff" }}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       {/* Sentinel — IntersectionObserver watches this to detect when header should pin */}
       <div ref={sentinelRef} style={{ height: 1, marginBottom: -1 }} />
@@ -1854,6 +1861,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                       autoFocus
                                       type="text"
                                       placeholder="Search…"
+                                      data-no-revalidate=""
                                       value={lovSearch}
                                       onChange={(e) => setLovSearch(e.target.value)}
                                       onClick={(e) => e.stopPropagation()}
