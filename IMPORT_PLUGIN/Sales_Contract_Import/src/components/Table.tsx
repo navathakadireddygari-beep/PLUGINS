@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, ChevronDown, ChevronUp, ChevronRight, X, RefreshCw, Save, CheckCircle2 } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Save, CheckCircle2 } from "lucide-react";
 import { getAppConfig } from "../config/app-config";
 import {
   getFinEvaluationStaging,
@@ -579,7 +579,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
         action: "fin-eval:saved",
         payload: { proposalId: cfg.proposal_id, method },
       });
-      await refetchStaging("saveDraft");
+      try {
+        await refetchStaging("saveDraft");
+      } catch (e) {
+        console.error("[saveDraft] re-fetch failed", e);
+      }
+      // Return to Page 4 once the model is saved.
+      (window as any).__GIS_SALES_RETURN_TO_P4__();
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown save error";
@@ -1190,6 +1196,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
         {/* Action bar */}
         <div className="action-bar">
           <div className="action-bar-group">
+            <button
+              id="fin-eval-back-btn"
+              type="button"
+              className="action-btn back-btn"
+              onClick={() => (window as any).__GIS_SALES_RETURN_TO_P4__()}
+            >
+              <ChevronLeft size={14} />
+              Back
+            </button>
             {/* Edit-only controls — hidden for read-only users */}
             {!isReadOnly && (() => {
               const busy = validating || savingDraft || loading;

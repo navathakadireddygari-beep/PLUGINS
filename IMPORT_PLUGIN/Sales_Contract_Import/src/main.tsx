@@ -45,6 +45,21 @@ type MountState = {
   container: HTMLElement | null;
   key:       string | null;
 };
+
+/* Navigate back to APEX Page 4 via the checksum-protected return_url in the config */
+(window as any).__GIS_SALES_RETURN_TO_P4__ = (): void => {
+  const url = ((window as any).__SPC_SALES_CONFIG__ ?? (window as any).__APP_CONFIG__)?.return_url;
+  if (!url) {
+    console.error("[sales_contracts] Missing protected Page 4 return URL.");
+    return;
+  }
+  if ((window as any).apex?.navigation?.redirect) {
+    (window as any).apex.navigation.redirect(url);
+  } else {
+    console.error("[sales_contracts] APEX navigation redirect is unavailable.");
+  }
+};
+
 // Kept on window (not module scope) so that if the APEX page loads this
 // bundle more than once, every copy sees the same mount and can't add a
 // second live widget. Named for this plugin (InvestmentReportWidget is also

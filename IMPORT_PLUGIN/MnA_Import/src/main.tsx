@@ -9,6 +9,8 @@ declare global {
 
     __GIS_INVEST_INIT_DONE__?: boolean;
 
+    __GIS_MNA_RETURN_TO_P31__?: () => boolean;
+
     __mnaImportInvestmentReportMount?: MountState;
 
     InvestmentReportWidget?: {
@@ -121,6 +123,23 @@ function destroy(hostId: string): void {
   window.__GIS_INVEST_INIT_DONE__ =
     false;
 }
+
+
+/* ============================================================
+ * RETURN TO PAGE 31
+ *
+ * Uses the checksum-protected return_url supplied in __APP_CONFIG__.
+ * ============================================================ */
+window.__GIS_MNA_RETURN_TO_P31__ = function () {
+  const u = window.__APP_CONFIG__ && (window.__APP_CONFIG__ as { return_url?: string }).return_url;
+  const apex = (window as unknown as { apex?: { navigation?: { redirect?: (url: string) => void } } }).apex;
+  if (u && apex && apex.navigation && typeof apex.navigation.redirect === "function") {
+    apex.navigation.redirect(u);
+    return true;
+  }
+  console.error("[mna] Checksum-protected Page 31 return URL is missing");
+  return false;
+};
 
 
 /* ============================================================

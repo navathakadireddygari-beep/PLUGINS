@@ -35,6 +35,7 @@ export type AppConfig = {
   flowId?:          string;
   stepId?:          string;
   instance?:        string;
+  return_url?:      string;
 };
 
 export function getAppConfig(): AppConfig {

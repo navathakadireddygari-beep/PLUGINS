@@ -118,6 +118,20 @@ function destroy(hostId: string): void {
 /* Expose on window so APEX DA can call init/destroy */
 (window as any).InvestmentReportWidget = { init, destroy };
 
+/* Navigate back to APEX Page 3 via the checksum-protected return_url in __APP_CONFIG__ */
+(window as any).__GIS_PD_RETURN_TO_P3__ = (): void => {
+  const url = (window as any).__APP_CONFIG__?.return_url;
+  if (!url) {
+    console.error("[fin_eval] Missing protected Page 3 return URL.");
+    return;
+  }
+  if ((window as any).apex?.navigation?.redirect) {
+    (window as any).apex.navigation.redirect(url);
+  } else {
+    console.error("[fin_eval] APEX navigation redirect is unavailable.");
+  }
+};
+
 
 /* ── Auto-mount on page load if __APP_CONFIG__ already has a valid proposal_id ──
    This handles the normal page load case (existing proposal opened directly).   */

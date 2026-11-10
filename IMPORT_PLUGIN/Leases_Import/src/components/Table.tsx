@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, ChevronDown, ChevronUp, X, RefreshCw, Save, Check } from "lucide-react";
+import { Trash2, ChevronDown, ChevronLeft, ChevronUp, X, RefreshCw, Save, Check } from "lucide-react";
 import { getAppConfig } from "../config/app-config";
 import {
   getFinEvaluationStaging,
@@ -480,15 +480,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
           || "Financial evaluation saved successfully.",
       });
       publishAction({ source: FIN_EVAL_SUBSCRIBER_ID, target: "apex", action: "tool:fin_eval_saved", payload: { proposalId: cfg.proposal_id } });
-      // Silent re-fetch — update state in place without showing the loading spinner.
-      try {
-        const refetched = await getFinEvaluationStaging(cfg, { force: true });
-        setData(refetched.table);
-        setRawHeader(refetched.rawHeader);
-        setValidationErrors(refetched.errors ?? []);
-      } catch (e) {
-        console.error("[saveDraft] re-fetch failed", e);
-      }
+      // Return to Page 23 once the model is saved.
+      window.__GIS_LEASES_RETURN_TO_P23__ && window.__GIS_LEASES_RETURN_TO_P23__();
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown save error";
@@ -1057,6 +1050,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
         {/* Action bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "8px 24px", minHeight: 44 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              id="fin-eval-back-btn"
+              type="button"
+              onClick={() => window.__GIS_LEASES_RETURN_TO_P23__ && window.__GIS_LEASES_RETURN_TO_P23__()}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: "pointer" }}
+            >
+              <ChevronLeft size={14} />
+              Back
+            </button>
             {!isReadonly && (
               <button
                 id="fin-eval-validate-btn"

@@ -118,6 +118,18 @@ function destroy(hostId: string): void {
 /* Expose on window so APEX DA can call init/destroy */
 (window as any).InvestmentReportWidget = { init, destroy };
 
+/* Navigate back to APEX Page 14 via the checksum-protected return_url in __APP_CONFIG__ */
+(window as any).__GIS_FIN_EVAL_RETURN_TO_P14__ = function (): boolean {
+  const u = (window as any).__APP_CONFIG__ && (window as any).__APP_CONFIG__.return_url;
+  const apex = (window as any).apex;
+  if (u && apex && apex.navigation && typeof apex.navigation.redirect === "function") {
+    apex.navigation.redirect(u);
+    return true;
+  }
+  console.error("[fin_eval] Checksum-protected Page 14 return URL is missing");
+  return false;
+};
+
 
 /* ── Auto-mount on page load if __APP_CONFIG__ already has a valid proposal_id ──
    This handles the normal page load case (existing proposal opened directly).   */

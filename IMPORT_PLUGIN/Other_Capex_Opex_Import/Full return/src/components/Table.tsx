@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, ChevronDown, ChevronUp, X, RefreshCw, Save, Check, Calendar } from "lucide-react";
+import { Trash2, ChevronDown, ChevronLeft, ChevronUp, X, RefreshCw, Save, Check, Calendar } from "lucide-react";
 import { getAppConfig, type AppConfig } from "../config/app-config";
 import { subscribeAllActions, publishToBridge } from "../lib";
 import type {} from "../types/fin-eval-bridge";
@@ -774,7 +774,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
       console.log("[fin_eval] dispatching tool:fin_eval_saved", saveEvent.detail);
       window.dispatchEvent(saveEvent);
       publishToBridge({ type: "PLUGIN_MSG", source: "editor", target: "chatbot", action: "fin-eval:saved", payload: { proposalId: cfg.proposal_id, method: "POST" } });
-      await silentRefetch(cfg, "saveDraft");
+      // Return to Page 14 once the model is saved.
+      (window as any).__GIS_FIN_EVAL_RETURN_TO_P14__ && (window as any).__GIS_FIN_EVAL_RETURN_TO_P14__();
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown save error";
@@ -1313,6 +1314,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
         {/* Action bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "10px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              id="fin-eval-back-btn"
+              type="button"
+              onClick={() => (window as any).__GIS_FIN_EVAL_RETURN_TO_P14__ && (window as any).__GIS_FIN_EVAL_RETURN_TO_P14__()}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: "pointer" }}
+            >
+              <ChevronLeft size={14} />
+              Back
+            </button>
             {!isReadonly && (
             <button
               id="fin-eval-validate-btn"

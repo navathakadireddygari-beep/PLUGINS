@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, ChevronDown, ChevronUp, ChevronRight, X, RefreshCw, Save, CheckCircle2, Calendar } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Save, CheckCircle2, Calendar } from "lucide-react";
 import { getAppConfig } from "../config/app-config";
 import { subscribeAllActions, publishToBridge } from "../lib";
 import type {} from "../types/fin-eval-bridge";
@@ -737,6 +737,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
       } catch (e) {
         console.error("[saveDraft] re-fetch failed", e);
       }
+      // Return to Page 3 once the model is saved.
+      (window as any).__GIS_PD_RETURN_TO_P3__();
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown save error";
@@ -1326,6 +1328,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
         {/* Action bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "10px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              id="fin-eval-back-btn"
+              type="button"
+              onClick={() => (window as any).__GIS_PD_RETURN_TO_P3__()}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: "pointer" }}
+            >
+              <ChevronLeft size={14} />
+              Back
+            </button>
             {!isReadonly && (
             <button
               id="fin-eval-validate-btn"

@@ -977,6 +977,8 @@ const Table: React.FC = () => {
     emitSaved();
     // Forced, so it can't share a GET that started before the migrate.
     reload(true, true);
+    // Return to Page 31 once the model is saved.
+    window.__GIS_MNA_RETURN_TO_P31__ && window.__GIS_MNA_RETURN_TO_P31__();
   };
   const { registerMigrate } = useSaveModel();
   // Re-registered every render for the same reason as the save handler.

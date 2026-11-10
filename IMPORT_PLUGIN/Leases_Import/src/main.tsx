@@ -25,6 +25,12 @@ declare global {
     };
 
     /*
+     * Navigates back to APEX Page 23 using the checksum-protected
+     * return_url supplied in __APP_CONFIG__.
+     */
+    __GIS_LEASES_RETURN_TO_P23__?: () => boolean;
+
+    /*
      * Mount record shared by every copy of this bundle.
      */
     __leasesImportInvestmentReportMount?: MountState;
@@ -170,6 +176,17 @@ function destroy(hostId: string): void {
 window.InvestmentReportWidget = {
   init,
   destroy,
+};
+
+window.__GIS_LEASES_RETURN_TO_P23__ = function () {
+  const u = window.__APP_CONFIG__ && window.__APP_CONFIG__.return_url;
+  const apex = (window as unknown as { apex?: { navigation?: { redirect?: (url: string) => void } } }).apex;
+  if (u && apex && apex.navigation && typeof apex.navigation.redirect === "function") {
+    apex.navigation.redirect(u);
+    return true;
+  }
+  console.error("[leases] Checksum-protected Page 23 return URL is missing");
+  return false;
 };
 
 
