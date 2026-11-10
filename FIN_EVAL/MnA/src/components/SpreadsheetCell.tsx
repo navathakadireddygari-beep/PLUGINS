@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useSpreadsheet, type CellPos } from "@/components/spreadsheetContext";
 import { sanitizeNumericInput } from "@/lib/spreadsheet";
 
@@ -105,9 +105,19 @@ export default function SpreadsheetCell({
 
   /** Text being typed. Null = not editing, so the formatted value shows. */
   const [draft, setDraft] = useState<string | null>(null);
+  /**
+   * What the draft was seeded with on focus. A draft still equal to it is not
+   * an edit: committing it anyway re-ran the row's parse/clamp on a value the
+   * user never touched, so merely TABBING through a row rewrote it (a negative
+   * percentage became 0, 4 decimals became 2).
+   */
+  const seed = useRef<string | null>(null);
 
   const commit = (text: string) => {
     setDraft(null);
+    const unchanged = text === seed.current;
+    seed.current = null;
+    if (unchanged) return;
     api.commit(pos, text);
   };
 
@@ -157,6 +167,7 @@ export default function SpreadsheetCell({
     if (e.key === "Escape") {
       e.preventDefault();
       setDraft(null);
+      seed.current = null;
       return;
     }
     // Backspace/Delete clear the SELECTION only when the user is not typing —
@@ -199,9 +210,17 @@ export default function SpreadsheetCell({
         // The text is deliberately NOT selected here. Keyboard navigation
         // selects it (see focusCell's `selectText`), but a click has already
         // put the caret where the user aimed and selecting would discard it.
-        setDraft(sanitizeNumericInput(editValue ?? value));
+        const initial = sanitizeNumericInput(editValue ?? value);
+        seed.current = initial;
+        setDraft(initial);
       }}
-      onChange={(e) => setDraft(sanitizeNumericInput(e.target.value))}
+      onChange={(e) => {
+        // Reject a keystroke that brings in a non-numeric character instead of
+        // rewriting the text: rewriting it moved the caret to the end.
+        const next = e.target.value;
+        if (sanitizeNumericInput(next) !== next) return;
+        setDraft(next);
+      }}
       onBlur={() => {
         if (draft !== null) commit(draft);
       }}

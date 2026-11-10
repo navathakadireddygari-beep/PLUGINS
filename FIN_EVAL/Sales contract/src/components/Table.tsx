@@ -663,7 +663,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   const displayPercent = (n: number): string => {
     if (!n) return "—";
-    const formatted = formatNumber(Math.abs(n), numFmt, 0);
+    // Up to 2 decimals (trailing zeros trimmed) — same precision the input accepts.
+    const formatted = formatNumber(Math.abs(n), numFmt, 2);
     return n < 0 ? `(${formatted}%)` : `${formatted}%`;
   };
 

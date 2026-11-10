@@ -52,8 +52,21 @@ export default function Header() {
 
   return (
     <header className="mna:overflow-hidden mna:rounded-3xl mna:border mna:border-slate-200 mna:bg-white mna:shadow-sm">
-      <div className="mna:flex mna:items-center mna:justify-end mna:border-b mna:border-slate-200 mna:bg-white mna:px-6 mna:py-4">
-        <div className="mna:flex mna:flex-wrap mna:items-center mna:gap-2">
+      <div className="mna:flex mna:items-center mna:justify-end mna:gap-3 mna:border-b mna:border-slate-200 mna:bg-white mna:px-6 mna:py-4">
+        {/* Save error sits to the LEFT of the buttons and takes the free width,
+            wrapping onto more lines rather than truncating, so the full message
+            is readable and the buttons never shift. */}
+        <div className="mna:min-w-0 mna:flex-1 mna:text-right">
+          {saveError && !saving && (
+            <span
+              role="alert"
+              className="mna:whitespace-normal mna:wrap-break-word mna:text-sm mna:text-red-600"
+            >
+              {saveError}
+            </span>
+          )}
+        </div>
+        <div className="mna:flex mna:shrink-0 mna:flex-wrap mna:items-center mna:justify-end mna:gap-2">
           {/* Back is always visible regardless of proposal status */}
           <button
             id="fin-eval-back-btn"
@@ -122,14 +135,6 @@ export default function Header() {
               </svg>
               Import Excel
             </button>
-          )}
-          {saveError && !saving && (
-            <span
-              className="mna:max-w-xs mna:truncate mna:text-sm mna:text-red-600"
-              title={saveError}
-            >
-              {saveError}
-            </span>
           )}
           {!isReadonly && (
             <button

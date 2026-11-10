@@ -264,3 +264,64 @@ export const parseDisplayInput = (
     return { value: null, isBlank: false, passthrough: trimmed };
   return { value: negative ? -num : num, isBlank: false };
 };
+
+/**
+ * Parse what the user typed or pasted into a PERCENTAGE / NON_FINANCIAL cell or
+ * a Key Input, following the active regional format: "12,5" is 12.5 in EU,
+ * "(5)" and "-5" are both -5, a "%" anywhere is ignored.
+ *
+ * Returns null for a blank entry and NaN for text that is not a number, so the
+ * caller can tell "cleared" from "garbage". Never clamps or rounds — that is a
+ * row rule, not a parsing one.
+ */
+export const parseTypedNumber = (
+  raw: unknown,
+  format: NumberFormatId = "us",
+): number | null => {
+  const text = String(raw ?? "").replace(/%/g, "").trim();
+  const parsed = parseDisplayInput(text, format);
+  if (parsed.isBlank) return null;
+  return parsed.value ?? NaN;
+};
+
+/**
+ * A canonical plain number ("12.5", as stored) rewritten for the editor in the
+ * active format's decimal separator ("12,5" in EU), so the text the user sees
+ * while editing parses back to the same value with `parseTypedNumber`. The
+ * input is ungrouped, so its only "." is the decimal point.
+ */
+export const toEditableNumber = (
+  canonical: string,
+  format: NumberFormatId = "us",
+): string => {
+  const { decimalSeparator } = numberFormatMeta(format);
+  return decimalSeparator === "."
+    ? canonical
+    : canonical.replace(".", decimalSeparator);
+};
+
+/**
+ * Should this keystroke be accepted in a plain numeric editor (Key Inputs)?
+ * Accepts only valid PARTIAL input — digits, at most one decimal separator of
+ * the active format, and (when allowed) one leading "-" — so "", "-", "12",
+ * "12," (EU) and ".5" are fine while letters, a second separator or a grouping
+ * character are rejected. Rejecting the keystroke (rather than rewriting the
+ * text) is what keeps the caret where the user put it.
+ *
+ * `max` bounds the magnitude: a keystroke that would take the value past it is
+ * refused, never silently replaced.
+ */
+export const isPartialNumberInput = (
+  s: string,
+  format: NumberFormatId = "us",
+  { allowNegative = false, max }: { allowNegative?: boolean; max?: number } = {},
+): boolean => {
+  if (s === "") return true;
+  const { decimalSeparator } = numberFormatMeta(format);
+  const sep = decimalSeparator.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`^${allowNegative ? "-?" : ""}\\d*(${sep}\\d*)?$`);
+  if (!re.test(s)) return false;
+  if (max === undefined) return true;
+  const n = parseTypedNumber(s, format);
+  return n === null || Number.isNaN(n) || Math.abs(n) <= max;
+};

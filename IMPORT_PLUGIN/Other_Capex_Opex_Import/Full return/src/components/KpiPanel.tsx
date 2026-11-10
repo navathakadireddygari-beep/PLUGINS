@@ -9,6 +9,8 @@ type Props = {
   numberFormat: NumberFormatKey;
   isReadonly:   boolean;
   fxRate:       number | null;
+  // Header field a validation-error click is pointing at — outlined briefly.
+  highlightField?: string | null;
 };
 
 const GREEN  = "#10B981";
@@ -72,7 +74,14 @@ const isValidPercentInput = (s: string): boolean => {
 const clampPercent = (n: number): number =>
   Math.min(100, Math.max(0, Math.round(n * 100) / 100));
 
-function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly, fxRate }: Props): React.ReactElement {
+function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly, fxRate, highlightField }: Props): React.ReactElement {
+  const highlightStyle: React.CSSProperties = { border: "2px solid #f59e0b", boxShadow: "0 0 0 3px #fde68a" };
+  const fieldStyle = (key: string): React.CSSProperties => ({
+    ...fieldInput,
+    background: isReadonly ? "#f3f4f6" : "#fff",
+    cursor: isReadonly ? "default" : "text",
+    ...(highlightField === key ? highlightStyle : {}),
+  });
   const pm = rawHeader.performance_metrics;
   const metrics: HurdleCheck[] = pm?.hurdle_checks ?? [];
 
@@ -262,7 +271,8 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly,
           <div style={fieldWrap}>
             <label style={fieldLabel}>Hurdle Rate (%) <span style={{ color: "#ef4444" }}>*</span></label>
             <input type="text" inputMode="decimal"
-              style={{ ...fieldInput, background: isReadonly ? "#f3f4f6" : "#fff", cursor: isReadonly ? "default" : "text" }}
+              style={fieldStyle("hurdle_rate_percent")}
+              data-kpi-field="hurdle_rate_percent"
               {...guardedField("hurdle_rate_percent", rawHeader.hurdle_rate_percent, isValidPercentInput, clampPercent)}
             />
           </div>
@@ -272,7 +282,8 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly,
               <span id="discount_rate_info" style={{ color: "#111827", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
             </label>
             <input type="text" inputMode="decimal"
-              style={{ ...fieldInput, background: isReadonly ? "#f3f4f6" : "#fff", cursor: isReadonly ? "default" : "text" }}
+              style={fieldStyle("discount_rate_percent")}
+              data-kpi-field="discount_rate_percent"
               {...guardedField("discount_rate_percent", rawHeader.discount_rate_percent, isValidPercentInput, clampPercent)}
             />
           </div>
@@ -282,7 +293,8 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly,
               <span id="share_purchase_info" style={{ color: "#111827", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", userSelect: "none" }}>(info)</span>
             </label>
             <input type="text" inputMode="decimal"
-              style={{ ...fieldInput, background: isReadonly ? "#f3f4f6" : "#fff", cursor: isReadonly ? "default" : "text" }}
+              style={fieldStyle("share_repurchase_percent")}
+              data-kpi-field="share_repurchase_percent"
               {...guardedField("share_repurchase_percent", rawHeader.share_repurchase_percent, isValidPercentInput, clampPercent)}
             />
           </div>

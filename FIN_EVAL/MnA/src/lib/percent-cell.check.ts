@@ -9,7 +9,13 @@
  *
  * Run: npx tsx src/lib/percent-cell.check.ts
  */
-import { formatPercent, PERCENT_DECIMALS } from "@/lib/number-format";
+import {
+  formatPercent,
+  isPartialNumberInput,
+  parseTypedNumber,
+  PERCENT_DECIMALS,
+  toEditableNumber,
+} from "@/lib/number-format";
 import { isPercentRow } from "@/lib/row-rules";
 
 let pass = 0;
@@ -85,6 +91,33 @@ console.log("\nNulls never render as NaN%");
 eq("null -> ''", formatPercent(null), "");
 eq("undefined -> ''", formatPercent(undefined), "");
 eq("NaN -> ''", formatPercent(Number.NaN), "");
+
+console.log("\nTyped / pasted percentages parse in the active number format");
+eq("US 12.5", parseTypedNumber("12.5", "us"), 12.5);
+eq("EU 12,5 is 12.5, not 125", parseTypedNumber("12,5", "eu"), 12.5);
+eq("accounting (5) is -5", parseTypedNumber("(5)", "us"), -5);
+eq("displayed (29%) is -29", parseTypedNumber("(29%)", "us"), -29);
+eq("-17 stays negative (no 0 clamp)", parseTypedNumber("-17", "us"), -17);
+eq("140 stays 140 (no 100 clamp)", parseTypedNumber("140", "us"), 140);
+eq("4dp kept", parseTypedNumber("41.5584", "us"), 41.5584);
+eq("blank -> null", parseTypedNumber("  ", "us"), null);
+eq("EU editor seed", toEditableNumber("41.5584", "eu"), "41,5584");
+eq("seed round-trips (EU)",
+   parseTypedNumber(toEditableNumber("41.5584", "eu"), "eu"), 41.5584);
+
+console.log("\nKey Input keystrokes: rejected, never rewritten");
+const ok = (s: string, f: "us" | "eu" = "us", neg = false) =>
+  isPartialNumberInput(s, f, { allowNegative: neg, max: 100 });
+eq("'' accepted", ok(""), true);
+eq("'12.' accepted (US)", ok("12."), true);
+eq("'.5' accepted", ok(".5"), true);
+eq("'12,' accepted (EU)", ok("12,", "eu"), true);
+eq("'12,' rejected (US grouping)", ok("12,"), false);
+eq("'1.2.3' rejected", ok("1.2.3"), false);
+eq("'abc' rejected", ok("12a"), false);
+eq("'101' rejected (not rewritten to 100)", ok("101"), false);
+eq("'-' rejected without allowNegative", ok("-"), false);
+eq("'-2.5' accepted for growth", ok("-2.5", "us", true), true);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) throw new Error(`${fail} percent-cell check(s) failed`);

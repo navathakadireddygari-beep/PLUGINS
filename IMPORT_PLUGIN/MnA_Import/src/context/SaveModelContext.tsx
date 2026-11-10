@@ -44,6 +44,12 @@ export interface SaveModelStatus {
   migrating: boolean;
   /** Validation issues on the staged data, for the Validate button badge. */
   issueCount: number;
+  /**
+   * True while the data on screen is exactly what the last CLEAN validate sent
+   * (the PUT succeeded and the re-fetch came back with zero issues). Save Model
+   * is enabled, and Validate disabled, only while this holds; any edit clears it.
+   */
+  validated: boolean;
 }
 
 export interface SaveModelContextValue extends SaveModelStatus {
@@ -72,6 +78,7 @@ const IDLE: SaveModelStatus = {
   readonly: false,
   migrating: false,
   issueCount: 0,
+  validated: false,
 };
 
 export function SaveModelProvider({ children }: { children: ReactNode }) {
@@ -98,7 +105,8 @@ export function SaveModelProvider({ children }: { children: ReactNode }) {
       prev.ready === next.ready &&
       prev.readonly === next.readonly &&
       prev.migrating === next.migrating &&
-      prev.issueCount === next.issueCount
+      prev.issueCount === next.issueCount &&
+      prev.validated === next.validated
         ? prev
         : next,
     );

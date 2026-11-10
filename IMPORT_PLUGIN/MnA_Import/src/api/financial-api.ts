@@ -641,6 +641,12 @@ export interface NewLineEdit {
    */
   afterKey?: string;
   /**
+   * Key of the template line this row sits DIRECTLY ABOVE, used only when
+   * there is no `afterKey` (the row was placed ahead of every template line of
+   * its section). Without it such a row fell back to the end of the section.
+   */
+  beforeKey?: string;
+  /**
    * The row's own identifier. Lines in a custom section are NON_FINANCIAL;
    * absent (a line added to a template section) it saves as FINANCIAL.
    */
@@ -971,9 +977,17 @@ export const buildFinancialEvaluationPayload = (
       // The anchor is the template line the row sits under. Its key encodes the
       // line's ORIGINAL index, which is where it still sits in `existing`.
       const anchor = line.afterKey ? keyAt.indexOf(line.afterKey) : -1;
-      // No anchor (first row of its section, or a key that no longer resolves):
-      // fall back to the end, which is the old behaviour and never loses data.
       if (anchor < 0) {
+        // First row of its section: insert ahead of the template line it sits
+        // above. Each such row goes directly before that line, so several of
+        // them keep their on-screen order.
+        const before = line.beforeKey ? keyAt.indexOf(line.beforeKey) : -1;
+        if (before >= 0) {
+          ordered.splice(ordered.indexOf(existing[before]), 0, built);
+          return;
+        }
+        // No anchor at all (a key that no longer resolves): fall back to the
+        // end, which is the old behaviour and never loses data.
         ordered.push(built);
         return;
       }
@@ -1068,11 +1082,17 @@ export const buildFinancialEvaluationPayload = (
   );
 
   // The Key Inputs panel is the editable face of these two header fields, so
-  // keep them in step with what the user sees.
-  const discountRate =
-    percentOrNull(edits.keyInputs?.DISCOUNT_RATE) ?? raw.discount_rate_percent;
-  const taxRate =
-    percentOrNull(edits.keyInputs?.TAX_RATE) ?? raw.tax_rate_percent;
+  // keep them in step with what the user sees. An input the screen SENT wins
+  // even when it is blank: a cleared field goes out as null (exactly what the
+  // input's own `value` carries), instead of the old `??` quietly restoring the
+  // stale header figure and making the clear impossible. Only an input the
+  // screen did not send at all echoes the header.
+  const headerPercent = (code: string, fallback: number | null) => {
+    const edited = edits.keyInputs?.[code];
+    return edited === undefined ? fallback : percentOrNull(edited);
+  };
+  const discountRate = headerPercent("DISCOUNT_RATE", raw.discount_rate_percent);
+  const taxRate = headerPercent("TAX_RATE", raw.tax_rate_percent);
 
   const displayYears = edits.displayYears ?? raw.display_years;
 

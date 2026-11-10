@@ -849,7 +849,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   // Rows shown as-is, with no fx / K-M-B scale: Tax Rate %, and any line whose
   // name contains "%" (EBIT Margin %, custom % rows, …).
-  const isUnscaledRow = (v: ValueRow): boolean => isTaxRateRow(v) || /%/.test(v.name ?? "");
+  const isUnscaledRow = (v: ValueRow): boolean => isTaxRateRow(v) || isPercentRow(v);
 
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like Tax Rate %.
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";

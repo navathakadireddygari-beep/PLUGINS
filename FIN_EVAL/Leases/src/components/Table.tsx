@@ -610,12 +610,18 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const isUnscaledRow = (v?: { lineIdentifier?: string; name?: string }): boolean =>
     isNonFinancialRow(v) || /%/.test(v?.name ?? "");
 
+  // Unscaled rows (percentages) show as entered, up to 2 decimals trimmed.
+  const formatUnscaledValue = (n: number, zero = "—"): string => {
+    if (!parseFloat(Math.abs(n).toFixed(2))) return zero;
+    const formatted = formatNumberTrimmed(Math.abs(n), numberFormat, 2);
+    return n < 0 ? `(${formatted})` : formatted;
+  };
+
   const formatDisplayValue = (n: number, useNetStyle = false, bypassScale = false): string => {
     if (!n) return useNetStyle ? "–" : "—";
+    if (bypassScale) return formatUnscaledValue(n);
     // Decimals follow the scale: K = 0, M = 2, B = 2.
-    const formatted = bypassScale
-      ? formatScaledValue(n, numberFormat, "K", 1, undefined, false, !useNetStyle)
-      : formatScaledValue(n, numberFormat, displayScale, fxMultiplier, undefined, false, !useNetStyle);
+    const formatted = formatScaledValue(n, numberFormat, displayScale, fxMultiplier, undefined, false, !useNetStyle);
     return useNetStyle ? formatted.replace(/^-/, '–') : formatted;
   };
 
@@ -630,8 +636,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const formatEditableInputValue = (raw: number, bypassScale = false, nonFinancial = false): string => {
     if (raw === 0) return "";
     if (nonFinancial) return formatNonFinancialValue(raw, "");
-    const scaled = bypassScale ? raw : (raw * fxMultiplier) / scaleDivisorFor(displayScale);
-    const decimals = bypassScale ? 0 : scaleDecimalsFor(displayScale);
+    if (bypassScale) return formatUnscaledValue(raw, "");
+    const scaled = (raw * fxMultiplier) / scaleDivisorFor(displayScale);
+    const decimals = scaleDecimalsFor(displayScale);
     const formatted = formatNumber(Math.abs(scaled), numberFormat, decimals);
     return scaled < 0 ? `(${formatted})` : formatted;
   };
@@ -781,7 +788,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
     : tabGroups;
 
   const computeDescendantTotal = (g: Group, year: number): number => {
-    const direct = g.values.filter((v) => v.isCalculated !== 'Y').reduce((s, v) => s + (v.yearValues[year] || 0), 0);
+    // Percentages / NON_FINANCIAL values aren't money — keep them out of the
+    // section's money total (an all-NON_FINANCIAL section hides it anyway).
+    const direct = g.values.filter((v) => v.isCalculated !== 'Y' && !isUnscaledRow(v)).reduce((s, v) => s + (v.yearValues[year] || 0), 0);
     const kids = groupChildrenOf.get(effectiveId(g) ?? -1) || [];
     return direct + kids.reduce((s, kid) => s + computeDescendantTotal(kid, year), 0);
   };
@@ -1734,7 +1743,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {data.years.map((year: number, yi: number) => {
                           const val = value.yearValues[year] ?? 0;
                           const col = isNetTab ? netColor(val) : (val < 0 ? "#DC2626" : "#1f2937");
-                          const text = isNetTab ? netFmt(val) : sectionBypassScale || isNonFinancialRow(value) ? formatNonFinancialValue(val) : displayFmt(val, rowBypassScale);
+                          const text = isNetTab && !rowBypassScale ? netFmt(val) : sectionBypassScale || isNonFinancialRow(value) ? formatNonFinancialValue(val) : displayFmt(val, rowBypassScale);
                           return (
                             <td key={year} style={{ ...TD, padding: "4px 14px", background: isNetTab ? "#fff" : "#f3f4f6" }}>
                               <input
@@ -1753,7 +1762,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {(() => {
                           const t = lineTotal(value, data.years);
                           const col = isNetTab ? netColor(t ?? 0) : ((t ?? 0) < 0 ? "#DC2626" : "#1f2937");
-                          return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{sectionBypassScale || isNonFinancialRow(value) || t == null ? "" : isNetTab ? netFmt(t) : displayFmt(t, rowBypassScale)}</td>;
+                          return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{sectionBypassScale || isNonFinancialRow(value) || t == null ? "" : isNetTab && !rowBypassScale ? netFmt(t) : displayFmt(t, rowBypassScale)}</td>;
                         })()}
                       </tr>
                       );

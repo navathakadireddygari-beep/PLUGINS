@@ -7,6 +7,7 @@ import type {} from "../types/fin-eval-bridge";
 import {
   getFinancialData,
   validateFinancialData,
+  buildStagingPutPayload,
   migrateFinEvalStaging,
   clearCachedToken,
   isServerDrivenSection,
@@ -63,6 +64,12 @@ const stripSelect: React.CSSProperties = {
 const stripLabel: React.CSSProperties = { fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 0.5 };
 
 const generateId  = (): string => `id-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
+// What Validate PUTs, as a string — used to tell whether the data changed
+// since the last clean validate. The display-currency toggle is a view
+// setting, so switching it doesn't force a re-validate.
+const payloadSnapshot = (table: PivotTableData, header: ApiHeader): string =>
+  JSON.stringify(buildStagingPutPayload(table, { ...header, display_currency: "" }));
 
 /* ─────────────────────────── Searchable Account Code Select ─────── */
 function AccountCodeSelect({
@@ -282,6 +289,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [toast,        setToast]        = useState<ToastState>(null);
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   const [validationErrors,   setValidationErrors]   = useState<ValidationIssue[]>([]);
+  // PUT payload of the last clean validate (no API error, no validation
+  // errors). Save Model is only enabled — and Validate disabled — while the
+  // current data still matches it; any edit after validating needs a re-validate.
+  const [validatedSnapshot,  setValidatedSnapshot]  = useState<string | null>(null);
   const [errorsDismissed,    setErrorsDismissed]     = useState<boolean>(false);
   const [highlightLineId,      setHighlightLineId]      = useState<string | null>(null);
   const [highlightHeaderField, setHighlightHeaderField] = useState<string | null>(null);
@@ -591,16 +602,25 @@ export default function PivotTableWithAPI(): React.ReactElement {
   }, [data, scrollTarget]);
 
   // Scroll a highlighted line row into view, then auto-clear the highlight.
+  // Retries briefly: the row only mounts once its section has re-rendered expanded.
   useEffect(() => {
     if (!highlightLineId) return;
-    const el = document.querySelector<HTMLElement>(`[data-line-id="${highlightLineId}"]`);
-    if (el) {
-      el.style.scrollMarginTop = "80px";
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    let attempts = 0;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const tryScroll = (): void => {
+      const el = document.querySelector<HTMLElement>(`[data-line-id="${highlightLineId}"]`);
+      if (el) {
+        el.style.scrollMarginTop = "120px";
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (attempts < 20) {
+        attempts++;
+        retry = setTimeout(tryScroll, 50);
+      }
+    };
+    tryScroll();
     const t = setTimeout(() => setHighlightLineId(null), 3000);
-    return () => clearTimeout(t);
-  }, [highlightLineId, data]);
+    return () => { clearTimeout(t); if (retry) clearTimeout(retry); };
+  }, [highlightLineId]);
 
   // Scroll a highlighted header/KPI field into view, then auto-clear the highlight.
   useEffect(() => {
@@ -609,6 +629,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
     if (el) {
       el.style.scrollMarginTop = "80px";
       el.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      // Header fields this widget doesn't render (hurdle, discount, …) — bring
+      // the top of the widget (KPI cards) into view instead of doing nothing.
+      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
     const t = setTimeout(() => setHighlightHeaderField(null), 3000);
     return () => clearTimeout(t);
@@ -650,7 +674,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // even empty ones), so we adopt it wholesale — exactly what a page reload
   // does. We only carry over each section's expanded/collapsed state so the
   // view doesn't jump.
-  const silentRefetch = useCallback(async (label: string): Promise<void> => {
+  const silentRefetch = useCallback(async (label: string): Promise<Awaited<ReturnType<typeof getFinancialData>> | null> => {
     const cfg = getAppConfig();
     try {
       const refetched = await getFinancialData(cfg, { force: true });
@@ -683,8 +707,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
       setRawHeader(refetched.rawHeader);
       setValidationErrors(refetched.validationErrors);
       setErrorsDismissed(false);
+      return refetched;
     } catch (e) {
       console.error(`[${label}] re-fetch failed`, e);
+      return null;
     }
   }, []);
 
@@ -696,13 +722,24 @@ export default function PivotTableWithAPI(): React.ReactElement {
     const cfg = getAppConfig();
     setValidating(true);
     setSaveError(null);
+    setValidatedSnapshot(null);
     try {
       const response = await validateFinancialData(cfg, data, rawHeader);
+      const apiMessage = (response as any).apiMessage || response.api_message || "";
+      const refetched = await silentRefetch("validate");
+      if (!refetched) {
+        setToast({ kind: "error", message: apiMessage || "Validation completed, but the refreshed data could not be loaded." });
+        return;
+      }
+      const errors = refetched.validationErrors;
+      // Save Model unlocks only when validation came back clean.
+      if (errors.length === 0) setValidatedSnapshot(payloadSnapshot(refetched.table, refetched.rawHeader));
       setToast({
-        kind: "success",
-        message: ((response as any).apiMessage || response.api_message || "") || "Financial evaluation validated successfully.",
+        kind: errors.length ? "error" : "success",
+        message: apiMessage || (errors.length
+          ? `Validation completed with ${errors.length} error${errors.length === 1 ? "" : "s"}.`
+          : "Financial evaluation validated successfully."),
       });
-      await silentRefetch("validate");
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown validation error";
@@ -717,6 +754,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
      POST to finEvalStagingMigrate, then silently re-fetch. */
   const saveDraft = useCallback(async (): Promise<void> => {
     if (!data || !rawHeader) return;
+    if (validatedSnapshot !== payloadSnapshot(data, rawHeader)) {
+      setToast({ kind: "error", message: "Please validate the data successfully before saving the model." });
+      return;
+    }
     const cfg = getAppConfig();
     const proposalId = cfg.proposal_id ?? rawHeader.proposal_id;
     setSavingDraft(true);
@@ -746,7 +787,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     } finally {
       setSavingDraft(false);
     }
-  }, [data, rawHeader, silentRefetch]);
+  }, [data, rawHeader, silentRefetch, validatedSnapshot]);
 
   // AppBridge event listeners.
   // "fin-eval" — commands from sibling plugins using our typed action names.
@@ -859,7 +900,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   // Rows shown as-is, with no fx / K-M-B scale: Tax Rate %, and any line whose
   // name contains "%" (EBIT Margin %, custom % rows, …).
-  const isUnscaledRow = (v: ValueRow): boolean => isTaxRateRow(v) || /%/.test(v.name ?? "");
+  const isUnscaledRow = (v: ValueRow): boolean => isTaxRateRow(v) || isPercentRow(v);
 
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like Tax Rate %.
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
@@ -956,6 +997,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ── Calculations (from line-level data populated by API) ─────── */
   const numYears   = data.years.length;
+
+  // Validate → (clean) → Save Model. Unchanged data after a clean validate
+  // keeps Validate disabled; any edit re-enables it and locks Save Model again.
+  const isValidated       = validatedSnapshot !== null && !!rawHeader && validatedSnapshot === payloadSnapshot(data, rawHeader);
+  const validateDisabled  = validating || savingDraft || loading || isValidated;
+  const saveModelDisabled = savingDraft || validating || loading || !isValidated;
 
   /* ── Year management ────────────────────────────────────────── */
   const insertYearAfter = (idx: number): void => { setData((p) => { if (!p) return p; const y = Math.max(...p.years) + 1; return { ...p, years: [...p.years.slice(0, idx + 1), y, ...p.years.slice(idx + 1)], columnLabels: { ...p.columnLabels, [y]: `FY${String(y).slice(2)}` }, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => ({ ...v, yearValues: { ...v.yearValues, [y]: 0 } })) })) }; }); setHoveredColIdx(null); };
@@ -1191,7 +1238,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       {/* Save error banner */}
       {saveError && (
         <div style={{ marginBottom: 12, padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, color: "#dc2626", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <span><strong>Save failed:</strong> {saveError}</span>
+          <span><strong>Error:</strong> {saveError}</span>
           <button type="button" onClick={() => setSaveError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626" }}><X size={12} /></button>
         </div>
       )}
@@ -1216,8 +1263,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
               id="fin-eval-validate-btn"
               type="button"
               onClick={handleValidate}
-              disabled={validating || loading}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 18px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 14, fontWeight: 700, background: "#fff", color: "#000", cursor: validating || loading ? "not-allowed" : "pointer", opacity: validating || loading ? 0.7 : 1 }}
+              disabled={validateDisabled}
+              title={isValidated ? "Validated — edit the data to validate again." : undefined}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 18px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 14, fontWeight: 700, background: "#fff", color: "#000", cursor: validateDisabled ? "not-allowed" : "pointer", opacity: validateDisabled ? 0.7 : 1 }}
             >
               <Check size={14} style={validating ? { animation: "spin 1s linear infinite" } : {}} />
               {validating ? "Validating…" : "Validate"}
@@ -1228,8 +1276,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
               id="fin-eval-save-model-btn"
               type="button"
               onClick={saveDraft}
-              disabled={savingDraft || loading || validationErrors.length > 0}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 24px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 14, fontWeight: 700, background: "#fff", color: "#000", cursor: savingDraft || loading || validationErrors.length > 0 ? "not-allowed" : "pointer", opacity: savingDraft || loading || validationErrors.length > 0 ? 0.7 : 1 }}
+              disabled={saveModelDisabled}
+              title={validationErrors.length > 0 ? "Resolve all validation errors before saving the model." : !isValidated ? "Validate the data successfully before saving the model." : undefined}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 24px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 14, fontWeight: 700, background: "#fff", color: "#000", cursor: saveModelDisabled ? "not-allowed" : "pointer", opacity: saveModelDisabled ? 0.7 : 1 }}
             >
               <Save size={14} style={savingDraft ? { animation: "spin 1s linear infinite" } : {}} />
               {savingDraft ? "Saving…" : "Save Model"}

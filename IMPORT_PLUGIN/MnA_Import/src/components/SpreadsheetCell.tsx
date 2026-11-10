@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useSpreadsheet, type CellPos } from "@/components/spreadsheetContext";
 import { sanitizeNumericInput } from "@/lib/spreadsheet";
 
@@ -37,6 +37,12 @@ type Props = {
    * CAGR summary cell passes `false` to stay reachable, like Prod Dev's TOTAL.
    */
   skipNav?: boolean;
+  /**
+   * Whether the text a keystroke would produce is acceptable (Prod Dev's
+   * editor rule: reject the keystroke, never rewrite the text). Defaults to
+   * "only characters a number can contain".
+   */
+  accept?: (text: string) => boolean;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -95,6 +101,7 @@ export default function SpreadsheetCell({
   calculated = false,
   tabIndex,
   skipNav = calculated,
+  accept,
   className = "mna:w-full mna:text-right",
   style,
 }: Props) {
@@ -105,11 +112,28 @@ export default function SpreadsheetCell({
 
   /** Text being typed. Null = not editing, so the formatted value shows. */
   const [draft, setDraft] = useState<string | null>(null);
+  /**
+   * The text the editor was seeded with on focus. A draft still equal to it is
+   * an untouched cell, and is NOT committed: re-parsing the seed is not a
+   * no-op (a percentage would be clamped / rounded, a "." seed misread under a
+   * "," decimal format), so merely tabbing through a row used to rewrite it.
+   */
+  const seedRef = useRef<string | null>(null);
 
   const commit = (text: string) => {
     setDraft(null);
+    const seed = seedRef.current;
+    // Null = this edit was already committed (Enter commits, then the blur
+    // that follows the move to the next row calls in again with a stale
+    // draft) or cancelled with Escape. Either way there is nothing to write.
+    if (seed === null) return;
+    seedRef.current = null;
+    if (text === seed) return;
     api.commit(pos, text);
   };
+
+  const isAcceptable = (text: string): boolean =>
+    accept ? accept(text) : sanitizeNumericInput(text) === text;
 
   // Negatives render red in every row; the bold near-black is reserved for
   // computed figures (Prod Dev: `color: val < 0 ? "#DC2626" : "#1f2937"`).
@@ -153,10 +177,12 @@ export default function SpreadsheetCell({
       api.keyDown(e, pos, "ArrowDown");
       return;
     }
-    // Escape abandons the edit and restores the committed value.
+    // Escape abandons the edit: back to the seed (the committed value), which
+    // the blur will not re-commit. The cell stays in edit mode, so typing on
+    // afterwards is a fresh edit of the committed value.
     if (e.key === "Escape") {
       e.preventDefault();
-      setDraft(null);
+      if (draft !== null && seedRef.current !== null) setDraft(seedRef.current);
       return;
     }
     // Backspace/Delete clear the SELECTION only when the user is not typing —
@@ -199,9 +225,28 @@ export default function SpreadsheetCell({
         // The text is deliberately NOT selected here. Keyboard navigation
         // selects it (see focusCell's `selectText`), but a click has already
         // put the caret where the user aimed and selecting would discard it.
-        setDraft(sanitizeNumericInput(editValue ?? value));
+        const seed = sanitizeNumericInput(editValue ?? value);
+        seedRef.current = seed;
+        setDraft(seed);
       }}
-      onChange={(e) => setDraft(sanitizeNumericInput(e.target.value))}
+      onChange={(e) => {
+        // Reject the keystroke (keep the previous text) rather than rewriting
+        // what the user typed — rewriting is what moved the caret and turned
+        // "12,5" into "125".
+        // A deletion is always allowed, so a seed that is itself outside the
+        // typing rule (a stored 12.3456 in a 2-decimal percentage cell) can
+        // still be edited down instead of locking the cell.
+        const next = e.target.value;
+        const deleting =
+          draft !== null &&
+          next.length < draft.length &&
+          sanitizeNumericInput(next) === next;
+        if (!deleting && !isAcceptable(next)) return;
+        // Typing into a cell that is still focused after a commit (Enter on
+        // the last row) starts a new edit of what is shown.
+        if (seedRef.current === null) seedRef.current = draft ?? value;
+        setDraft(next);
+      }}
       onBlur={() => {
         if (draft !== null) commit(draft);
       }}

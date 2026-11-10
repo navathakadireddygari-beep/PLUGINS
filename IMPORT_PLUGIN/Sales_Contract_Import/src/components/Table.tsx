@@ -5,6 +5,7 @@ import { getAppConfig } from "../config/app-config";
 import {
   getFinEvaluationStaging,
   validateFinEvaluationStaging,
+  buildFinEvaluationStagingPutPayload,
   migrateFinEvalStaging,
   clearCachedToken,
   isNewLine,
@@ -60,6 +61,19 @@ const DATE_FORMATS: { value: DateFmt; label: string }[] = [
 const MONTHS_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const generateId  = (): string => `id-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
+// What Validate PUTs, as a string — used to tell whether the data changed
+// since the last clean validate. The display-currency toggle is a view
+// setting, so switching it doesn't force a re-validate.
+const payloadSnapshot = (table: PivotTableData, header: ApiHeader): string =>
+  JSON.stringify(buildFinEvaluationStagingPutPayload(table, { ...header, display_currency: "" }));
+
+// First element matching `selector` that is actually rendered (not inside a
+// display:none container); falls back to the first match, or null.
+const findVisible = (selector: string): HTMLElement | null => {
+  const all = Array.from(document.querySelectorAll<HTMLElement>(selector));
+  return all.find((el) => el.offsetParent !== null) ?? all[0] ?? null;
+};
 
 
 /* API types, transformApiData, and buildPutPayload live in src/api/financial-api.ts */
@@ -150,6 +164,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [validating,   setValidating]   = useState<boolean>(false);
   const [saveError,    setSaveError]    = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationIssue[]>([]);
+  // PUT payload of the last clean validate (no API error, no validation
+  // errors). Save Model is only enabled — and Validate disabled — while the
+  // current data still matches it; any edit after validating needs a re-validate.
+  const [validatedSnapshot, setValidatedSnapshot] = useState<string | null>(null);
   const [highlightLineId,  setHighlightLineId]  = useState<string | null>(null);
   const [toast,        setToast]        = useState<ToastState>(null);
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
@@ -434,9 +452,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
     const MAX_ATTEMPTS = 60; // 60 × 100ms = 6s — allows for APEX tab-switch transition
 
     const tryScroll = (): void => {
+      // Prefer the rendered row — an element inside a display:none container
+      // has offsetParent === null and scrollIntoView does nothing for it.
       const el =
-        document.querySelector<HTMLElement>(`[data-section-id="${matched.sectionId}"]`) ??
-        document.querySelector<HTMLElement>(`[data-section-type="${matched.sectionType || matched.id}"]`);
+        findVisible(`[data-section-id="${matched.sectionId}"]`) ??
+        findVisible(`[data-section-type="${matched.sectionType || matched.id}"]`);
 
       if (!el) { setScrollTarget(null); return; }
 
@@ -475,25 +495,28 @@ export default function PivotTableWithAPI(): React.ReactElement {
   useEffect(() => {
     if (!highlightLineId) return;
     let attempts = 0;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    // Retries briefly: the row only mounts once its section has re-rendered
+    // expanded, and only a rendered (visible) row can be scrolled to.
     const tryScroll = (): void => {
-      const el = document.querySelector<HTMLElement>(`[data-line-id="${highlightLineId}"]`);
-      if (el) {
+      const el = findVisible(`[data-line-id="${highlightLineId}"]`);
+      if (el && (el.offsetParent !== null || attempts >= 20)) {
         el.style.scrollMarginTop = "120px";
         el.scrollIntoView({ behavior: "smooth", block: "center" });
       } else if (attempts < 20) {
         attempts++;
-        setTimeout(tryScroll, 50);
+        retry = setTimeout(tryScroll, 50);
       }
     };
     tryScroll();
     const clear = setTimeout(() => setHighlightLineId(null), 3000);
-    return () => clearTimeout(clear);
+    return () => { clearTimeout(clear); if (retry) clearTimeout(retry); };
   }, [highlightLineId]);
 
   // Silent re-fetch after Validate / Save Model — adopt the server result as
   // source of truth, carrying over each section's expanded/collapsed state
   // and the user's selected display currency so the view doesn't jump.
-  const refetchStaging = useCallback(async (label: string): Promise<void> => {
+  const refetchStaging = useCallback(async (label: string): Promise<Awaited<ReturnType<typeof getFinEvaluationStaging>> | null> => {
     try {
       const cfg = getAppConfig();
       const refetched = await getFinEvaluationStaging(cfg, { force: true });
@@ -529,8 +552,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
           || "USD",
       }));
       setValidationErrors(refetched.errors ?? []);
+      return refetched;
     } catch (e) {
       console.error(`[${label}] re-fetch failed`, e);
+      return null;
     }
   }, []);
 
@@ -541,6 +566,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const saveDraft = useCallback(async (): Promise<void> => {
     if (isReadOnly) return;            // access control — no saves when read-only
     if (!data || !rawHeader) return;
+    if (validatedSnapshot !== payloadSnapshot(data, rawHeader)) {
+      setToast({ kind: "error", message: "Please validate the data successfully before saving the model." });
+      return;
+    }
     const cfg = getAppConfig();
     if (!cfg.proposal_id) {
       setToast({
@@ -594,7 +623,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     } finally {
       setSavingDraft(false);
     }
-  }, [data, rawHeader, isReadOnly, refetchStaging]);
+  }, [data, rawHeader, isReadOnly, refetchStaging, validatedSnapshot]);
 
   /* ── Validate ─────────────────────────────────────────────────
      PUT the current state to finEvaluationStaging so the backend re-runs
@@ -617,14 +646,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
     }
     setValidating(true);
     setSaveError(null);
+    setValidatedSnapshot(null);
     try {
       const response = await validateFinEvaluationStaging(cfg, data, rawHeader);
       const method = "PUT" as const;
-      setToast({
-        kind: "success",
-        message: (response.apiMessage || response.api_message || "")
-          || "Validation completed successfully.",
-      });
+      const apiMessage = response.apiMessage || response.api_message || "";
       const saveEvent = new CustomEvent("tool:fin_eval_saved", { detail: { proposalId: cfg.proposal_id } });
       console.log("[fin_eval] dispatching tool:fin_eval_saved (validate)", saveEvent.detail);
       window.dispatchEvent(saveEvent);
@@ -634,7 +660,20 @@ export default function PivotTableWithAPI(): React.ReactElement {
         action: "fin-eval:saved",
         payload: { proposalId: cfg.proposal_id, method },
       });
-      await refetchStaging("validate");
+      const refetched = await refetchStaging("validate");
+      if (!refetched) {
+        setToast({ kind: "error", message: apiMessage || "Validation completed, but the refreshed data could not be loaded." });
+        return;
+      }
+      const errors = refetched.errors ?? [];
+      // Save Model unlocks only when validation came back clean.
+      if (errors.length === 0) setValidatedSnapshot(payloadSnapshot(refetched.table, refetched.rawHeader));
+      setToast({
+        kind: errors.length ? "error" : "success",
+        message: apiMessage || (errors.length
+          ? `Validation completed with ${errors.length} error${errors.length === 1 ? "" : "s"}.`
+          : "Validation completed successfully."),
+      });
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown validation error";
@@ -771,8 +810,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   };
 
   const displayPercent = (n: number): string => {
-    if (!n) return "—";
-    const formatted = formatNumber(Math.abs(n), numFmt, 0);
+    if (!n || parseFloat(Math.abs(n).toFixed(2)) === 0) return "—";
+    // Up to 2 decimals (what the % input accepts); formatNumber trims trailing
+    // zeros, so 12.5 → 12.5%, 12 → 12%.
+    const formatted = formatNumber(Math.abs(n), numFmt, 2);
     return n < 0 ? `(${formatted}%)` : `${formatted}%`;
   };
 
@@ -834,6 +875,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   /* ── Calculations (from line-level data populated by API) ─────── */
   const numYears   = data.years.length;
 
+  // Validate → (clean) → Save Model. Unchanged data after a clean validate
+  // keeps Validate disabled; any edit re-enables it and locks Save Model again.
+  const isValidated = validatedSnapshot !== null && !!rawHeader && validatedSnapshot === payloadSnapshot(data, rawHeader);
+
   /* ── Validation errors → real navigation targets ───────────────
      Each ValidationIssue already carries whichever target the backend's
      own errorMessage matched to (section id / line id) — see
@@ -841,6 +886,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const goToError = (idx: number): void => {
     const err = validationErrors[idx];
     if (!err) return;
+    if (err.headerField || err.isHeader) {
+      // Sales renders no editable header fields — bring the top of the widget
+      // (KPI cards) into view instead of doing nothing.
+      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     if (err.sectionId != null) {
       setScrollTarget(String(err.sectionId));
       return;
@@ -849,6 +900,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
       const owningGroup = data.groups.find((g) => g.values.some((v) => v.id === err.lineId));
       if (owningGroup) {
         setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === owningGroup.id ? { ...g, expanded: true } : g) }) : p);
+        // Calculated rows of an all-NON_FINANCIAL section are never rendered —
+        // there is no row to jump to, so go to the section instead.
+        const line = owningGroup.values.find((v) => v.id === err.lineId);
+        if (line?.isCalculated === "Y" && isAllNonFinancialGroup(owningGroup)) {
+          setScrollTarget(owningGroup.sectionId != null ? String(owningGroup.sectionId) : (owningGroup.sectionType || owningGroup.name));
+          return;
+        }
       }
       setHighlightLineId(err.lineId);
     }
@@ -970,6 +1028,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleCellNav}
+        onPaste={(e) => handleValueCellPaste(e, gId, value.id, data.years.indexOf(year))}
         style={inputStyle}
       />
     );
@@ -985,7 +1044,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
     const d = dir[e.key];
     if (!d) return;
     const cur   = e.currentTarget;
-    const cells = Array.from(document.querySelectorAll<HTMLInputElement>("input.spc-nav-cell"));
+    // Skip cells of the hidden (display:none) table — their rects are all 0,0.
+    const cells = Array.from(document.querySelectorAll<HTMLInputElement>("input.spc-nav-cell")).filter((c) => c.offsetParent !== null);
     const r0 = cur.getBoundingClientRect();
     const cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
     let best: HTMLInputElement | null = null, bestScore = Infinity;
@@ -1031,6 +1091,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
     setPasteToast({ gId, count: parsed.length }); setActiveAutocomplete(null); setAutocompleteSearch("");
   };
 
+  // % rows accept 0–100 at 2 decimals (same rule as the % input) — pasted values are clamped to it.
+  const clampPercent = (n: number): number => Math.round(Math.min(100, Math.max(0, n)) * 100) / 100;
   const handleValueCellPaste = (e: React.ClipboardEvent<HTMLInputElement>, gId: string, vId: string, startYearIdx: number): void => {
     if (isReadOnly) return;
     const text: string = e.clipboardData.getData("text/plain");
@@ -1043,7 +1105,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     for (let c = 0; c < maxC; c++) { if (rawRows.every((r) => { const v = (r[c] ?? "").trim(); return !v || isNumericCell(v); })) { vs = c; break; } }
     const parsedRows: number[][] = rawRows.map((cols) => cols.slice(vs).map((c) => parseExcelValue(c)));
     if (!parsedRows.length) return;
-    setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = val; }); return { ...v, yearValues: nv }; }) }; return withValues; }) }; });
+    setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; const pct = isPercentRow(v); parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = pct ? clampPercent(val) : val; }); return { ...v, yearValues: nv }; }) }; return withValues; }) }; });
     const grp = data.groups.find((g) => g.id === gId);
     const si  = grp ? grp.values.findIndex((v) => v.id === vId) : 0;
     setPasteToast({ gId, count: grp ? Math.min(parsedRows.length, grp.values.length - si) : parsedRows.length });
@@ -1182,11 +1244,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
         </div>
       )}
 
-      {/* Save error banner */}
+      {/* Validate / Save Model error banner — full message, wrapped */}
       {saveError && (
-        <div style={{ marginBottom: 12, padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, color: "#dc2626", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <span><strong>Save failed:</strong> {saveError}</span>
-          <button type="button" onClick={() => setSaveError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626" }}><X size={12} /></button>
+        <div style={{ marginBottom: 12, padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, color: "#dc2626", fontSize: 12, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+          <span style={{ flex: 1, minWidth: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}><strong>Error:</strong> {saveError}</span>
+          <button type="button" onClick={() => setSaveError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", flexShrink: 0 }}><X size={12} /></button>
         </div>
       )}
 
@@ -1207,9 +1269,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
             </button>
             {/* Edit-only controls — hidden for read-only users */}
             {!isReadOnly && (() => {
-              const busy = validating || savingDraft || loading;
+              const validateDisabled = validating || savingDraft || loading || isValidated;
               const hasErrors = validationErrors.length > 0;
-              const saveModelDisabled = savingDraft || loading || hasErrors;
+              const saveModelDisabled = savingDraft || validating || loading || !isValidated;
               return (
                 <>
                   <button
@@ -1217,8 +1279,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     type="button"
                     className="action-btn"
                     onClick={validate}
-                    disabled={busy}
-                    style={{ cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.7 : 1 }}
+                    disabled={validateDisabled}
+                    title={isValidated ? "Validated — edit the data to validate again." : undefined}
+                    style={{ cursor: validateDisabled ? "not-allowed" : "pointer", opacity: validateDisabled ? 0.7 : 1 }}
                   >
                     <CheckCircle2 size={14} className={validating ? "save-icon-spinning" : undefined} />
                     {validating ? "Validating…" : "Validate"}
@@ -1229,7 +1292,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     className="save-model-btn"
                     onClick={saveDraft}
                     disabled={saveModelDisabled}
-                    title={hasErrors ? "Resolve all validation errors before saving the model." : undefined}
+                    title={hasErrors ? "Resolve all validation errors before saving the model." : !isValidated ? "Validate the data successfully before saving the model." : undefined}
                     style={{ cursor: saveModelDisabled ? "not-allowed" : "pointer", opacity: saveModelDisabled ? 0.4 : 1 }}
                   >
                     <Save size={14} className={savingDraft ? "save-icon-spinning" : undefined} />
@@ -1386,7 +1449,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
           </div>
           <div style={{ minHeight: 88, maxHeight: 200, overflowY: "auto" }}>
             {validationErrors.map((err, i) => {
-              const hasTarget = !!(err.sectionId != null || err.lineId);
+              const hasTarget = !!(err.headerField || err.isHeader || err.sectionId != null || err.lineId);
               return (
                 <div
                   key={i}
@@ -1461,18 +1524,20 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
                 return (
                   <React.Fragment key={group.id}>
-                    <tr data-section-id={group.sectionId} data-section-type={group.sectionType || group.id} style={{ background: "#182a49" }}>
+                    {/* No data-section-* / data-line-id in this hidden table — the
+                        validation-error scroll lookups must hit the visible table below. */}
+                    <tr style={{ background: "#182a49" }}>
                       <td style={{ ...TD, height: 40, borderBottom: "1px solid #293a59", borderRight: "none" }} />
                       <td colSpan={2} style={{ ...TD, padding: "8px 14px", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", borderRight: "1px solid #31415e" }}>
                         {group.name}
                       </td>
                       {data.years.map((year) => (
                         <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", borderRight: "1px solid #31415e" }}>
-                          {displayFmt(sectionValues[year] || 0)}
+                          {calc ? displayRow(calc, sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
                         </td>
                       ))}
                       <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                        {displayFmt(sectionTotal)}
+                        {calc ? displayRow(calc, sectionTotal) : displayFmt(sectionTotal)}
                       </td>
                     </tr>
 
@@ -1480,7 +1545,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       const acKey = `${group.id}|${value.id}`;
                       const isAC = activeAutocomplete === acKey;
                       return (
-                        <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#fef08a" : "#fffbea", transition: "background 0.4s", boxShadow: value.id === highlightLineId ? "inset 0 0 0 2px #f59e0b" : undefined }}>
+                        <tr key={value.id} style={{ background: value.id === highlightLineId ? "#fef08a" : "#fffbea", transition: "background 0.4s", boxShadow: value.id === highlightLineId ? "inset 0 0 0 2px #f59e0b" : undefined }}>
                           <td style={{ ...TD, padding: "4px 0", textAlign: "center", verticalAlign: "middle" }}>
                             {value.isMandatory !== "Y" && value.isCustom !== "N" && !isReadOnly && (
                               <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, vId: value.id, name: value.name, kind: "line" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={12} /></button>
@@ -1526,7 +1591,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               <input type="text"
                                 className="spc-nav-cell"
                                 readOnly
-                                value={displayFmt(t)}
+                                value={displayRow(value, t)}
                                 onClick={(e) => e.stopPropagation()}
                                 onKeyDown={handleCellNav}
                                 style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 12, fontWeight: 800, color: t < 0 ? "#DC2626" : "#111827", outline: "none", height: 30 }}

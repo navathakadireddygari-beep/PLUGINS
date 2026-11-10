@@ -207,15 +207,14 @@ const splitMessage = (msg: string): string[] =>
 // failing validation_status entry, tagging each with its own object's
 // identity (headerField / sectionId / lineId) so the UI can navigate to the
 // exact place the error is coming from. This self-heals — a fixed line's
-// error_message naturally comes back null on the next fetch. Different
-// endpoints use different terminology for a failing status ("ERROR" vs
-// "INVALID"), so both are treated as failing.
+// error_message naturally comes back null on the next fetch. Endpoints use
+// different terms for a failing status ("ERROR", "INVALID", "E", …), so any
+// object carrying an error_message counts unless its status is explicitly valid.
 export function extractValidationErrors(header: ApiHeader): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
-  const isFailing = (status?: string | null): boolean => {
-    const s = (status || "").toUpperCase();
-    return s === "ERROR" || s === "INVALID";
-  };
+  const VALID_STATUSES = new Set(["VALID", "SUCCESS", "S", "PASS", "PASSED", "OK"]);
+  const isFailing = (status?: string | null): boolean =>
+    !VALID_STATUSES.has((status || "").trim().toUpperCase());
 
   if (isFailing(header.validation_status) && header.error_message) {
     const headerField = mapErrorCodeToField(header.error_code);
@@ -409,8 +408,8 @@ export function buildStagingPutPayload(
   const toFyKey = (year: number): string =>
     (tableData.columnLabels[year] || `FY${String(year).slice(2)}`).toLowerCase();
 
-  const sections = tableData.groups.map((group) => {
-    const lines = group.values.map((value) => {
+  const sections = tableData.groups.map((group, grpIdx) => {
+    const lines = group.values.map((value, lineIdx) => {
       const yearValues: Record<string, object> = {};
       tableData.years.forEach((y) => {
         const amt = value.yearValues[y] ? value.yearValues[y] : null;
@@ -437,13 +436,13 @@ export function buildStagingPutPayload(
         finEvalLineStgId: value.lineId ?? null,
         lineType:         value.lineType || "CUSTOM",
         lineItemName:     value.name,
-        lineIdentifier:   value.lineIdentifier ?? "Financial",
+        lineIdentifier:   (value.lineIdentifier ?? "FINANCIAL").toUpperCase(),
         isCalculated:     value.isCalculated ?? "N",
         isMandatory:      value.isMandatory  ?? "N",
         isReadOnly:       value.isReadOnly   ?? "N",
         isCustom:         value.isCustom     ?? "Y",
         account:          value.accountId    ?? null,
-        displayOrder:     value.displayOrder ?? 0,
+        displayOrder:     value.displayOrder ?? lineIdx + 1,
         yearValues,
         targetGoLiveDate: null,
         status:           value.status       ?? "ACTIVE",
@@ -464,7 +463,7 @@ export function buildStagingPutPayload(
       isAccountRequired:         group.isAccountRequired ?? "N",
       isNewLineRequired:         group.isNewLineRequired ?? "Y",
       isGoLiveReq:               "N",
-      displayOrder:              group.displayOrder ?? 0,
+      displayOrder:              group.displayOrder ?? grpIdx + 1,
       status:                    group.status ?? "ACTIVE",
       languageCode:              group.languageCode ?? "EN",
       attribute1: null, attribute2: null, attribute3: null, attribute4: null, attribute5: null,
@@ -774,10 +773,14 @@ async function fetchFinancialData(
   if (!result) return { table: createEmptyTable(), rawHeader: createEmptyHeader(cfg), validationErrors: [] };
 
   let validationErrors = extractValidationErrors(result.rawHeader);
+  // Messages that don't belong to any header/section/line object at all (e.g.
+  // "an entire section is missing from the upload") only arrive on the file
+  // (pipe-separated) — add the ones the structured walk didn't already cover.
+  const seen = new Set(validationErrors.map((e) => e.message));
+  const fileErrors = typeof stagedFile?.errorMessage === "string" ? stagedFile.errorMessage : "";
+  fileErrors.split("|").map((m: string) => m.trim()).filter((m: string) => m && !seen.has(m))
+    .forEach((message: string) => { seen.add(message); validationErrors.push({ message }); });
   if (!validationErrors.length && typeof raw.errorMessages === "string" && raw.errorMessages.trim()) {
-    // Fallback for messages that don't belong to any header/section/line object
-    // at all (e.g. "an entire section is missing from the upload") — the
-    // structured walk above is empty, so nothing more precise is available.
     validationErrors = raw.errorMessages.split("\n").filter(Boolean).map((message) => ({ message }));
   }
   console.log("[getFinancialData] validationErrors:", validationErrors.length);

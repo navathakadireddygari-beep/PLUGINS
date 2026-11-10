@@ -7,7 +7,7 @@ import {
   isNoTotalRow,
   isNonFinancialRow,
   isPercentRow,
-  isValidPercentInput,
+  isTaxRateRow,
   type RowIdentity,
 } from "@/lib/row-rules";
 import Toast, { type ToastState } from "@/components/Toast";
@@ -43,9 +43,13 @@ import {
   formatNonFinancial,
   formatNumber,
   formatPercent,
+  isPartialNumberInput,
   nonFinancialPlain,
+  parseTypedNumber,
+  toEditableNumber,
   trimNonFinancial,
 } from "@/lib/number-format";
+import type { NumberFormatId } from "@/config/formats";
 import {
   actualsCountOf,
   currentFiscalYear,
@@ -53,6 +57,7 @@ import {
 } from "@/lib/fiscal-years";
 import {
   collectGridRows,
+  newLinesError,
   newSectionsError,
   type NewSectionDraft,
 } from "@/lib/save-collect";
@@ -469,34 +474,116 @@ const rowAllowsRows = (row: Row): boolean =>
 const canDeleteRow = (row: Row, isReadonly: boolean): boolean =>
   !isRowLocked(row, isReadonly) && rowAllowsRows(row) && row.isCustom !== false;
 
+/** Largest magnitude a Key Input (a rate / percentage) may take. */
+const KEY_INPUT_MAX = 100;
+
 /**
- * A percentage input for the Key Inputs panel. Accepts digits and a single
- * decimal point only (no text characters) and never lets the value exceed 100.
+ * A percentage input for the Key Inputs panel, edited the way Prod Dev edits a
+ * cell (its `editingCell` raw string):
+ *
+ *   not focused   the stored value, formatted in the active number format
+ *   on focus      seeded with the plain value ("12,5" in EU) as a local draft
+ *   typing        the draft only; a keystroke that would make it invalid is
+ *                 REJECTED (not rewritten), so the caret never jumps
+ *   blur / Enter  committed once, and only when it actually changed
+ *   Escape        abandons the draft
+ *
+ * The draft is local, so a background re-fetch that replaces `value` while the
+ * user is typing cannot overwrite what they have typed.
  */
 const PercentInput: React.FC<{
+  /** Stored value: canonical plain number ("12.5") or "" when unset. */
   value: string;
   onValueChange: (value: string) => void;
+  numberFormat: NumberFormatId;
+  /** Growth-type inputs can legitimately be negative. */
+  allowNegative?: boolean;
   /** View-only mode: the value is shown on the locked surface, not editable. */
   readOnly?: boolean;
-}> = ({ value, onValueChange, readOnly = false }) => {
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // digits + at most one decimal point, nothing else
-    let raw = e.target.value.replace(/[^0-9.]/g, "");
-    const dot = raw.indexOf(".");
-    if (dot !== -1) {
-      raw = raw.slice(0, dot + 1) + raw.slice(dot + 1).replace(/\./g, "");
+}> = ({
+  value,
+  onValueChange,
+  numberFormat,
+  allowNegative = false,
+  readOnly = false,
+}) => {
+  /** Text being typed; null = not editing, so the formatted value shows. */
+  const [draft, setDraft] = useState<string | null>(null);
+  /** What the draft was seeded with, to skip a no-op commit. */
+  const seed = useRef("");
+  /** Set by Escape so the blur that follows does not commit. */
+  const cancelled = useRef(false);
+
+  const stored = value.trim() === "" ? NaN : Number(value);
+  const display = Number.isFinite(stored)
+    ? formatNonFinancial(stored, numberFormat)
+    : value;
+
+  const commit = (text: string) => {
+    setDraft(null);
+    if (text === seed.current) return;
+    // A lone "-" (or separator) is an abandoned partial entry, not a value:
+    // the stored value stands.
+    if (!/\d/.test(text) && text.trim() !== "") return;
+    const n = parseTypedNumber(text, numberFormat);
+    if (n === null) {
+      onValueChange("");
+    } else if (Number.isFinite(n)) {
+      // Keystrokes past the bound are already refused; this is a safety net.
+      const min = allowNegative ? -KEY_INPUT_MAX : 0;
+      onValueChange(String(Math.max(min, Math.min(KEY_INPUT_MAX, n))));
     }
-    // clamp to a maximum of 100
-    if (raw !== "" && raw !== "." && Number(raw) > 100) raw = "100";
-    onValueChange(raw);
   };
+
+  const negative =
+    draft !== null ? /^-.*[1-9]/.test(draft) : Number.isFinite(stored) && stored < 0;
+  const surface = readOnly
+    ? "mna:cursor-default mna:bg-[#f3f4f6] mna:text-[#6b7280]"
+    : `mna:bg-transparent ${negative ? "mna:text-[#DC2626]" : "mna:text-[#1f2937]"}`;
+
   return (
     <input
+      type="text"
       readOnly={readOnly}
-      className={`mna:w-20 mna:text-right mna:text-[13px] mna:text-[#1f2937] mna:outline-none ${readOnly ? "mna:cursor-default mna:bg-[#f3f4f6] mna:text-[#6b7280]" : "mna:bg-transparent"}`}
-      value={value}
-      onChange={onChange}
+      className={`mna:w-20 mna:text-right mna:text-[13px] mna:outline-none ${surface}`}
+      value={draft ?? display}
+      placeholder="—"
       inputMode="decimal"
+      onFocus={() => {
+        if (readOnly) return;
+        cancelled.current = false;
+        const initial = Number.isFinite(stored)
+          ? toEditableNumber(nonFinancialPlain(stored), numberFormat)
+          : "";
+        seed.current = initial;
+        setDraft(initial);
+      }}
+      onChange={(e) => {
+        if (readOnly || draft === null) return;
+        const next = e.target.value;
+        if (!isPartialNumberInput(next, numberFormat, { allowNegative, max: KEY_INPUT_MAX }))
+          return;
+        setDraft(next);
+      }}
+      onBlur={() => {
+        if (draft === null) return;
+        if (cancelled.current) {
+          cancelled.current = false;
+          setDraft(null);
+          return;
+        }
+        commit(draft);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          cancelled.current = true;
+          e.currentTarget.blur();
+        }
+      }}
     />
   );
 };
@@ -916,16 +1003,34 @@ const Table: React.FC = () => {
     // the first grid can hold them, but every grid is passed the accumulator so
     // a row can never be silently dropped for being in the "wrong" one.
     const sectionDrafts: Record<string, NewSectionDraft> = {};
-    // Consideration is never calculated, so its state IS what is on screen.
-    collectRows(conRows, conYearIdx, yearValues, newLines, sectionDrafts);
-    // Calculated lines go out as loaded (last-fetched backend values); the
-    // server recomputes them on save.
-    collectRows(corRows, allYearIdx, yearValues, newLines, sectionDrafts);
-    collectRows(fcfRows, allYearIdx, yearValues, newLines, sectionDrafts);
-    // Post Tax Return only renders the projection columns.
-    collectRows(ptrRows, projYearIdx, yearValues, newLines, sectionDrafts);
-    // The user's own block.
-    collectRows(cusRows, allYearIdx, yearValues, newLines, sectionDrafts);
+    // Every grid sends every year its rows carry (see byYearOf); the column
+    // sets only add buckets the stepper created ahead of the response.
+    const issues = [
+      // Consideration is never calculated, so its state IS what is on screen.
+      collectRows(conRows, conYearIdx, yearValues, newLines, sectionDrafts),
+      // Calculated lines go out as loaded (last-fetched backend values); the
+      // server recomputes them on save.
+      collectRows(corRows, allYearIdx, yearValues, newLines, sectionDrafts),
+      collectRows(fcfRows, allYearIdx, yearValues, newLines, sectionDrafts),
+      // Post Tax Return only renders the projection columns.
+      collectRows(ptrRows, projYearIdx, yearValues, newLines, sectionDrafts),
+      // The user's own block.
+      collectRows(cusRows, allYearIdx, yearValues, newLines, sectionDrafts),
+    ].reduce(
+      (sum, i) => ({
+        unnamedLines: sum.unnamedLines + i.unnamedLines,
+        unattachedLines: sum.unattachedLines + i.unattachedLines,
+      }),
+      { unnamedLines: 0, unattachedLines: 0 },
+    );
+
+    // A new line with figures but no name used to be dropped without a word
+    // and vanish on reload. Refuse the save and say why instead.
+    const lineError = newLinesError(issues);
+    if (lineError) {
+      setToast({ kind: "error", message: lineError });
+      return;
+    }
 
     const sectionError = newSectionsError(sectionDrafts);
     if (sectionError) {
@@ -1490,20 +1595,27 @@ const Table: React.FC = () => {
     return "—";
   };
 
-  /** Editor seed for one row — percentage and NON_FINANCIAL rows are seeded unconverted. */
+  /**
+   * Editor seed for one row — percentage and NON_FINANCIAL rows are seeded
+   * unconverted.
+   *
+   * Every seed is written in the ACTIVE number format's decimal separator
+   * ("12,5" in EU), because the commit parses what the user leaves in the cell
+   * with that format. A canonical "12.5" seed read back under EU rules — where
+   * "." is the GROUP separator — became 125.
+   */
   const cellSeed = (row: Row, raw: string | undefined): string => {
     const value = raw ?? "";
-    if (isPercentRow(identityOf(row))) {
-      return value === "" || Number(value) === 0 ? "" : value;
-    }
-    if (isNonFinancialRow(identityOf(row))) {
-      // The exact stored value (2.35 reopens as 2.35) — no 3-decimal editor
-      // rounding, only float noise trimmed.
+    if (isPercentRow(identityOf(row)) || isNonFinancialRow(identityOf(row))) {
+      // The exact stored value (2.35 reopens as 2.35, a 4dp margin keeps its
+      // 4dp) — no editor rounding, only float noise trimmed.
       const n = Number(value);
       if (value.trim() === "" || !Number.isFinite(n)) return "";
-      return trimNonFinancial(n) === 0 ? "" : nonFinancialPlain(n);
+      return trimNonFinancial(n) === 0
+        ? ""
+        : toEditableNumber(nonFinancialPlain(n), numberFormat);
     }
-    return formatBaseToEditable(value);
+    return toEditableNumber(formatBaseToEditable(value), numberFormat);
   };
 
   /* ─────────────────────── Shared grid body renderer ───────────────────
@@ -1971,30 +2083,26 @@ const Table: React.FC = () => {
           cc < next[rr].values.length
         ) {
           const target = next[rr];
-          if (isPercentRow(identityOf(target))) {
-            // Percentages bypass the currency/scale parse and are forced into
-            // [0, 100] — a safety net for paste, which skips the keystroke
-            // check the editor applies.
-            const trimmed = String(cell).trim();
-            if (trimmed === "") {
+          const identity = identityOf(target);
+          if (isPercentRow(identity) || isNonFinancialRow(identity)) {
+            // Percentages and NON_FINANCIAL figures bypass the currency/scale
+            // parse and are stored as the plain number — but parsed in the
+            // ACTIVE number format, so EU "12,5" is 12.5 (not 125) and the
+            // accounting "(5)" / "(5%)" the grid displays is -5 (not 5).
+            //
+            // Percentages are NOT forced into [0, 100] / 2dp: growth and
+            // return rows are legitimately negative or above 100, and the
+            // server's 4dp figures must survive an edit of a neighbour. Only a
+            // Tax Rate is a true 0-100 bound.
+            const n = parseTypedNumber(cell, numberFormat);
+            if (n === null) {
               target.values[cc] = "";
-            } else if (isValidPercentInput(trimmed)) {
-              target.values[cc] = trimmed;
-            } else {
-              const n = Number(trimmed.replace(/[^0-9.-]/g, ""));
-              target.values[cc] = Number.isFinite(n)
-                ? String(clampPercent(n))
-                : "";
+            } else if (Number.isFinite(n)) {
+              target.values[cc] = String(
+                isTaxRateRow(identity) ? clampPercent(n) : n,
+              );
             }
-          } else if (isNonFinancialRow(identityOf(target))) {
-            // NON_FINANCIAL bypasses the currency/scale parse — stored as the raw number.
-            const trimmed = String(cell).trim();
-            if (trimmed === "") {
-              target.values[cc] = "";
-            } else {
-              const n = Number(trimmed.replace(/[^0-9.-]/g, ""));
-              target.values[cc] = Number.isFinite(n) ? String(n) : "";
-            }
+            // Unparseable text leaves the stored value as it was.
           } else {
             target.values[cc] = a.parse(cell);
           }
@@ -2386,6 +2494,8 @@ const Table: React.FC = () => {
                             <PercentInput
                               value={input.value}
                               onValueChange={(v) => setKeyInputValue(input.code, v)}
+                              numberFormat={numberFormat}
+                              allowNegative={/GROWTH/i.test(`${input.code} ${input.label}`)}
                               readOnly={isReadonly}
                             />
                             <span className="mna:text-sm mna:text-slate-500">%</span>

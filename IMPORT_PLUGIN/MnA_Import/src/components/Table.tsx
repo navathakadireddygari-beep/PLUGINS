@@ -15,9 +15,9 @@ import {
   isNoTotalRow,
   isNonFinancialRow,
   isPercentRow,
-  isValidPercentInput,
   type RowIdentity,
 } from "@/lib/row-rules";
+import type { NumberFormatId } from "@/config/formats";
 import Toast, { type ToastState } from "@/components/Toast";
 import { emitDeleted, emitSaved, onHostRefresh } from "@/lib/app-bridge";
 import {
@@ -45,7 +45,10 @@ import {
   formatNonFinancial,
   formatNumber,
   formatPercent,
+  isPartialNumberInput,
   nonFinancialPlain,
+  parseDisplayInput,
+  toLocalDecimal,
   trimNonFinancial,
 } from "@/lib/number-format";
 import {
@@ -55,6 +58,7 @@ import {
 } from "@/lib/fiscal-years";
 import { collectGridRows, type NewSectionDraft } from "@/lib/save-collect";
 import {
+  buildFinancialEvaluationPayload,
   getFileId,
   getProposalId,
   isHostReadonly,
@@ -490,34 +494,128 @@ const rowAllowsRows = (row: Row): boolean =>
 const canDeleteRow = (row: Row, isReadonly: boolean): boolean =>
   !isRowLocked(row, isReadonly) && rowAllowsRows(row) && row.isCustom !== false;
 
+/** Most decimals a Key Input accepts while typing (WACC 10.875 must fit). */
+const KEY_INPUT_DECIMALS = 4;
+
 /**
- * A percentage input for the Key Inputs panel. Accepts digits and a single
- * decimal point only (no text characters) and never lets the value exceed 100.
+ * Key Inputs that may legitimately go below zero. A terminal growth rate can be
+ * negative; WACC / discount and tax rates cannot.
+ */
+const keyInputAllowsNegative = (code: string): boolean => /GROWTH/i.test(code);
+
+/**
+ * A percentage input for the Key Inputs panel, built the way Prod Dev builds
+ * its grid cells (`editingCell`):
+ *
+ *   not focused   the stored value, formatted in the active number format
+ *   on focus      a local raw-string draft is seeded from the stored value
+ *   typing        the draft changes only if the new text is a valid partial
+ *                 number (digits, one decimal separator of the active format,
+ *                 a leading "-" where the input allows negatives, magnitude
+ *                 <= 100); anything else is REJECTED, never rewritten, so the
+ *                 caret stays where it was
+ *   blur / Enter  the draft is parsed and committed once (an untouched draft
+ *                 is not committed at all)
+ *   Escape        the draft is dropped and the stored value comes back
+ *
+ * The old input was fully controlled and pushed every keystroke through a
+ * sanitiser that stripped "-" and ",", force-replaced anything over 100 with
+ * "100" and reset the caret — and because each keystroke was a commit, a
+ * background refetch landing mid-edit overwrote what was being typed. The
+ * draft lives here, so a refetch only changes what shows once the field is
+ * left.
+ *
+ * `onValueChange` receives a canonical string ("10.5", "-2", "" for cleared).
  */
 const PercentInput: React.FC<{
   value: string;
   onValueChange: (value: string) => void;
+  numberFormat: NumberFormatId;
+  allowNegative?: boolean;
   /** View-only mode: the value is shown on the locked surface, not editable. */
   readOnly?: boolean;
-}> = ({ value, onValueChange, readOnly = false }) => {
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // digits + at most one decimal point, nothing else
-    let raw = e.target.value.replace(/[^0-9.]/g, "");
-    const dot = raw.indexOf(".");
-    if (dot !== -1) {
-      raw = raw.slice(0, dot + 1) + raw.slice(dot + 1).replace(/\./g, "");
+  /** Target for validation-error navigation. */
+  inputCode?: string;
+}> = ({
+  value,
+  onValueChange,
+  numberFormat,
+  allowNegative = false,
+  readOnly = false,
+  inputCode,
+}) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  const seedRef = useRef<string>("");
+
+  const canonical = (() => {
+    const n = Number(value);
+    return value.trim() === "" || !Number.isFinite(n) ? "" : nonFinancialPlain(n);
+  })();
+  const shown =
+    canonical === "" ? "" : formatNonFinancial(Number(canonical), numberFormat);
+
+  const commit = () => {
+    if (draft === null) return;
+    const text = draft;
+    setDraft(null);
+    if (text === seedRef.current) return; // untouched — keep the stored value
+    const parsed = parseDisplayInput(text, numberFormat);
+    if (parsed.value === null) {
+      onValueChange("");
+      return;
     }
-    // clamp to a maximum of 100
-    if (raw !== "" && raw !== "." && Number(raw) > 100) raw = "100";
-    onValueChange(raw);
+    const bounded = Math.min(
+      100,
+      Math.max(allowNegative ? -100 : 0, parsed.value),
+    );
+    onValueChange(nonFinancialPlain(bounded));
   };
+
   return (
     <input
+      type="text"
       readOnly={readOnly}
+      data-key-input-field={inputCode}
       className={`mna:w-20 mna:text-right mna:text-[13px] mna:text-[#1f2937] mna:outline-none ${readOnly ? "mna:cursor-default mna:bg-[#f3f4f6] mna:text-[#6b7280]" : "mna:bg-transparent"}`}
-      value={value}
-      onChange={onChange}
+      value={draft ?? shown}
+      placeholder="—"
       inputMode="decimal"
+      onFocus={() => {
+        if (readOnly) return;
+        const seed = toLocalDecimal(canonical, numberFormat);
+        seedRef.current = seed;
+        setDraft(seed);
+      }}
+      onChange={(e) => {
+        if (readOnly || draft === null) return;
+        const next = e.target.value;
+        // Deleting is always allowed (a stored value with more decimals than
+        // the typing rule permits must still be editable).
+        const deleting =
+          next.length < draft.length && /^-?[0-9.,]*$/.test(next);
+        if (
+          !deleting &&
+          !isPartialNumberInput(next, numberFormat, {
+            allowNegative,
+            maxDecimals: KEY_INPUT_DECIMALS,
+            maxAbs: 100,
+          })
+        ) {
+          return; // reject the keystroke
+        }
+        setDraft(next);
+      }}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur(); // onBlur commits
+        } else if (e.key === "Escape") {
+          // Cancel: back to the seed, which blur will not commit.
+          e.preventDefault();
+          if (draft !== null) setDraft(seedRef.current);
+        }
+      }}
     />
   );
 };
@@ -823,11 +921,22 @@ const Table: React.FC = () => {
     saved,
     message: validateMessage,
   } = useSaveFinancialEvaluation();
-  const { migrate, migrating, error: migrateError } =
-    useMigrateFinEvalStaging();
-  const { remove: deleteLine, error: deleteError } = useDeleteFinEvalLine();
-  const { remove: deleteSection, error: deleteSectionError } =
-    useDeleteFinEvalSection();
+  const {
+    migrate,
+    migrating,
+    error: migrateError,
+    clearError: clearMigrateError,
+  } = useMigrateFinEvalStaging();
+  const {
+    remove: deleteLine,
+    error: deleteError,
+    clearError: clearDeleteError,
+  } = useDeleteFinEvalLine();
+  const {
+    remove: deleteSection,
+    error: deleteSectionError,
+    clearError: clearDeleteSectionError,
+  } = useDeleteFinEvalSection();
 
   /**
    * Grid rows -> save payload, via the extracted (and directly tested) helper
@@ -863,7 +972,11 @@ const Table: React.FC = () => {
       });
       return null;
     }
+    return assembleEdits();
+  };
 
+  /** The screen's state as payload edits. Pure: no toasts, no state. */
+  const assembleEdits = (): FinancialEvaluationEdits => {
     const yearValues: Record<string, Record<string, string>> = {};
     const newLines: NewLineEdit[] = [];
     // Sections the user added this session, gathered by their local id. Only
@@ -928,10 +1041,78 @@ const Table: React.FC = () => {
     return edits;
   };
 
+  /* ── Validate → Save Model gating (Prod Dev parity) ────────────────
+   * Save Model is enabled only while the data on screen is EXACTLY what the
+   * last clean validate sent: the Validate PUT succeeded AND the re-fetch that
+   * followed came back with zero issues. While that holds, Validate is
+   * disabled (there is nothing new to validate); any edit — a cell, a label, an
+   * added or deleted row, a Key Input — changes the snapshot, which re-enables
+   * Validate and locks Save Model again.
+   *
+   * The snapshot is the payload the Validate PUT is built from, serialised.
+   * Pure VIEW settings are left out of it — the display currency, the FX rate
+   * shown and the number of projection years on screen — so switching those
+   * does not force a re-validate.
+   */
+  const currentSnapshot = useMemo(
+    () =>
+      template?.raw
+        ? JSON.stringify(
+            buildFinancialEvaluationPayload(template.raw, {
+              ...assembleEdits(),
+              displayCurrency: undefined,
+              exchangeRate: undefined,
+              displayYears: undefined,
+            }),
+          )
+        : null,
+    // assembleEdits reads exactly these.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      template,
+      conRows,
+      corRows,
+      fcfRows,
+      ptrRows,
+      cusRows,
+      npvRows,
+      keyInputs,
+      deletedLineIds,
+      deletedSectionIds,
+      fyKeys,
+      conFyKeys,
+      actualsCount,
+      years,
+    ],
+  );
+  /** Snapshot of the last clean validate; null = not validated. */
+  const [validatedSnapshot, setValidatedSnapshot] = useState<string | null>(
+    null,
+  );
+  /**
+   * Set when a clean re-fetch lands. The snapshot is taken on the NEXT render,
+   * once the grids have been rebuilt from that response — taking it in the
+   * same effect would capture the rows from before the re-fetch.
+   */
+  const [captureSnapshot, setCaptureSnapshot] = useState(false);
+  useEffect(() => {
+    if (!captureSnapshot || currentSnapshot === null) return;
+    setValidatedSnapshot(currentSnapshot);
+    setCaptureSnapshot(false);
+  }, [captureSnapshot, currentSnapshot]);
+
   const onSave = () => {
     if (!template?.raw) return;
     const edits = buildEdits();
     if (!edits) return;
+    // A new attempt: whatever was validated before no longer counts, and the
+    // header should stop showing failures from earlier actions.
+    setValidatedSnapshot(null);
+    setCaptureSnapshot(false);
+    reportIssuesRef.current = null;
+    clearDeleteError();
+    clearDeleteSectionError();
+    clearMigrateError();
     void save(template.raw, edits);
   };
 
@@ -953,6 +1134,15 @@ const Table: React.FC = () => {
   // edits into staging — so it needs a proposal to migrate into and a file
   // to read. The header keeps it disabled while validation issues remain.
   const onMigrate = async () => {
+    // Same rule the header's button follows, enforced here too so nothing
+    // that reaches the handler can migrate unvalidated (or since-edited) data.
+    if (!validated) {
+      setToast({
+        kind: "error",
+        message: "Please validate the data successfully before saving the model.",
+      });
+      return;
+    }
     if (!getProposalId() && !template?.raw?.proposal_id) {
       setToast({
         kind: "error",
@@ -968,6 +1158,8 @@ const Table: React.FC = () => {
       });
       return;
     }
+    clearDeleteError();
+    clearDeleteSectionError();
     const result = await migrate();
     if (!result) return;
     setToast({
@@ -990,6 +1182,16 @@ const Table: React.FC = () => {
   const validationIssues: ValidationIssue[] = template?.validationIssues ?? [];
 
   /**
+   * True while the data on screen is exactly what the last clean validate
+   * sent (see `currentSnapshot`). Drives both header buttons: Validate is
+   * disabled and Save Model enabled only while this holds.
+   */
+  const validated =
+    validatedSnapshot !== null &&
+    validatedSnapshot === currentSnapshot &&
+    validationIssues.length === 0;
+
+  /**
    * Where the last validation-error click should land, as selectors tried in
    * order (the exact row first, then its panel). Prod Dev parity: the target is
    * found once it has rendered — the click also expands whatever was collapsed
@@ -1002,18 +1204,35 @@ const Table: React.FC = () => {
   } | null>(null);
   useEffect(() => {
     if (!errorFocus) return;
+    // Polls for up to ~2s. The MOST specific selector gets the first stretch
+    // to itself — the expand that accompanies the click can take a render or
+    // two to put the row in the DOM, and the panel (always present) must not
+    // win just because it was found first. Each later stretch admits the next
+    // fallback, so a target that never renders still lands near the problem.
+    const MAX_ATTEMPTS = 40;
+    const STEP_MS = 50;
+    const PER_TIER = 8;
     let attempts = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let flashed: HTMLElement | null = null;
+    /** Present AND drawn (a collapsed / display:none node has no boxes). */
+    const visible = (e: HTMLElement | null): e is HTMLElement =>
+      !!e && e.getClientRects().length > 0;
     const tryScroll = (): void => {
+      const tiers = Math.min(
+        errorFocus.selectors.length,
+        1 + Math.floor(attempts / PER_TIER),
+      );
+      const last = attempts >= MAX_ATTEMPTS;
       const el =
         errorFocus.selectors
+          .slice(0, last ? errorFocus.selectors.length : tiers)
           .map((s) => document.querySelector<HTMLElement>(s))
-          .find((e): e is HTMLElement => e !== null) ?? null;
+          .find(visible) ?? null;
       if (!el) {
-        if (attempts < 20) {
+        if (!last) {
           attempts += 1;
-          timer = setTimeout(tryScroll, 50);
+          timer = setTimeout(tryScroll, STEP_MS);
         } else {
           setToast({
             kind: "error",
@@ -1027,6 +1246,11 @@ const Table: React.FC = () => {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.classList.add(FLASH_CLASS);
       flashed = el;
+      // A Key Input target: put the caret in the field too.
+      if (el.matches("[data-key-input]")) {
+        el.querySelector<HTMLInputElement>("input[data-key-input-field]")
+          ?.focus({ preventScroll: true });
+      }
       timer = setTimeout(() => el.classList.remove(FLASH_CLASS), 3000);
     };
     tryScroll();
@@ -1048,6 +1272,7 @@ const Table: React.FC = () => {
       readonly: isReadonly,
       migrating,
       issueCount: validationIssues.length,
+      validated,
     });
   }, [
     publishStatus,
@@ -1056,6 +1281,7 @@ const Table: React.FC = () => {
     migrateError,
     migrating,
     validationIssues.length,
+    validated,
     deleteError,
     deleteSectionError,
     saved,
@@ -1071,16 +1297,17 @@ const Table: React.FC = () => {
   // kept. Reloading here means server-assigned ids for newly added lines and
   // any backend-calculated rows land straight away, and a save the backend
   // silently dropped shows up immediately instead of at the next page reload.
-  // Set when a validation succeeds, so the re-fetch that follows can report
-  // the refreshed issue count once it lands.
-  const reportIssuesRef = useRef(false);
+  //
+  // ONE toast per validate, shown once the re-fetch has landed (Prod Dev
+  // parity): the PUT's own apiMessage when it sent one, as an error if issues
+  // remain and a success otherwise. Toasting success on the PUT and then
+  // overwriting it with an issue count lost the server's message.
+  //
+  // Holds the PUT's message while its re-fetch is outstanding; null otherwise.
+  const reportIssuesRef = useRef<{ message: string | null } | null>(null);
   useEffect(() => {
     if (saved) {
-      setToast({
-        kind: "success",
-        message: validateMessage || "Validation completed successfully.",
-      });
-      reportIssuesRef.current = true;
+      reportIssuesRef.current = { message: validateMessage };
       emitSaved();
       // Silent, matching the reference project's post-save re-fetch: the grid
       // keeps the numbers on screen and swaps them for the server's when they
@@ -1088,18 +1315,26 @@ const Table: React.FC = () => {
       // it can't share a GET that started before the save.
       reload(true, true);
     }
+    // validateMessage is set in the same update as `saved`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saved, reload]);
 
   useEffect(() => {
-    if (!template || !reportIssuesRef.current) return;
-    reportIssuesRef.current = false;
-    const issues = template.validationIssues;
-    if (issues.length) {
-      setToast({
-        kind: "error",
-        message: `${issues.length} validation issue${issues.length > 1 ? "s" : ""} found: ${issues[0].message}`,
-      });
-    }
+    const pending = reportIssuesRef.current;
+    if (!template || !pending) return;
+    reportIssuesRef.current = null;
+    const count = template.validationIssues.length;
+    setToast({
+      kind: count ? "error" : "success",
+      message:
+        pending.message ||
+        (count
+          ? `Validation completed with ${count} error${count === 1 ? "" : "s"}.`
+          : "Validation completed successfully."),
+    });
+    // Save Model unlocks only on a clean result; the snapshot is taken once
+    // the grids have been rebuilt from this response (next render).
+    if (count === 0) setCaptureSnapshot(true);
   }, [template]);
 
   useEffect(() => {
@@ -1117,7 +1352,22 @@ const Table: React.FC = () => {
   // `local_currency`, so it collapses to the USD-only default while the grid
   // shows demo numbers that look real.
   useEffect(() => {
-    if (loadError) setToast({ kind: "error", message: loadError });
+    if (!loadError) return;
+    const pending = reportIssuesRef.current;
+    if (pending) {
+      // The re-fetch after a validate failed: report it as the validate's
+      // outcome, and stop waiting for a response that is not coming (the flag
+      // used to stay set and fire on the next unrelated load).
+      reportIssuesRef.current = null;
+      setToast({
+        kind: "error",
+        message:
+          pending.message ||
+          "Validation completed, but the refreshed data could not be loaded.",
+      });
+      return;
+    }
+    setToast({ kind: "error", message: loadError });
   }, [loadError]);
 
   /**
@@ -1419,19 +1669,45 @@ const Table: React.FC = () => {
   };
 
   /** Editor seed for one row — percentage and NON_FINANCIAL rows are seeded unconverted. */
+  // Every seed is spelled with the ACTIVE format's decimal separator, because
+  // that is how the commit parses it back (`parseDisplayInput`): a "." seed
+  // under a "," format reads as grouping, so 12.5 would come back as 125.
   const cellSeed = (row: Row, raw: string | undefined): string => {
     const value = raw ?? "";
-    if (isPercentRow(identityOf(row))) {
-      return value === "" || Number(value) === 0 ? "" : value;
-    }
-    if (isNonFinancialRow(identityOf(row))) {
+    if (isPercentRow(identityOf(row)) || isNonFinancialRow(identityOf(row))) {
       // The exact stored value (2.35 reopens as 2.35) — no 3-decimal editor
-      // rounding, only float noise trimmed.
+      // rounding, only float noise trimmed. Percentages are never scaled.
       const n = Number(value);
       if (value.trim() === "" || !Number.isFinite(n)) return "";
-      return trimNonFinancial(n) === 0 ? "" : nonFinancialPlain(n);
+      return trimNonFinancial(n) === 0
+        ? ""
+        : toLocalDecimal(nonFinancialPlain(n), numberFormat);
     }
-    return formatBaseToEditable(value);
+    return toLocalDecimal(formatBaseToEditable(value), numberFormat);
+  };
+
+  /**
+   * Keystroke filter for a row's cells (Prod Dev: reject, don't rewrite).
+   * Percentage rows: digits, one decimal separator of the active format, an
+   * optional leading "-", at most 2 decimals and magnitude <= 100.
+   * NON_FINANCIAL rows: digits, one decimal separator, optional leading "-".
+   * Money rows keep the default filter (number characters only), since their
+   * typed text may legitimately carry grouping or accounting parentheses.
+   */
+  const cellAccept = (row: Row): ((text: string) => boolean) | undefined => {
+    if (isPercentRow(identityOf(row))) {
+      return (text) =>
+        isPartialNumberInput(text, numberFormat, {
+          allowNegative: true,
+          maxDecimals: 2,
+          maxAbs: 100,
+        });
+    }
+    if (isNonFinancialRow(identityOf(row))) {
+      return (text) =>
+        isPartialNumberInput(text, numberFormat, { allowNegative: true });
+    }
+    return undefined;
   };
 
   /* ─────────────────────── Shared grid body renderer ───────────────────
@@ -1593,6 +1869,11 @@ const Table: React.FC = () => {
             <tr
               className={rowBgClass(locked)}
               data-line-id={row.lineId ?? undefined}
+              // Lets a SECTION error land on the section's first row in grids
+              // that draw no section bar (Free Cash Flows, Post Tax Return).
+              data-section-row={
+                startsSection ? (row.sectionId ?? undefined) : undefined
+              }
               title={issueTextFor(row.lineId) ?? undefined}
               style={
                 issueTextFor(row.lineId)
@@ -1648,6 +1929,7 @@ const Table: React.FC = () => {
                     col={i}
                     value={cellText(row, row.values[i])}
                     editValue={cellSeed(row, row.values[i])}
+                    accept={cellAccept(row)}
                     readOnly={locked}
                     calculated={!!row.isCalculated}
                   />
@@ -1909,29 +2191,28 @@ const Table: React.FC = () => {
         ) {
           const target = next[rr];
           if (isPercentRow(identityOf(target))) {
-            // Percentages bypass the currency/scale parse and are forced into
-            // [0, 100] — a safety net for paste, which skips the keystroke
-            // check the editor applies.
-            const trimmed = String(cell).trim();
-            if (trimmed === "") {
-              target.values[cc] = "";
-            } else if (isValidPercentInput(trimmed)) {
-              target.values[cc] = trimmed;
-            } else {
-              const n = Number(trimmed.replace(/[^0-9.-]/g, ""));
-              target.values[cc] = Number.isFinite(n)
-                ? String(clampPercent(n))
-                : "";
-            }
+            // Percentages bypass the currency/scale parse. Parsed in the
+            // ACTIVE number format — "12,5" under EU is 12.5, not 125 — with
+            // accounting parentheses read as negative ("(5)" is -5), a "%"
+            // tolerated, then bounded to ±100 at 2dp as a safety net for paste.
+            // Only edited cells get here: an untouched cell is not
+            // re-committed (SpreadsheetCell), so tabbing through a row no
+            // longer rewrites it.
+            const parsed = parseDisplayInput(
+              String(cell).replace(/%/g, ""),
+              numberFormat,
+            );
+            target.values[cc] =
+              parsed.value === null ? "" : String(clampPercent(parsed.value));
           } else if (isNonFinancialRow(identityOf(target))) {
-            // NON_FINANCIAL bypasses the currency/scale parse — stored as the raw number.
-            const trimmed = String(cell).trim();
-            if (trimmed === "") {
-              target.values[cc] = "";
-            } else {
-              const n = Number(trimmed.replace(/[^0-9.-]/g, ""));
-              target.values[cc] = Number.isFinite(n) ? String(n) : "";
-            }
+            // NON_FINANCIAL bypasses the currency/scale parse — stored as the
+            // raw number, parsed in the active number format like the rest.
+            const parsed = parseDisplayInput(
+              String(cell).replace(/%/g, ""),
+              numberFormat,
+            );
+            target.values[cc] =
+              parsed.value === null ? "" : String(parsed.value);
           } else {
             target.values[cc] = a.parse(cell);
           }
@@ -2215,6 +2496,7 @@ const Table: React.FC = () => {
       ["fcf", fcfRows],
       ["ptr", ptrRows],
       ["cus", cusRows],
+      ["npv", npvRows],
     ];
     const expand = (gridId: string, row?: Row) => {
       setCollapsedPanels((prev) => {
@@ -2255,7 +2537,10 @@ const Table: React.FC = () => {
       focus([
         `[data-line-id="${issue.lineId}"]`,
         ...(issue.sectionId != null
-          ? [`[data-section-id="${issue.sectionId}"]`]
+          ? [
+              `[data-section-id="${issue.sectionId}"]`,
+              `[data-section-row="${issue.sectionId}"]`,
+            ]
           : []),
         ...(panel ? [`[data-panel="${panel}"]`] : []),
       ]);
@@ -2272,9 +2557,11 @@ const Table: React.FC = () => {
         }
       }
       // Single-section grids (Free Cash Flows, Post Tax Return) draw no
-      // section bar of their own, so their panel is the target.
+      // section bar of their own: the section's first row is the target
+      // there, and the panel after that.
       focus([
         `[data-section-id="${issue.sectionId}"]`,
+        `[data-section-row="${issue.sectionId}"]`,
         ...(panel ? [`[data-panel="${panel}"]`] : []),
       ]);
       return;
@@ -2288,7 +2575,36 @@ const Table: React.FC = () => {
       ]);
       return;
     }
-    if (issue.header) focus([`[data-panel="key"]`]);
+    if (issue.header) {
+      // A header error usually names one Key Input ("Discount rate …",
+      // "WACC …"): land on that field, else on the panel.
+      const input = keyInputOfMessage(issue.message);
+      focus([
+        ...(input ? [`[data-key-input="${input}"]`] : []),
+        `[data-panel="key"]`,
+      ]);
+    }
+  };
+
+  /**
+   * The Key Input a header-level message is about, by its label or its code
+   * spelled as words ("DISCOUNT_RATE" -> "discount rate"), longest match first
+   * so "Terminal growth rate" wins over a shorter label it contains.
+   */
+  const keyInputOfMessage = (message: string): string | null => {
+    const text = ` ${message.toLowerCase().replace(/[^a-z0-9%]+/g, " ")} `;
+    const words = (s: string) =>
+      ` ${s.toLowerCase().replace(/[^a-z0-9%]+/g, " ").trim()} `;
+    let best: { code: string; len: number } | null = null;
+    keyInputs.forEach((k) => {
+      [k.label, k.code].forEach((name) => {
+        const w = words(name ?? "");
+        if (w.trim() && text.includes(w) && (!best || w.length > best.len)) {
+          best = { code: k.code, len: w.length };
+        }
+      });
+    });
+    return (best as { code: string; len: number } | null)?.code ?? null;
   };
 
   /**
@@ -2526,7 +2842,11 @@ const Table: React.FC = () => {
                   </thead>
                   <tbody>
                     {keyInputs.map((input) => (
-                      <tr key={input.code} className={rowBgClass(false)}>
+                      <tr
+                        key={input.code}
+                        className={rowBgClass(false)}
+                        data-key-input={input.code}
+                      >
                         <td className={`mna:h-10 mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:align-middle ${TEMPLATE_LABEL_CLASS}`}>
                           {input.label}
                         </td>
@@ -2535,7 +2855,10 @@ const Table: React.FC = () => {
                             <PercentInput
                               value={input.value}
                               onValueChange={(v) => setKeyInputValue(input.code, v)}
+                              numberFormat={numberFormat}
+                              allowNegative={keyInputAllowsNegative(input.code)}
                               readOnly={isReadonly}
+                              inputCode={input.code}
                             />
                             <span className="mna:text-sm mna:text-slate-500">%</span>
                           </div>
@@ -2674,7 +2997,12 @@ const Table: React.FC = () => {
                     const locked = isRowLocked(row, isReadonly);
                     if (npvHidden.has(row.id)) return null;
                     return (
-                      <tr key={row.id} className={rowBgClass(locked)}>
+                      <tr
+                        key={row.id}
+                        className={rowBgClass(locked)}
+                        data-line-id={row.lineId ?? undefined}
+                        data-npv-key={row.apiKey}
+                      >
                         <td className="mna:h-10 mna:overflow-hidden mna:border-b mna:border-r mna:border-[#e5e7eb] mna:px-3 mna:align-middle">
                           {locked ? (
                             <div
@@ -2704,6 +3032,7 @@ const Table: React.FC = () => {
                               className="mna:w-full mna:text-right"
                               value={cellText(row, row.values[c])}
                               editValue={cellSeed(row, row.values[c])}
+                              accept={cellAccept(row)}
                               readOnly={locked}
                               calculated={!!row.isCalculated}
                             />

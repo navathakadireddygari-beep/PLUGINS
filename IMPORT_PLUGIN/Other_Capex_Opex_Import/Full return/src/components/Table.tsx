@@ -7,6 +7,7 @@ import type {} from "../types/fin-eval-bridge";
 import {
   getFinancialData,
   importFinancialData,
+  buildStagingPutPayload,
   migrateFinEvalStaging,
   clearCachedToken,
   getAccountCodes,
@@ -73,6 +74,69 @@ const toggleBtn = (active: boolean, first: boolean): React.CSSProperties => ({
 const FIN_CELL_CLASS = "fin-cell-input";
 
 const generateId  = (): string => `id-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
+// What Validate PUTs, as a string — used to tell whether the data changed
+// since the last clean validate. The display-currency toggle is a view
+// setting, so switching it doesn't force a re-validate.
+const payloadSnapshot = (table: PivotTableData, header: ApiHeader): string =>
+  JSON.stringify(buildStagingPutPayload(table, { ...header, display_currency: "" }));
+
+/* ── Validation errors surfaced by the GET API ───────────────────────
+   One entry per "|"-separated piece of each header/section/line's own
+   errorMessage, tagged with where it came from so a click can navigate
+   there. Endpoints use different terms for a failing status ("ERROR",
+   "INVALID", "E", …), so any object carrying an error_message counts
+   unless its status is explicitly valid. File-level messages that no
+   object already carries (e.g. a section missing from the upload) are
+   appended last. */
+type ValidationError = {
+  id:           string;
+  message:      string;
+  isHeader?:    boolean;
+  headerField?: string;  // data-kpi-field of the Financial Parameters input
+  groupId?:     string;  // owning section (Group.id)
+  lineId?:      string;  // ValueRow.id — matches data-line-id
+};
+
+const VALID_STATUSES = new Set(["VALID", "SUCCESS", "S", "PASS", "PASSED", "OK"]);
+const isFailingStatus = (status?: string | null): boolean =>
+  !VALID_STATUSES.has((status || "").trim().toUpperCase());
+const splitErrors = (msg?: string | null): string[] =>
+  (msg || "").split("|").map((m) => m.trim()).filter(Boolean);
+
+// Header error code → Financial Parameters field; falls back to the wording.
+const HEADER_ERROR_FIELD_MAP: Record<string, string> = { FE_HDR_HURDLE: "hurdle_rate_percent" };
+const headerFieldFor = (code: string | null | undefined, message: string): string | undefined =>
+  HEADER_ERROR_FIELD_MAP[(code || "").toUpperCase()] ??
+  (/hurdle/i.test(message)                ? "hurdle_rate_percent"
+  : /discount/i.test(message)             ? "discount_rate_percent"
+  : /share\s*re-?purchase/i.test(message) ? "share_repurchase_percent"
+  : undefined);
+
+function collectValidationErrors(table: PivotTableData | null, header: ApiHeader | null): ValidationError[] {
+  const out: ValidationError[] = [];
+  if (header && isFailingStatus(header.validation_status)) {
+    splitErrors(header.error_message).forEach((message, i) =>
+      out.push({ id: `header-${i}`, message, isHeader: true, headerField: headerFieldFor(header.error_code, message) }));
+  }
+  table?.groups.forEach((g) => {
+    if (isFailingStatus(g.validationStatus)) {
+      splitErrors(g.errorMessage).forEach((message, i) => out.push({ id: `sec-${g.id}-${i}`, message, groupId: g.id }));
+    }
+    g.values.forEach((v) => {
+      if (isFailingStatus(v.validationStatus)) {
+        splitErrors(v.errorMessage).forEach((message, i) => out.push({ id: `line-${v.id}-${i}`, message, groupId: g.id, lineId: v.id }));
+      }
+    });
+  });
+  const seen = new Set(out.map((e) => e.message));
+  splitErrors(header?.file_error_message).forEach((message, i) => {
+    if (seen.has(message)) return;
+    seen.add(message);
+    out.push({ id: `file-${i}`, message });
+  });
+  return out;
+}
 
 /* ─────────────────────────── Searchable Account Code Select ─────── */
 function AccountCodeSelect({
@@ -333,8 +397,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [saveError,    setSaveError]    = useState<string | null>(null);
   const [toast,        setToast]        = useState<ToastState>(null);
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
-  const [errorNav,          setErrorNav]          = useState<{ groupId: string; valueId?: string } | null>(null);
-  const [highlightedLineId, setHighlightedLineId] = useState<string | null>(null);
+  const [highlightLineId,      setHighlightLineId]      = useState<string | null>(null);
+  const [highlightHeaderField, setHighlightHeaderField] = useState<string | null>(null);
+  // PUT payload of the last clean validate (no API error, no validation
+  // errors). Save Model is only enabled — and Validate disabled — while the
+  // current data still matches it; any edit after validating needs a re-validate.
+  const [validatedSnapshot,    setValidatedSnapshot]    = useState<string | null>(null);
 
   const [activeAutocomplete, setActiveAutocomplete] = useState<string | null>(null);
   const [autocompleteSearch, setAutocompleteSearch] = useState<string>("");
@@ -641,26 +709,43 @@ export default function PivotTableWithAPI(): React.ReactElement {
     tryScroll();
   }, [data, scrollTarget]);
 
-  /* ── Validation error banner: click-to-navigate + highlight ─────
-     Expands the offending section, scrolls to the specific line (or
-     the section header when there's no line-level target), and flashes
-     a yellow highlight on the line so the user can find where to edit. */
+  /* ── Validation error click → scroll to + highlight the line row ──
+     Retries briefly: the row only mounts once its section (and the P&L
+     parent, for a sub-section) has re-rendered expanded. */
   useEffect(() => {
-    if (!errorNav) return;
-    setData((p) => p ? { ...p, groups: p.groups.map((g) => g.id === errorNav.groupId ? { ...g, expanded: true } : g) } : p);
+    if (!highlightLineId) return;
+    let attempts = 0;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const tryScroll = (): void => {
+      const el = document.querySelector<HTMLElement>(`[data-line-id="${highlightLineId}"]`);
+      if (el) {
+        el.style.scrollMarginTop = "120px";
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (attempts < 20) {
+        attempts++;
+        retry = setTimeout(tryScroll, 50);
+      }
+    };
+    tryScroll();
+    const t = setTimeout(() => setHighlightLineId(null), 3000);
+    return () => { clearTimeout(t); if (retry) clearTimeout(retry); };
+  }, [highlightLineId]);
 
-    const selector = errorNav.valueId
-      ? `[data-error-line-id="${errorNav.valueId}"]`
-      : `[data-error-group-id="${errorNav.groupId}"]`;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>(selector)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }));
-
-    if (!errorNav.valueId) return;
-    setHighlightedLineId(errorNav.valueId);
-    const t = setTimeout(() => setHighlightedLineId(null), 4000);
+  /* ── Validation error click → scroll to a Financial Parameters field ── */
+  useEffect(() => {
+    if (!highlightHeaderField) return;
+    const el = document.querySelector<HTMLElement>(`[data-kpi-field="${highlightHeaderField}"]`);
+    if (el) {
+      el.style.scrollMarginTop = "120px";
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus?.();
+    } else {
+      // Field not rendered — bring the top of the widget (KPI cards) into view.
+      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    const t = setTimeout(() => setHighlightHeaderField(null), 3000);
     return () => clearTimeout(t);
-  }, [errorNav]);
+  }, [highlightHeaderField]);
 
   /* ── Silent re-fetch — replace local state with the server result. ──
      After a successful save/validate the backend holds the source of
@@ -668,7 +753,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
      included, even empty ones), so we adopt it wholesale — exactly what
      a page reload does. We only carry over each section's expanded/
      collapsed state so the view doesn't jump. */
-  const silentRefetch = useCallback(async (cfg: AppConfig, label: string): Promise<void> => {
+  const silentRefetch = useCallback(async (cfg: AppConfig, label: string): Promise<Awaited<ReturnType<typeof getFinancialData>> | null> => {
     try {
       const refetched = await getFinancialData(cfg, { force: true });
       console.log(`[${label}] re-fetch groups:`, refetched.table.groups.length,
@@ -698,8 +783,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
       // Always update the header so KPIs, exchange rate, etc. reflect server state.
       setRawHeader(refetched.rawHeader);
+      return refetched;
     } catch (e) {
       console.error(`[${label}] re-fetch failed`, e);
+      return null;
     }
   }, []);
 
@@ -723,13 +810,24 @@ export default function PivotTableWithAPI(): React.ReactElement {
     }
     setValidating(true);
     setSaveError(null);
+    setValidatedSnapshot(null);
     try {
       const response = await importFinancialData(cfg, data, rawHeader);
+      const apiMessage = (response as any).apiMessage || response.api_message || "";
+      const refetched = await silentRefetch(cfg, "validateDraft");
+      if (!refetched) {
+        setToast({ kind: "error", message: apiMessage || "Validation completed, but the refreshed data could not be loaded." });
+        return;
+      }
+      const errors = collectValidationErrors(refetched.table, refetched.rawHeader);
+      // Save Model unlocks only when validation came back clean.
+      if (errors.length === 0) setValidatedSnapshot(payloadSnapshot(refetched.table, refetched.rawHeader));
       setToast({
-        kind: "success",
-        message: ((response as any).apiMessage || response.api_message || "") || "Financial evaluation validated successfully.",
+        kind: errors.length ? "error" : "success",
+        message: apiMessage || (errors.length
+          ? `Validation completed with ${errors.length} error${errors.length === 1 ? "" : "s"}.`
+          : "Financial evaluation validated successfully."),
       });
-      await silentRefetch(cfg, "validateDraft");
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown validation error";
@@ -744,6 +842,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
      POST to finEvalStagingMigrate to migrate staged data, then re-fetch. */
   const saveDraft = useCallback(async (): Promise<void> => {
     if (!data || !rawHeader) return;
+    if (validatedSnapshot !== payloadSnapshot(data, rawHeader) || collectValidationErrors(data, rawHeader).length > 0) {
+      setToast({ kind: "error", message: "Please validate the data successfully before saving the model." });
+      return;
+    }
     const cfg = getAppConfig();
     if (!cfg.proposal_id) {
       setToast({
@@ -784,7 +886,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     } finally {
       setSavingDraft(false);
     }
-  }, [data, rawHeader, silentRefetch]);
+  }, [data, rawHeader, validatedSnapshot]);
 
   // AppBridge event listeners.
   // "fin-eval" — commands from sibling plugins using our typed action names.
@@ -886,7 +988,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   // Rows shown as-is, with no fx / K-M-B scale: Tax Rate %, and any line whose
   // name contains "%" (EBIT Margin %, custom % rows, …).
-  const isUnscaledRow = (v: ValueRow): boolean => isTaxRateRow(v) || /%/.test(v.name ?? "");
+  const isUnscaledRow = (v: ValueRow): boolean => isTaxRateRow(v) || isPercentRow(v);
 
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like Tax Rate %.
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
@@ -1014,24 +1116,53 @@ export default function PivotTableWithAPI(): React.ReactElement {
   /* ── Calculations (from line-level data populated by API) ─────── */
   const numYears   = data.years.length;
 
-  /* ── Validation errors surfaced by the GET API (header/section/line
-     validationStatus + errorMessage) — rendered as a banner above the
-     KPI panel; clicking an entry expands + scrolls to + highlights the
-     offending section/line (see the errorNav effect above). */
-  const validationErrors: { id: string; message: string; groupId?: string; valueId?: string }[] = [];
-  if (rawHeader?.validation_status === "INVALID" && rawHeader.error_message) {
-    validationErrors.push({ id: "header", message: rawHeader.error_message });
-  }
-  data.groups.forEach((g) => {
-    if (g.validationStatus === "INVALID" && g.errorMessage) {
-      validationErrors.push({ id: `sec-${g.id}`, message: g.errorMessage, groupId: g.id });
+  /* ── Validation errors surfaced by the GET API — rendered as a banner
+     above the KPI panel (see collectValidationErrors). Clicking an entry
+     navigates to it: header → Financial Parameters field (or widget top),
+     section → expand + scroll to its header row, line → expand its
+     section (and the P&L parent of a sub-section) + scroll + highlight. */
+  const validationErrors = collectValidationErrors(data, rawHeader);
+
+  const expandForNav = (groupId: string): void => {
+    const owner = data.groups.find((g) => g.id === groupId);
+    const parentId = owner && isSubSection(owner) ? sectionTree.pnl?.id : undefined;
+    setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === groupId || g.id === parentId ? { ...g, expanded: true } : g) }) : p);
+  };
+
+  const goToError = (err: ValidationError): void => {
+    if (err.isHeader) {
+      if (err.headerField) setHighlightHeaderField(err.headerField);
+      else containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
     }
-    g.values.forEach((v) => {
-      if (v.validationStatus === "INVALID" && v.errorMessage) {
-        validationErrors.push({ id: `line-${v.id}`, message: v.errorMessage, groupId: g.id, valueId: v.id });
-      }
-    });
-  });
+    if (!err.groupId) return;
+    expandForNav(err.groupId);
+    const owner = data.groups.find((g) => g.id === err.groupId);
+    // Calculated rows of a non-financial section aren't rendered — fall back to the section.
+    const lineHidden = !!owner && isNonFinancialSection(owner) && owner.values.some((v) => v.id === err.lineId && v.isCalculated === "Y");
+    if (err.lineId && !lineHidden) {
+      setHighlightLineId(err.lineId);
+      return;
+    }
+    if (owner?.sectionId != null) {
+      setScrollTarget(String(owner.sectionId));
+      return;
+    }
+    // No DB id (shouldn't happen for a server-validated section) — scroll by group id.
+    let attempts = 0;
+    const tryScroll = (): void => {
+      const el = document.querySelector<HTMLElement>(`[data-error-group-id="${err.groupId}"]`);
+      if (el) { el.style.scrollMarginTop = "120px"; el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      else if (attempts++ < 20) setTimeout(tryScroll, 50);
+    };
+    tryScroll();
+  };
+
+  // Validate → (clean) → Save Model. Unchanged data after a clean validate
+  // keeps Validate disabled; any edit re-enables it and locks Save Model again.
+  const isValidated       = validatedSnapshot !== null && !!rawHeader && validationErrors.length === 0 && validatedSnapshot === payloadSnapshot(data, rawHeader);
+  const validateDisabled  = validating || savingDraft || loading || isValidated;
+  const saveModelDisabled = savingDraft || validating || loading || !isValidated;
 
   /* ── Arrow-key cell navigation ───────────────────────────────
      Every navigable cell (line name, year value, row total — editable or
@@ -1300,11 +1431,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
         </div>
       )}
 
-      {/* Save error banner */}
+      {/* Validate / save error banner — full API message, wrapped */}
       {saveError && (
-        <div style={{ marginBottom: 12, padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, color: "#dc2626", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <span><strong>Save failed:</strong> {saveError}</span>
-          <button type="button" onClick={() => setSaveError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626" }}><X size={12} /></button>
+        <div style={{ marginBottom: 12, padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, color: "#dc2626", fontSize: 12, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+          <span style={{ flex: 1, minWidth: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}><strong>Error:</strong> {saveError}</span>
+          <button type="button" onClick={() => setSaveError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", flexShrink: 0 }}><X size={12} /></button>
         </div>
       )}
 
@@ -1328,8 +1459,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
               id="fin-eval-validate-btn"
               type="button"
               onClick={validateDraft}
-              disabled={validating || loading}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: validating || loading ? "not-allowed" : "pointer", opacity: validating || loading ? 0.7 : 1 }}
+              disabled={validateDisabled}
+              title={isValidated ? "Validated — edit the data to validate again." : undefined}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: validateDisabled ? "not-allowed" : "pointer", opacity: validateDisabled ? 0.7 : 1 }}
             >
               <Check size={14} style={validating ? { animation: "spin 1s linear infinite" } : {}} />
               {validating ? "Validating…" : "Validate"}
@@ -1340,9 +1472,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
               id="fin-eval-save-model-btn"
               type="button"
               onClick={saveDraft}
-              disabled={savingDraft || loading || validationErrors.length > 0}
-              title={validationErrors.length > 0 ? "Resolve all validation errors before saving" : undefined}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 700, background: "#fff", color: "#000", cursor: savingDraft || loading || validationErrors.length > 0 ? "not-allowed" : "pointer", opacity: savingDraft || loading ? 0.7 : validationErrors.length > 0 ? 0.4 : 1 }}
+              disabled={saveModelDisabled}
+              title={validationErrors.length > 0 ? "Resolve all validation errors before saving the model." : !isValidated ? "Validate the data successfully before saving the model." : undefined}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 700, background: "#fff", color: "#000", cursor: saveModelDisabled ? "not-allowed" : "pointer", opacity: savingDraft || validating || loading ? 0.7 : saveModelDisabled ? 0.4 : 1 }}
             >
               <Save size={14} style={savingDraft ? { animation: "spin 1s linear infinite" } : {}} />
               {savingDraft ? "Saving…" : "Save Model"}
@@ -1471,15 +1603,19 @@ export default function PivotTableWithAPI(): React.ReactElement {
             {validationErrors.length} validation error{validationErrors.length === 1 ? "" : "s"}
           </div>
           <div style={{ maxHeight: validationErrors.length > 4 ? 140 : undefined, overflowY: validationErrors.length > 4 ? "auto" : undefined }}>
-            {validationErrors.map((err, i) => (
-              <div
-                key={err.id}
-                onClick={() => err.groupId && setErrorNav({ groupId: err.groupId, valueId: err.valueId })}
-                style={{ padding: "6px 16px", color: "#b91c1c", fontSize: 12, cursor: err.groupId ? "pointer" : "default" }}
-              >
-                <strong>{i + 1}.</strong> {err.message}
-              </div>
-            ))}
+            {validationErrors.map((err, i) => {
+              const hasTarget = !!(err.isHeader || err.groupId);
+              return (
+                <div
+                  key={err.id}
+                  onClick={() => hasTarget && goToError(err)}
+                  title={hasTarget ? "Go to error" : undefined}
+                  style={{ padding: "6px 16px", color: "#b91c1c", fontSize: 12, cursor: hasTarget ? "pointer" : "default" }}
+                >
+                  <strong>{i + 1}.</strong> {err.message}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -1493,6 +1629,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
           numberFormat={numberFormat}
           isReadonly={isReadonly}
           fxRate={fxRate}
+          highlightField={highlightHeaderField}
         />
       )}
 
@@ -1631,7 +1768,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     const renderEditable = (value: ValueRow, _idx: number) => {
                       const acKey = `${group.id}|${value.id}`;
                       const isAC  = activeAutocomplete === acKey;
-                      const bg    = value.id === highlightedLineId ? "#FEF3C7" : "#fff";
+                      const bg    = value.id === highlightLineId ? "#FEF3C7" : "#fff";
                       // Non-custom lines (is_custom === "N") come from the template and
                       // must not have their name edited — on top of the read-only rule.
                       const nameLocked = isReadonly || value.isCustom === "N";
@@ -1639,7 +1776,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       // rows) rather than a greyed-out input box.
                       const isTemplateName = value.isCustom === "N";
                       return (
-                        <tr key={value.id} data-error-line-id={value.id} style={{ background: bg, transition: "background 0.3s" }}>
+                        <tr key={value.id} data-line-id={value.id} style={{ background: bg, transition: "background 0.3s" }}>
                           <td style={{ ...TD, padding: sub ? `4px 0 4px ${SUB_INDENT}px` : "4px 0", ...subGutter(sub), textAlign: "center", verticalAlign: "middle" }}>
                             {!isReadonly && value.isMandatory !== "Y" && value.isCustom !== "N" && (
                               <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, vId: value.id, name: value.name, kind: "line" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={12} /></button>
@@ -1747,7 +1884,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     const calcRest        = calc.filter((v) => v.lineType !== "INITIAL_CAPEX");
 
                     const renderCalcRow = (value: ValueRow) => (
-                      <tr key={value.id} style={{ background: "#f3f4f6" }}>
+                      <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#FEF3C7" : "#f3f4f6", transition: "background 0.3s" }}>
                         <td colSpan={3 + assetSpan(group)} style={{ ...TD, padding: sub ? `8px 12px 8px ${ICON_COL + 12 + SUB_INDENT}px` : "8px 12px", ...subGutter(sub) }}>
                           <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={value.name} style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} />
                         </td>
@@ -1778,7 +1915,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {ongoingEditable.map((v, i) => renderEditable(v, regularEditable.length + i))}
                         {calcRest.map(renderCalcRow)}
                       </>) : calc.map((value: ValueRow) => (
-                        <tr key={value.id} style={{ background: "#f3f4f6" }}>
+                        <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#FEF3C7" : "#f3f4f6", transition: "background 0.3s" }}>
                           <td colSpan={3 + assetSpan(group)} style={{ ...TD, padding: sub ? `10px 14px 10px ${ICON_COL + 12 + SUB_INDENT}px` : "10px 14px", ...subGutter(sub) }}>
                             <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={value.name} style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} />
                           </td>

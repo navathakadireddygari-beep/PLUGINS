@@ -118,6 +118,13 @@ export const isValidPercentInput = (s: string): boolean => {
   return Number.isFinite(n) && n >= 0 && n <= 100;
 };
 
-/** Safety net for paste: force into [0, 100] at 2 decimal places. */
+/**
+ * Safety net for a typed / pasted percentage: magnitude at most 100, 2 decimal
+ * places. Negatives are kept — margins and growth rates go below zero (the
+ * grid renders them as "(29%)") — so "(5)" or "-5" stays -5 rather than 0.
+ * Only applied to a value the user actually changed: an untouched cell is
+ * never re-committed (see SpreadsheetCell), so stored figures outside this
+ * range (a server-computed 140%) are left exactly as they are.
+ */
 export const clampPercent = (n: number): number =>
-  Math.min(100, Math.max(0, Math.round(n * 100) / 100));
+  Math.min(100, Math.max(-100, Math.round(n * 100) / 100));

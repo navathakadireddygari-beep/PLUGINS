@@ -14,7 +14,11 @@ import {
   sectionIndexOfKey,
   type NewLineEdit,
 } from "@/api/financial-api";
-import { collectGridRows, type CollectableRow } from "@/lib/save-collect";
+import {
+  collectGridRows,
+  newLinesError,
+  type CollectableRow,
+} from "@/lib/save-collect";
 import type { FinancialEvaluationResponse } from "@/types";
 
 let pass = 0;
@@ -164,23 +168,79 @@ for (const label of [
   eq("leading/trailing space trimmed", newLines[0]?.name, "Padded label");
 }
 
-/* ── 5. rows that must NOT be sent ───────────────────────────────────── */
-console.log("\n5. Unnamed rows are placeholders, not data");
+/* ── 5. unnamed rows: placeholder vs. data the save must refuse ──────── */
+console.log("\n5. Unnamed rows are never sent; ones with figures block the save");
+const collect = (rows: CollectableRow[]) => {
+  const yearValues: Record<string, Record<string, string>> = {};
+  const newLines: NewLineEdit[] = [];
+  const issues = collectGridRows(rows, COLS, FY, sectionIndexOfKey, yearValues, newLines);
+  return { newLines, issues };
+};
 for (const [label, why] of [["", "empty"], ["   ", "whitespace only"]] as const) {
   const { newLines, payload } = save(gridWith(label));
   eq(`${why} label -> not collected`, newLines.length, 0);
   eq(`${why} label -> not in the body`, linesOf(payload).length, 3);
+  // ...but it had figures, so the save is refused rather than dropping them.
+  const { issues } = collect(gridWith(label));
+  eq(`${why} label with figures -> counted`, issues.unnamedLines, 1);
+  eq(`${why} label with figures -> save blocked`,
+     newLinesError(issues),
+     "Cannot save — a new line has figures but no name. Enter a line name or delete the line.");
 }
-// A row added before any template row has no section to attach to.
 {
-  const orphan: CollectableRow[] = [
-    { label: "Stranded", values: ["1", "1", "1"] },
+  // A blank row nobody typed into is a placeholder: no error, nothing sent.
+  const { newLines, issues } = collect(gridWith("", ["", "", ""]));
+  eq("blank placeholder -> not collected", newLines.length, 0);
+  eq("blank placeholder -> no error", newLinesError(issues), null);
+}
+// A row added before any template row attaches to the grid's first section,
+// directly above the first template row.
+{
+  const top: CollectableRow[] = [
+    { label: "Top line", values: ["5", "5", "5"] },
     { apiKey: "s0l0", label: "Standalone Revenues", values: ["1", "1", "1"] },
+    { apiKey: "s0l1", label: "Experian Factor Revenues", values: ["1", "1", "1"] },
+    { apiKey: "s0l2", label: "Revenue (Total)", values: ["1", "1", "1"] },
   ];
+  const { newLines, issues } = collect(top);
+  eq("row above every template row is collected", newLines.length, 1);
+  eq("  into the first section", newLines[0]?.sectionIndex, 0);
+  eq("  no afterKey", newLines[0]?.afterKey, undefined);
+  eq("  anchored above the first line", newLines[0]?.beforeKey, "s0l0");
+  eq("  no issues", newLinesError(issues), null);
+  const payload = buildFinancialEvaluationPayload(raw, { newLines });
+  eq("  lands first in the body", linesOf(payload).map((l) => l.line_item_name), [
+    "Top line", "Standalone Revenues", "Experian Factor Revenues", "Revenue (Total)",
+  ]);
+}
+// A grid with no template rows at all has nowhere to put the line: refused.
+{
+  const { newLines, issues } = collect([{ label: "Stranded", values: ["1", "1", "1"] }]);
+  eq("no template row -> not collected", newLines.length, 0);
+  eq("no template row -> counted", issues.unattachedLines, 1);
+  eq("no template row -> save blocked", newLinesError(issues) !== null, true);
+}
+// The row's own section wins over position: a row at the top of section 1
+// (all of whose lines are calculated) sits under section 0's last row.
+{
+  const rows: CollectableRow[] = [
+    { apiKey: "s0l0", label: "Standalone Revenues", values: ["1", "1", "1"] },
+    { label: "Cost line", sectionKey: "s1", values: ["2", "2", "2"] },
+    { apiKey: "s1l0", label: "Total Costs", values: ["1", "1", "1"] },
+  ];
+  const { newLines } = collect(rows);
+  eq("own section used", newLines[0]?.sectionIndex, 1);
+  eq("  anchored above its section's first line", newLines[0]?.beforeKey, "s1l0");
+  eq("  no cross-section afterKey", newLines[0]?.afterKey, undefined);
+}
+// Hidden years still go out: a narrowed view must not drop a new line's values.
+{
   const yearValues: Record<string, Record<string, string>> = {};
   const newLines: NewLineEdit[] = [];
-  collectGridRows(orphan, COLS, FY, sectionIndexOfKey, yearValues, newLines);
-  eq("row above every template row is skipped", newLines.length, 0);
+  collectGridRows(gridWith("Licensing revenue"), [0], FY, sectionIndexOfKey, yearValues, newLines);
+  eq("all years collected with one column shown", newLines[0]?.yearValues, {
+    fy25: "11", fy26: "22", fy27: "33",
+  });
 }
 
 /* ── 6. edits to existing rows still ride along ──────────────────────── */

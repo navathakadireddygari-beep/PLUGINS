@@ -81,5 +81,17 @@ eq("PUT blob keeps snake_case codes", snakeBody.mAKeyInputs.inputs[0].input_code
 eq("PUT blob carries the edited value", snakeBody.mAKeyInputs.inputs[0].value, 4);
 eq("no source column -> header untouched", snakeBody.terminalGrowthRatePercent, "2");
 
+/* ── 3. a cleared input is sent as null, not the stale header value ───── */
+console.log("\n3. Clearing Discount / Tax actually clears them");
+{
+  const cleared = buildFinancialEvaluationPayload(camel.raw!, {
+    keyInputs: { DISCOUNT_RATE: "", TAX_RATE: "" },
+  }) as any;
+  eq("discount_rate_percent cleared", cleared.discount_rate_percent, null);
+  eq("tax_rate_percent cleared", cleared.tax_rate_percent, null);
+  const untouched = buildFinancialEvaluationPayload(camel.raw!, {}) as any;
+  eq("not sent -> header echoed", untouched.discount_rate_percent, "10.8");
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) throw new Error(`${fail} key-inputs-save check(s) failed`);

@@ -172,7 +172,8 @@ for (const [label, why] of [["", "empty"], ["   ", "whitespace only"]] as const)
   eq(`${why} label -> name sent trimmed`, newLines[0]?.name, "");
   eq(`${why} label -> in the body`, linesOf(payload).length, 4);
 }
-// A row added before any template row has no section to attach to.
+// A row added before any template row attaches to the first section and is
+// placed ahead of its first template line (it used to be skipped outright).
 {
   const orphan: CollectableRow[] = [
     { label: "Stranded", values: ["1", "1", "1"] },
@@ -181,7 +182,25 @@ for (const [label, why] of [["", "empty"], ["   ", "whitespace only"]] as const)
   const yearValues: Record<string, Record<string, string>> = {};
   const newLines: NewLineEdit[] = [];
   collectGridRows(orphan, COLS, FY, sectionIndexOfKey, yearValues, newLines);
-  eq("row above every template row is skipped", newLines.length, 0);
+  eq("row above every template row is collected", newLines.length, 1);
+  eq("  attached to the first section", newLines[0]?.sectionIndex, 0);
+  eq("  anchored before its first line", newLines[0]?.beforeKey, "s0l0");
+  const payload = buildFinancialEvaluationPayload(raw, { yearValues, newLines });
+  eq("  sent first in the section", linesOf(payload)[0]?.line_item_name, "Stranded");
+}
+// A new row carries every fiscal year, even ones scrolled out of view.
+{
+  const rows: CollectableRow[] = [
+    { apiKey: "s0l0", label: "Standalone Revenues", values: ["1", "1", "1"] },
+    { label: "Hidden years", values: ["5", "6", "7"], sectionKey: "s0" },
+  ];
+  const yearValues: Record<string, Record<string, string>> = {};
+  const newLines: NewLineEdit[] = [];
+  collectGridRows(rows, [1], FY, sectionIndexOfKey, yearValues, newLines);
+  eq("new row: all years, not just visible", newLines[0]?.yearValues, {
+    fy25: "5", fy26: "6", fy27: "7",
+  });
+  eq("template row: visible years only", yearValues.s0l0, { fy26: "1" });
 }
 
 /* ── 6. edits to existing rows still ride along ──────────────────────── */

@@ -34,6 +34,7 @@ export default function Header() {
     saving,
     migrating,
     issueCount,
+    validated,
     error: saveError,
     ready,
     readonly,
@@ -45,8 +46,19 @@ export default function Header() {
 
   return (
     <header className="mna:overflow-hidden mna:rounded-3xl mna:border mna:border-slate-200 mna:bg-white mna:shadow-sm">
-      <div className="mna:flex mna:items-center mna:justify-end mna:border-b mna:border-slate-200 mna:bg-white mna:px-6 mna:py-4">
-        <div className="mna:flex mna:flex-wrap mna:items-center mna:gap-2">
+      <div className="mna:flex mna:items-center mna:gap-4 mna:border-b mna:border-slate-200 mna:bg-white mna:px-6 mna:py-4">
+        {/* The error sits to the LEFT of the buttons, in the space that grows,
+            and wraps to show the whole message. The buttons are a separate
+            non-shrinking group, so a message appearing or changing never moves
+            Back / Validate / Save Model. The block is always rendered (empty
+            when there is no error) so the buttons stay right-aligned. */}
+        <div
+          className="mna:min-w-0 mna:flex-1 mna:text-right mna:text-sm mna:break-words mna:text-red-600"
+          role={saveError && !saving && !migrating ? "alert" : undefined}
+        >
+          {saveError && !saving && !migrating ? saveError : null}
+        </div>
+        <div className="mna:flex mna:shrink-0 mna:items-center mna:gap-2">
           <button
             id="fin-eval-back-btn"
             type="button"
@@ -58,27 +70,23 @@ export default function Header() {
             </svg>
             Back
           </button>
-          {saveError && !saving && !migrating && (
-            <span
-              className="mna:max-w-xs mna:truncate mna:text-sm mna:text-red-600"
-              title={saveError}
-            >
-              {saveError}
-            </span>
-          )}
           {!isReadonly && (
             <button
               id="fin-eval-validate-btn"
               type="button"
               className="mna:inline-flex mna:items-center mna:gap-1.5 mna:rounded-md mna:border mna:border-black/70 mna:bg-white mna:px-[14px] mna:py-2 mna:text-[13px] mna:font-semibold mna:text-black mna:transition mna:disabled:cursor-not-allowed mna:disabled:opacity-70"
               onClick={requestSave}
-              disabled={busy || !ready}
+              // Disabled while the clean-validated data is unchanged: there is
+              // nothing new to validate. Any edit clears `validated`.
+              disabled={busy || !ready || validated}
               title={
-                issueCount > 0
-                  ? `${issueCount} validation issue${issueCount > 1 ? "s" : ""}`
-                  : ready
-                    ? undefined
-                    : "Nothing to validate until the staged data loads"
+                validated
+                  ? "Validated — edit the data to validate again."
+                  : issueCount > 0
+                    ? `${issueCount} validation issue${issueCount > 1 ? "s" : ""}`
+                    : ready
+                      ? undefined
+                      : "Nothing to validate until the staged data loads"
               }
             >
               <svg
@@ -108,16 +116,19 @@ export default function Header() {
               type="button"
               className="mna:inline-flex mna:items-center mna:gap-1.5 mna:rounded-md mna:border mna:border-black/70 mna:bg-white mna:px-[18px] mna:py-2 mna:text-[13px] mna:font-bold mna:text-black mna:transition mna:disabled:cursor-not-allowed mna:disabled:opacity-40"
               onClick={requestMigrate}
-              // Prod Dev parity: migrating is blocked until the staged data
-              // validates clean, so Validate (which PUTs the edits) always runs
-              // before the migrate that copies staging into the proposal.
-              disabled={busy || !ready || issueCount > 0}
+              // Prod Dev parity: enabled only after a Validate whose PUT
+              // succeeded AND whose re-fetch came back clean, and only while
+              // the data is unchanged since — so the migrate always copies
+              // exactly what was validated.
+              disabled={busy || !ready || !validated}
               title={
                 issueCount > 0
                   ? "Resolve all validation errors before saving the model."
-                  : ready
-                    ? undefined
-                    : "Nothing to save until the staged data loads"
+                  : !ready
+                    ? "Nothing to save until the staged data loads"
+                    : !validated
+                      ? "Validate the data successfully before saving the model."
+                      : undefined
               }
             >
               <svg

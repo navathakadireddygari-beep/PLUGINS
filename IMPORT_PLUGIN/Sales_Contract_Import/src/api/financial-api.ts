@@ -404,10 +404,11 @@ export type ValidationIssue = {
   headerField?: keyof ApiHeader;
   sectionId?:   number;
   lineId?:      string; // matches ValueRow.id ("val-{finEvalLineStgId}")
+  isHeader?:    boolean; // header-level error with no mapped field — UI scrolls to the widget top
 };
 
 // Sales has no editable header fields on screen, so header-level errors are
-// listed without a jump target. Extend this map if that changes.
+// tagged isHeader and jump to the top of the widget. Extend this map if that changes.
 const HEADER_ERROR_FIELD_MAP: Partial<Record<string, keyof ApiHeader>> = {};
 
 // Walks header → sections → lines and emits one entry per "|"-separated
@@ -416,13 +417,14 @@ const HEADER_ERROR_FIELD_MAP: Partial<Record<string, keyof ApiHeader>> = {};
 // errorMessage comes back null and it simply stops contributing an entry.
 function collectStructuredIssues(header: StagingHeader): ValidationIssue[] {
   const out: ValidationIssue[] = [];
-  const pushAll = (raw: string | null | undefined, target: Pick<ValidationIssue, "headerField" | "sectionId" | "lineId">) => {
+  // Not gated on validationStatus: any object carrying an errorMessage counts.
+  const pushAll = (raw: string | null | undefined, target: Pick<ValidationIssue, "headerField" | "sectionId" | "lineId" | "isHeader">) => {
     if (!raw) return;
     raw.split("|").map((s) => s.trim()).filter(Boolean).forEach((message) => out.push({ message, ...target }));
   };
 
   const field = HEADER_ERROR_FIELD_MAP[header.errorCode ?? ""];
-  pushAll(header.errorMessage, field ? { headerField: field } : {});
+  pushAll(header.errorMessage, field ? { headerField: field } : { isHeader: true });
 
   for (const sec of header.sections || []) {
     pushAll(sec.errorMessage, sec.finEvalSectionStgId != null ? { sectionId: sec.finEvalSectionStgId } : {});
@@ -470,7 +472,11 @@ export function buildFinEvaluationStagingPutPayload(
     (tableData.columnLabels[year] || `FY${String(year).slice(2)}`).toLowerCase();
 
   const sections = tableData.groups.map((group, grpIdx) => {
-    const lines = group.values.map((value, lineIdx) => {
+    // New UI lines have no displayOrder — number them after the section's
+    // highest existing one so they never collide with (and re-sort before)
+    // backend lines that use sparse orders (10, 20, …).
+    let nextOrder = group.values.reduce((m, v) => Math.max(m, v.displayOrder ?? 0), 0);
+    const lines = group.values.map((value) => {
       // Mirror the per-line year-entry shape the GET returned.
       const nonFinancial = (value.lineIdentifier ?? "").toUpperCase().replace(/[^A-Z]/g, "") === "NONFINANCIAL"; // NON_FINANCIAL / NONFINANCIAL / "Non Financial"
       const entry = (amt: number | null): object => nonFinancial
@@ -495,7 +501,7 @@ export function buildFinEvaluationStagingPutPayload(
         isCalculated:     value.isCalculated ?? "N",
         isCustom:         value.isCustom     ?? "Y",
         account:          value.accountId    ?? null,
-        displayOrder:     value.displayOrder ?? lineIdx + 1,
+        displayOrder:     value.displayOrder ?? ++nextOrder,
         targetGoLiveDate: value.targetGoLiveDate || null,
         yearValues,
       };

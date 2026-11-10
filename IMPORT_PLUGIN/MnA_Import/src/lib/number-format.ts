@@ -171,6 +171,49 @@ export const formatPercent = (
   return negative ? `(${body})` : body;
 };
 
+/**
+ * A canonical plain number string ("1234.5", "-2") re-spelled with the active
+ * format's decimal separator ("1234,5" in EU). Used to seed an editor, so the
+ * text the user sees and edits is the text `parseDisplayInput` reads back with
+ * the same format — a "." seed under EU would otherwise parse as grouping and
+ * turn 12.5 into 125. No grouping is added.
+ */
+export const toLocalDecimal = (
+  canonical: string,
+  format: NumberFormatId = "us",
+): string => {
+  const { decimalSeparator } = numberFormatMeta(format);
+  return decimalSeparator === "." ? canonical : canonical.replace(".", decimalSeparator);
+};
+
+/**
+ * Whether `text` is an acceptable PARTIAL number while it is being typed in the
+ * active format: digits, at most one decimal separator (the format's own), an
+ * optional leading "-" when negatives are allowed, at most `maxDecimals`
+ * decimals, and — when `maxAbs` is given — a magnitude no larger than it.
+ * Intermediate states ("", "-", "12", "12,") are accepted, so a keystroke is
+ * rejected rather than the text rewritten (Prod Dev's editor rule).
+ */
+export const isPartialNumberInput = (
+  text: string,
+  format: NumberFormatId = "us",
+  opts: { allowNegative?: boolean; maxDecimals?: number; maxAbs?: number } = {},
+): boolean => {
+  const { allowNegative = false, maxDecimals, maxAbs } = opts;
+  if (text === "") return true;
+  const { decimalSeparator } = numberFormatMeta(format);
+  const esc = decimalSeparator.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const dec = maxDecimals === undefined ? "\\d*" : `\\d{0,${maxDecimals}}`;
+  const re = new RegExp(`^${allowNegative ? "-?" : ""}\\d*(${esc}${dec})?$`);
+  if (!re.test(text)) return false;
+  if (maxAbs !== undefined) {
+    // "-", "12." and ".5" are partial states; a NaN ("-") simply passes.
+    const n = Number(text.replace(decimalSeparator, "."));
+    if (Number.isFinite(n) && Math.abs(n) > maxAbs) return false;
+  }
+  return true;
+};
+
 export interface ParsedInput {
   /** Numeric value (already sign-applied), or null when not numeric. */
   value: number | null;

@@ -669,21 +669,29 @@ const HEADER_ERROR_FIELD_MAP: Partial<Record<string, keyof ApiHeader>> = {
 // Walks header → sections → lines and emits one entry per "|"-separated
 // piece of EACH object's own errorMessage, tagged with that object's own
 // target. Built directly from the structured data so two lines sharing the
-// same generic error text each get their own correct entry.
+// same generic error text each get their own correct entry. Endpoints use
+// different terms for a failing status ("ERROR", "INVALID", "E", …), so any
+// object carrying an errorMessage counts unless its status is explicitly valid.
+const VALID_STATUSES = new Set(["VALID", "SUCCESS", "S", "PASS", "PASSED", "OK"]);
+const isFailingStatus = (status?: string | null): boolean =>
+  !VALID_STATUSES.has((status || "").trim().toUpperCase());
+
 function collectStructuredIssues(header: StagingHeader): ValidationIssue[] {
   const out: ValidationIssue[] = [];
-  const pushAll = (raw: string | null | undefined, target: Pick<ValidationIssue, "headerField" | "sectionId" | "lineId">) => {
-    if (!raw) return;
+  const pushAll = (status: string | undefined, raw: string | null | undefined, target: Pick<ValidationIssue, "headerField" | "sectionId" | "lineId">) => {
+    if (!raw || !isFailingStatus(status)) return;
     raw.split("|").map((s) => s.trim()).filter(Boolean).forEach((message) => out.push({ message, ...target }));
   };
 
-  const field = HEADER_ERROR_FIELD_MAP[header.errorCode ?? ""];
-  pushAll(header.errorMessage, field ? { headerField: field } : {});
+  // Unmapped header errors still target the header (the UI brings the top of
+  // the widget into view for any header-level error).
+  const field = HEADER_ERROR_FIELD_MAP[header.errorCode ?? ""] ?? "fin_eval_header_id";
+  pushAll(header.validationStatus, header.errorMessage, { headerField: field });
 
   for (const sec of header.sections || []) {
-    pushAll(sec.errorMessage, sec.finEvalSectionStgId != null ? { sectionId: sec.finEvalSectionStgId } : {});
+    pushAll(sec.validationStatus, sec.errorMessage, sec.finEvalSectionStgId != null ? { sectionId: sec.finEvalSectionStgId } : {});
     for (const line of sec.lines || []) {
-      pushAll(line.errorMessage, line.finEvalLineStgId != null ? { lineId: `val-${line.finEvalLineStgId}` } : {});
+      pushAll(line.validationStatus, line.errorMessage, line.finEvalLineStgId != null ? { lineId: `val-${line.finEvalLineStgId}` } : {});
     }
   }
   return out;

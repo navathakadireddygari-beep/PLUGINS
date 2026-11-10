@@ -7,6 +7,7 @@ import type {} from "../types/fin-eval-bridge";
 import {
   getFinEvaluationStaging,
   validateFinEvaluationStaging,
+  buildFinEvaluationStagingPutPayload,
   migrateFinEvalStaging,
   clearCachedToken,
   lineTotal,
@@ -66,6 +67,12 @@ const toggleBtn = (active: boolean, first: boolean): React.CSSProperties => ({
 });
 
 const generateId  = (): string => `id-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
+// What Validate PUTs, as a string — used to tell whether the data changed
+// since the last clean validate. The display-currency toggle is a view
+// setting, so switching it doesn't force a re-validate.
+const payloadSnapshot = (table: PivotTableData, header: ApiHeader): string =>
+  JSON.stringify(buildFinEvaluationStagingPutPayload(table, { ...header, display_currency: "" }));
 
 /* ─────────────────────────── Searchable Account Code Select ─────── */
 function AccountCodeSelect({
@@ -328,6 +335,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [validating,   setValidating]   = useState<boolean>(false);
   const [saveError,    setSaveError]    = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationIssue[]>([]);
+  // PUT payload of the last clean validate (no API error, no validation
+  // errors). Save Model is only enabled — and Validate disabled — while the
+  // current data still matches it; any edit after validating needs a re-validate.
+  const [validatedSnapshot, setValidatedSnapshot] = useState<string | null>(null);
   const [highlightLineId,  setHighlightLineId]  = useState<string | null>(null);
   const [highlightHeaderField, setHighlightHeaderField] = useState<string | null>(null);
   const [toast,        setToast]        = useState<ToastState>(null);
@@ -670,6 +681,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
      rows reflect the migrated server state. */
   const saveDraft = useCallback(async (): Promise<void> => {
     if (!data || !rawHeader) return;
+    if (validatedSnapshot !== payloadSnapshot(data, rawHeader)) {
+      setToast({ kind: "error", message: "Please validate the data successfully before saving the model." });
+      return;
+    }
     const cfg = getAppConfig();
     if (!cfg.proposal_id) {
       setToast({
@@ -747,7 +762,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     } finally {
       setSavingDraft(false);
     }
-  }, [data, rawHeader, loadData]);
+  }, [data, rawHeader, loadData, validatedSnapshot]);
 
   /* ── Validate ─────────────────────────────────────────────────
      PUT the current state to finEvaluationStaging so the backend re-runs
@@ -772,14 +787,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
     }
     setValidating(true);
     setSaveError(null);
+    setValidatedSnapshot(null);
     try {
       const response = await validateFinEvaluationStaging(cfg, data, rawHeader);
       const method: "PUT" = "PUT";
-      setToast({
-        kind: "success",
-        message: ((response as any).apiMessage || response.api_message || "")
-          || "Validation completed successfully.",
-      });
+      const apiMessage = (response as any).apiMessage || response.api_message || "";
       const saveEvent = new CustomEvent("tool:fin_eval_saved", { detail: { proposalId: cfg.proposal_id } });
       console.log("[fin_eval] dispatching tool:fin_eval_saved (validate)", saveEvent.detail);
       window.dispatchEvent(saveEvent);
@@ -814,9 +826,19 @@ export default function PivotTableWithAPI(): React.ReactElement {
         });
 
         setRawHeader(refetched.rawHeader);
-        setValidationErrors(refetched.errors ?? []);
+        const errors = refetched.errors ?? [];
+        setValidationErrors(errors);
+        // Save Model unlocks only when validation came back clean.
+        if (errors.length === 0) setValidatedSnapshot(payloadSnapshot(refetched.table, refetched.rawHeader));
+        setToast({
+          kind: errors.length ? "error" : "success",
+          message: apiMessage || (errors.length
+            ? `Validation completed with ${errors.length} error${errors.length === 1 ? "" : "s"}.`
+            : "Validation completed successfully."),
+        });
       } catch (e) {
         console.error("[validate] re-fetch failed", e);
+        setToast({ kind: "error", message: apiMessage || "Validation completed, but the refreshed data could not be loaded." });
       }
     } catch (e: unknown) {
       clearCachedToken();
@@ -1053,6 +1075,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ── Calculations (from line-level data populated by API) ─────── */
   const numYears   = data.years.length;
+
+  // Validate → (clean) → Save Model. Unchanged data after a clean validate
+  // keeps Validate disabled; any edit re-enables it and locks Save Model again.
+  const isValidated      = validatedSnapshot !== null && !!rawHeader && validatedSnapshot === payloadSnapshot(data, rawHeader);
+  const validateDisabled = validating || savingDraft || loading || isValidated;
 
   /* ── Validation errors → real navigation targets ───────────────
      Each ValidationIssue already carries whichever target the backend's
@@ -1317,7 +1344,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       {/* Save error banner */}
       {saveError && (
         <div style={{ marginBottom: 12, padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, color: "#dc2626", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <span><strong>Save failed:</strong> {saveError}</span>
+          <span><strong>Error:</strong> {saveError}</span>
           <button type="button" onClick={() => setSaveError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626" }}><X size={12} /></button>
         </div>
       )}
@@ -1342,8 +1369,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
               id="fin-eval-validate-btn"
               type="button"
               onClick={validate}
-              disabled={validating || savingDraft || loading}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: validating || savingDraft || loading ? "not-allowed" : "pointer", opacity: validating || savingDraft || loading ? 0.7 : 1 }}
+              disabled={validateDisabled}
+              title={isValidated ? "Validated — edit the data to validate again." : undefined}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: validateDisabled ? "not-allowed" : "pointer", opacity: validateDisabled ? 0.7 : 1 }}
             >
               <CheckCircle2 size={14} style={validating ? { animation: "spin 1s linear infinite" } : {}} />
               {validating ? "Validating…" : "Validate"}
@@ -1351,14 +1379,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
             )}
             {!isReadonly && (() => {
               const hasErrors = validationErrors.length > 0;
-              const saveModelDisabled = savingDraft || loading || hasErrors;
+              const saveModelDisabled = savingDraft || validating || loading || !isValidated;
               return (
                 <button
                   id="fin-eval-save-model-btn"
                   type="button"
                   onClick={saveDraft}
                   disabled={saveModelDisabled}
-                  title={hasErrors ? "Resolve all validation errors before saving the model." : undefined}
+                  title={hasErrors ? "Resolve all validation errors before saving the model." : !isValidated ? "Validate the data successfully before saving the model." : undefined}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 700, background: "#fff", color: "#000", cursor: saveModelDisabled ? "not-allowed" : "pointer", opacity: saveModelDisabled ? 0.4 : 1 }}
                 >
                   <Save size={14} style={savingDraft ? { animation: "spin 1s linear infinite" } : {}} />

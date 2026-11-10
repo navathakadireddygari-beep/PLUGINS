@@ -55,8 +55,9 @@ const TAX_RATE_IDS: ReadonlySet<string> = new Set([
 
 /**
  * Any percentage row. These are exempt from FX and scale conversion — 58.33%
- * is 58.33% whether the screen shows USD thousands or CAD billions — and they
- * drive the 0-100 / 2-decimal input rules.
+ * is 58.33% whether the screen shows USD thousands or CAD billions. Only the
+ * Tax Rate is clamped to 0-100 on entry; growth / return percentages can be
+ * negative or exceed 100 and are stored as typed.
  *
  * The M&A template's percentage `line_type`s are all listed here. Without them
  * a margin was run through the money formatter, so 58.3333 rendered as "58" at
@@ -118,6 +119,6 @@ export const isValidPercentInput = (s: string): boolean => {
   return Number.isFinite(n) && n >= 0 && n <= 100;
 };
 
-/** Safety net for paste: force into [0, 100] at 2 decimal places. */
+/** Tax Rate entry bound: force into [0, 100] at 2 decimal places. */
 export const clampPercent = (n: number): number =>
   Math.min(100, Math.max(0, Math.round(n * 100) / 100));

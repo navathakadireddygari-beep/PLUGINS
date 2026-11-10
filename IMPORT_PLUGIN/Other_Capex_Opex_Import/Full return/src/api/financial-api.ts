@@ -176,6 +176,10 @@ export type ApiHeader = {
   sections:                  ApiSection[];
   validation_status?:        string;
   error_message?:            string | null;
+  error_code?:               string | null;
+  // data.file.errorMessage — pipe-separated, can carry messages that belong to
+  // no header/section/line object (e.g. a section missing from the upload).
+  file_error_message?:       string | null;
 };
 
 export type ApiResponse = { data: ApiHeader[] };
@@ -375,17 +379,23 @@ const yn = (v: string | undefined | null, fallback: "Y" | "N"): string => {
 const norm = (s: string | undefined | null): string => (s ?? "").trim().toUpperCase();
 
 /** Finds the line the GET returned for a UI row, so server-owned fields
-    (ytd actuals, read-only flags, go-live date) survive the round trip. */
+    (ytd actuals, read-only flags, go-live date) survive the round trip.
+    A line added in this session has no server counterpart — matching it by
+    name would hand it an existing line's id and overwrite that line instead
+    of inserting a new one (blank-named rows matched any blank raw line). */
 function findRawLine(section: ApiSection | undefined, value: ValueRow): ApiLine | undefined {
+  if (isLocalLine(value)) return undefined;
   const lines = section?.lines;
   if (!lines?.length) return undefined;
   if (value.lineId != null) {
     const byId = lines.find((l) => l.fin_eval_line_id === value.lineId);
     if (byId) return byId;
   }
+  const name = norm(value.name);
+  if (!name) return undefined;
   return (
-    lines.find((l) => norm(l.line_type) === norm(value.lineType) && norm(l.line_item_name) === norm(value.name)) ??
-    lines.find((l) => norm(l.line_item_name) === norm(value.name))
+    lines.find((l) => norm(l.line_type) === norm(value.lineType) && norm(l.line_item_name) === name) ??
+    lines.find((l) => norm(l.line_item_name) === name)
   );
 }
 
@@ -431,7 +441,7 @@ export function buildStagingPutPayload(tableData: PivotTableData, rawHeader: Api
         finEvalLineStgId: value.lineId ?? rawLine?.fin_eval_line_id ?? null,
         lineType:         value.lineType || rawLine?.line_type || "CUSTOM",
         lineItemName:     value.name,
-        lineIdentifier:   rawLine?.line_identifier ?? value.lineIdentifier ?? "Financial",
+        lineIdentifier:   (rawLine?.line_identifier ?? value.lineIdentifier ?? "FINANCIAL").toUpperCase(),
         isCalculated:     yn(value.isCalculated ?? rawLine?.is_calculated, "N"),
         isMandatory:      yn(value.isMandatory  ?? rawLine?.is_mandatory,  "N"),
         isReadOnly:       yn(rawLine?.is_read_only, "N"),
@@ -439,7 +449,7 @@ export function buildStagingPutPayload(tableData: PivotTableData, rawHeader: Api
         account:          value.accountId ?? rawLine?.account ?? null,
         amortizationPeriod:  value.amortizationPeriod ?? null,
         datePlacedInService: value.datePlacedInService || null,
-        displayOrder:     value.displayOrder ?? rawLine?.display_order ?? (lineIdx + 1) * 10,
+        displayOrder:     value.displayOrder ?? rawLine?.display_order ?? lineIdx + 1,
         yearValues,
         targetGoLiveDate: rawLine?.target_go_live_date ?? null,
         status:           value.status       ?? rawLine?.status        ?? "ACTIVE",
@@ -458,7 +468,7 @@ export function buildStagingPutPayload(tableData: PivotTableData, rawHeader: Api
       isAccountRequired: yn(group.isAccountRequired ?? rawSection?.is_account_required,   "N"),
       isNewLineRequired: yn(group.isNewLineRequired ?? rawSection?.is_new_line_required,  "Y"),
       isGoLiveReq:       yn(rawSection?.is_go_live_req, "N"),
-      displayOrder:      group.displayOrder ?? rawSection?.display_order ?? (grpIdx + 1) * 10,
+      displayOrder:      group.displayOrder ?? rawSection?.display_order ?? grpIdx + 1,
       status:            group.status       ?? "ACTIVE",
       languageCode:      group.languageCode ?? "EN",
       lines,
@@ -741,7 +751,9 @@ function mapStagingHeader(data: Record<string, unknown>, cfg: AppConfig): ApiHea
     language_code:             (header.languageCode as string) ?? "EN",
     sections:                  ((header.sections as Record<string, unknown>[]) ?? []).map(mapStagingSection),
     validation_status:         header.validationStatus as string | undefined,
-    error_message:             (header.errorMessage as string | null) ?? (file.errorMessage as string | null) ?? null,
+    error_message:             (header.errorMessage as string | null) ?? null,
+    error_code:                (header.errorCode as string | null) ?? null,
+    file_error_message:        (file.errorMessage as string | null) ?? null,
   };
 }
 
@@ -860,8 +872,8 @@ export async function importFinancialData(
   const apiMsg    = (json as any).apiMessage || json.api_message || text || res.statusText;
   const apiStatus = (json as any).apiStatus  || json.api_status  || "";
 
-  if (!res.ok) throw new Error(apiMsg || `Save failed (${res.status}).`);
-  if (apiStatus && apiStatus !== "S" && apiStatus !== "SUCCESS") throw new Error(apiMsg || "Save failed on server.");
+  if (!res.ok) throw new Error(apiMsg || `Validation failed (${res.status}).`);
+  if (apiStatus && apiStatus !== "S" && apiStatus !== "SUCCESS") throw new Error(apiMsg || "Validation failed on server.");
   return json;
 }
 

@@ -401,6 +401,7 @@ export function buildPutPayload(
         line_item_name:        value.name,
         line_identifier:       (value.lineIdentifier ?? "FINANCIAL").toUpperCase(),
         is_calculated:         value.isCalculated      ?? "N",
+        is_custom:             value.isCustom          ?? "Y",
         account:               value.accountId         ?? null,
         target_go_live_date:   value.targetGoLiveDate  ?? null,
         display_order:       value.displayOrder   ?? lineIdx + 1,

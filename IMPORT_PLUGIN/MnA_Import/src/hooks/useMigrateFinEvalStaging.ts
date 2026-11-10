@@ -12,6 +12,8 @@ export interface UseMigrateFinEvalStagingResult {
   migrating: boolean;
   /** Human-readable failure message, or null. */
   error: string | null;
+  /** Clear the last error (e.g. once the user validates again). */
+  clearError: () => void;
 }
 
 export const useMigrateFinEvalStaging = (
@@ -46,7 +48,9 @@ export const useMigrateFinEvalStaging = (
     }
   }, [fileId]);
 
-  return { migrate, migrating, error };
+  const clearError = useCallback(() => setError(null), []);
+
+  return { migrate, migrating, error, clearError };
 };
 
 export default useMigrateFinEvalStaging;

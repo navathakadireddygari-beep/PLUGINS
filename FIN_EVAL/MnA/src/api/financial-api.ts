@@ -644,6 +644,13 @@ export interface NewLineEdit {
    */
   afterKey?: string;
   /**
+   * Key of the template line this row sits directly ABOVE, used only when there
+   * is no `afterKey` — a row at the top of its section (e.g. one whose lines
+   * are all calculated). Without it such a row was appended to the END of the
+   * section, below the subtotal.
+   */
+  beforeKey?: string;
+  /**
    * The row's own identifier. Lines in a custom section are NON_FINANCIAL;
    * absent (a line added to a template section) it saves as FINANCIAL.
    */
@@ -974,8 +981,18 @@ export const buildFinancialEvaluationPayload = (
       // The anchor is the template line the row sits under. Its key encodes the
       // line's ORIGINAL index, which is where it still sits in `existing`.
       const anchor = line.afterKey ? keyAt.indexOf(line.afterKey) : -1;
-      // No anchor (first row of its section, or a key that no longer resolves):
-      // fall back to the end, which is the old behaviour and never loses data.
+      // First row of its section: insert directly above the template line it
+      // sits over. Each such insert goes just before that line, so several
+      // rows keep their screen order.
+      if (anchor < 0 && !line.afterKey && line.beforeKey) {
+        const below = keyAt.indexOf(line.beforeKey);
+        if (below >= 0) {
+          ordered.splice(ordered.indexOf(existing[below]), 0, built);
+          return;
+        }
+      }
+      // No anchor (or a key that no longer resolves): fall back to the end,
+      // which is the old behaviour and never loses data.
       if (anchor < 0) {
         ordered.push(built);
         return;
@@ -1071,15 +1088,38 @@ export const buildFinancialEvaluationPayload = (
   );
 
   // The Key Inputs panel is the editable face of these two header fields, so
-  // keep them in step with what the user sees.
-  const discountRate =
-    percentOrNull(edits.keyInputs?.DISCOUNT_RATE) ?? raw.discount_rate_percent;
-  const taxRate =
-    percentOrNull(edits.keyInputs?.TAX_RATE) ?? raw.tax_rate_percent;
+  // keep them in step with what the user sees. Only an input the panel did NOT
+  // send falls back to the stored value: a cleared input is sent as "" and
+  // must save as null. The old `percentOrNull(...) ?? raw` treated "cleared" the
+  // same as "absent", so clearing Discount/Tax silently restored the old value
+  // while the `m_a_key_inputs` entry beside it was saved as null.
+  const headerPercent = (code: string, stored: number | null): number | null =>
+    edits.keyInputs && code in edits.keyInputs
+      ? percentOrNull(edits.keyInputs[code])
+      : stored;
+  const discountRate = headerPercent("DISCOUNT_RATE", raw.discount_rate_percent);
+  const taxRate = headerPercent("TAX_RATE", raw.tax_rate_percent);
 
   const displayYears = edits.displayYears ?? raw.display_years;
 
   const rawAny = raw as unknown as Record<string, unknown>;
+
+  // A Key Input naming a header column in `source_column` is stored THERE, and
+  // the backend rebuilds the input from that column on the next GET. Only
+  // Discount and Tax were written back, so any other input backed by a header
+  // column (terminal growth, …) reverted on every save. Columns the header
+  // does not carry are left alone rather than invented. (Same rule as the
+  // MnA_Import plugin.)
+  const sourceColumns: Record<string, number | null> = {};
+  (raw.m_a_key_inputs?.inputs ?? []).forEach((input) => {
+    const edited = edits.keyInputs?.[input.input_code];
+    const column = (input.source_column ?? "").trim();
+    if (edited === undefined || !column) return;
+    const key = column.includes("_")
+      ? column.toLowerCase()
+      : column.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+    if (key in rawAny) sourceColumns[key] = percentOrNull(edited);
+  });
 
   // The endpoint REPLACES the whole evaluation, so the body is the GET payload
   // with this screen's edits applied on top — not a hand-picked subset. The
@@ -1090,6 +1130,7 @@ export const buildFinancialEvaluationPayload = (
   // answer "S" and still leave the stored evaluation untouched.
   return {
     ...rawAny,
+    ...sourceColumns,
     fin_eval_header_id: raw.fin_eval_header_id ?? null,
     proposal_id: raw.proposal_id ?? getAppConfig().proposal_id ?? null,
     user_email: getAppConfig().app_user,
