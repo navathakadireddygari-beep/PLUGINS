@@ -1101,7 +1101,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 className="action-btn"
                 onClick={() => { /* TODO: export template */ }}
               >
-                <Download size={14} />
+                <Upload size={14} />
                 Export Template
               </button>
             )}
@@ -1114,7 +1114,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   className="action-btn"
                   onClick={() => { /* TODO: import excel */ }}
                 >
-                  <Upload size={14} />
+                  <Download size={14} />
                   Import Excel
                 </button>
                 <button

@@ -1294,7 +1294,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
               onClick={() => { /* TODO: export template */ }}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: "pointer" }}
             >
-              <Download size={14} />
+              <Upload size={14} />
               Export Template
             </button>
             )}
@@ -1305,7 +1305,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
               onClick={() => { /* TODO: import excel */ }}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1px solid #000000b8", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "#fff", color: "#000", cursor: "pointer" }}
             >
-              <Upload size={14} />
+              <Download size={14} />
               Import Excel
             </button>
             )}

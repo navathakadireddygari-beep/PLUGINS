@@ -1238,7 +1238,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 onClick={() => { /* TODO: export template */ }}
                 style={neutralButtonStyle()}
               >
-                <Download size={14} />
+                <Upload size={14} />
                 Export Template
               </button>
             )}
@@ -1249,7 +1249,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 onClick={() => { /* TODO: import excel */ }}
                 style={neutralButtonStyle()}
               >
-                <Upload size={14} />
+                <Download size={14} />
                 Import Excel
               </button>
             )}
