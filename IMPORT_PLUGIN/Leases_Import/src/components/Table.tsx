@@ -998,6 +998,42 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const updateValueName = (gId: string, vId: string, name: string): void => { if (isReadonly) return; setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? { ...g, values: g.values.map((v) => v.id === vId ? { ...v, name } : v) } : g) }) : p); };
   const updateGroupName = (gId: string, name: string): void => { if (isReadonly) return; setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.id === gId ? { ...g, name } : g) }) : p); setEditingGroupId(null); setEditingGroupName(""); };
 
+  // Section-bar name: click-to-rename for custom sections, as in Prod Dev.
+  const sectionNameCell = (group: Group, color: string): React.ReactElement => {
+    const custom = !isReadonly && group.isCustom === "Y";
+    if (custom && editingGroupId === group.id) {
+      return (
+        <input autoFocus value={editingGroupName}
+          placeholder="Enter section name"
+          onChange={(e) => setEditingGroupName(e.target.value)}
+          onBlur={() => updateGroupName(group.id, editingGroupName)}
+          onKeyDown={(e) => { if (e.key === "Enter") updateGroupName(group.id, editingGroupName); else if (e.key === "Escape") { setEditingGroupId(null); setEditingGroupName(""); } }}
+          onClick={(e) => e.stopPropagation()}
+          style={{ width: "100%", padding: "2px 8px", fontSize: 12, fontWeight: 700, background: "#fff", color: "#111", border: "1px solid #3b82f6", borderRadius: 3, outline: "none", textTransform: "none" }}
+        />
+      );
+    }
+    return (
+      <span
+        style={{ cursor: custom ? "pointer" : "default", color, opacity: group.name ? 1 : 0.45, fontStyle: group.name ? "normal" : "italic" }}
+        onClick={(e) => { if (!custom) return; e.stopPropagation(); setEditingGroupId(group.id); setEditingGroupName(group.name); }}
+      >{group.name || (custom ? "Enter section name" : "")}</span>
+    );
+  };
+
+  /** Last cell of a section bar: the total, then the delete-section control at the far right, as in Prod Dev. */
+  const sectionTotalCell = (total: string, group: Group): React.ReactNode => {
+    if (isReadonly || group.isCustom !== "Y" || group.isMandatory === "Y") return total;
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+        <span>{total}</span>
+        <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, name: group.name, kind: "section" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", display: "flex", padding: 2, flexShrink: 0 }} title="Delete section">
+          <Trash2 size={14} />
+        </button>
+      </div>
+    );
+  };
+
   /* ── Paste handlers ─────────────────────────────────────────── */
   const handleNamePaste = (e: React.ClipboardEvent<HTMLInputElement>, gId: string, vId: string): void => {
     if (isReadonly) return;
@@ -1569,7 +1605,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       <tr data-section-id={group.sectionId} data-section-type={group.sectionType || group.id} style={{ background: "#182a49" }}>
                         <td style={{ ...TD, height: 40, borderBottom: "1px solid #293a59" }} />
                         <td style={{ ...TD, padding: "8px 14px", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                          {group.name}
+                          {sectionNameCell(group, "#fff")}
                         </td>
                         {data.years.map((year: number) => (
                           <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
@@ -1577,14 +1613,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                          {sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
+                          {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group)}
                         </td>
                       </tr>
                     ) : (
                       <tr data-section-id={group.sectionId} data-section-type={group.sectionType || group.id} style={{ background: isNetTab ? "#fff" : "#f3f4f6", borderBottom: "1px solid #e5e7eb" }}>
                         <td style={{ ...TD, height: 36, borderBottom: "1px solid #e5e7eb" }} />
                         <td style={{ ...TD, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                          {group.name}
+                          {sectionNameCell(group, "#1f2937")}
                         </td>
                         {data.years.map((year: number) => (
                           <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
@@ -1592,7 +1628,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                          {sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
+                          {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group)}
                         </td>
                       </tr>
                     )}
