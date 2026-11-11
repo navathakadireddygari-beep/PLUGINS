@@ -1602,6 +1602,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
                 // flags it custom, or when it was just added in this session and
                 // has no persisted id yet.
                 const isOwnSection = group.isCustom === "Y" && group.isMandatory !== "Y";
+                // While its name is being edited, the bar is one cell — the name box
+                // stretches up to the delete icon, as in Prod Dev.
+                const isEditingName = !isReadonly && isOwnSection && editingGroupId === group.id;
                 const editable     = mergedLines.filter(({ value }) => value.isCalculated !== "Y");
                 const calculated   = mergedLines.filter(({ value }) => value.isCalculated === "Y");
                 const sectionValues = data.years.reduce<Record<number, number>>((acc, year) => {
@@ -1637,17 +1640,26 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         <td style={{ ...TD, height: 40, borderBottom: "1px solid #293a59", textAlign: "center", color: "#fff" }}>
                           {group.expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </td>
-                        <td style={{ ...TD, padding: "8px 14px", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                          {sectionNameCell(group, isOwnSection, "#fff")}
-                        </td>
-                        {data.years.map((year: number) => (
-                          <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                            {sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                        {isEditingName ? (
+                          <td colSpan={data.years.length + 2} style={{ ...TD, padding: "8px 14px", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ flex: 1 }}>{sectionNameCell(group, isOwnSection, "#fff")}</div>
+                              {sectionDeleteButton(group, isOwnSection)}
+                            </div>
                           </td>
-                        ))}
-                        <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                          {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group, isOwnSection)}
-                        </td>
+                        ) : (<>
+                          <td style={{ ...TD, padding: "8px 14px", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                            {sectionNameCell(group, isOwnSection, "#fff")}
+                          </td>
+                          {data.years.map((year: number) => (
+                            <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
+                              {sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                            </td>
+                          ))}
+                          <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
+                            {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group, isOwnSection)}
+                          </td>
+                        </>)}
                       </tr>
                     ) : (
                       <tr
@@ -1659,17 +1671,26 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         <td style={{ ...TD, height: 36, borderBottom: "1px solid #e5e7eb", textAlign: "center", color: "#374151" }}>
                           {group.expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </td>
-                        <td style={{ ...TD, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                          {sectionNameCell(group, isOwnSection, "#1f2937")}
-                        </td>
-                        {data.years.map((year: number) => (
-                          <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                            {sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                        {isEditingName ? (
+                          <td colSpan={data.years.length + 2} style={{ ...TD, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ flex: 1 }}>{sectionNameCell(group, isOwnSection, "#1f2937")}</div>
+                              {sectionDeleteButton(group, isOwnSection)}
+                            </div>
                           </td>
-                        ))}
-                        <td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                          {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group, isOwnSection)}
-                        </td>
+                        ) : (<>
+                          <td style={{ ...TD, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
+                            {sectionNameCell(group, isOwnSection, "#1f2937")}
+                          </td>
+                          {data.years.map((year: number) => (
+                            <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
+                              {sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                            </td>
+                          ))}
+                          <td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
+                            {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group, isOwnSection)}
+                          </td>
+                        </>)}
                       </tr>
                     )}
 
