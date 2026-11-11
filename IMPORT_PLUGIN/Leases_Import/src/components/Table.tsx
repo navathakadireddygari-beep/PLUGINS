@@ -1755,7 +1755,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               onClick={(e) => { if (group.isCustom !== "Y") return; e.stopPropagation(); setEditingGroupId(group.id); setEditingGroupName(group.name); }}
                             >{group.name || "Enter section name"}</span>
                           )}
-                          {group.isCustom === "Y" && group.isMandatory !== "Y" && (
+                          {!isReadonly && group.isCustom === "Y" && group.isMandatory !== "Y" && (
                             <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, name: group.name, kind: "section" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", display: "flex", padding: 2 }} title="Delete section">
                               <Trash2 size={14} />
                             </button>
@@ -1767,7 +1767,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <ChevronDown size={16} style={{ flexShrink: 0 }} />
                           <span style={{ flex: 1, color: group.name ? "#fff" : "rgba(255,255,255,0.45)", fontStyle: group.name ? "normal" : "italic" }}>{group.name || "Enter section name"}</span>
-                          {group.isCustom === "Y" && group.isMandatory !== "Y" && (
+                          {!isReadonly && group.isCustom === "Y" && group.isMandatory !== "Y" && (
                             <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, name: group.name, kind: "section" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", display: "flex", padding: 2 }} title="Delete section">
                               <Trash2 size={14} />
                             </button>

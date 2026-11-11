@@ -672,9 +672,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   const netFmt = (n: number): string => formatDisplayValue(n, true);
 
-  // Section-header name cell: inline-renameable for custom sections, with the
-  // delete-section control the visible table was missing entirely (it only
-  // existed in the old hidden table that has since been removed).
+  // Section-header name cell: inline-renameable for custom sections. The
+  // delete-section control is sectionDeleteButton, placed at the far right
+  // end of the bar as in Prod Dev.
   const sectionNameCell = (
     group: Group,
     isOwnSection: boolean,
@@ -713,18 +713,32 @@ export default function PivotTableWithAPI(): React.ReactElement {
           {group.name || (isOwnSection ? "Enter section name" : "")}
         </span>
       )}
-      {!isReadonly && isOwnSection && (
-        <button
-          type="button"
-          title="Delete section"
-          onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, name: group.name, kind: "section" }); }}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", display: "flex", padding: 2, flexShrink: 0 }}
-        >
-          <Trash2 size={14} />
-        </button>
-      )}
     </div>
   );
+
+  const sectionDeleteButton = (group: Group, isOwnSection: boolean): React.ReactElement | null =>
+    !isReadonly && isOwnSection ? (
+      <button
+        type="button"
+        title="Delete section"
+        onClick={(e) => { e.stopPropagation(); setConfirmDelete({ gId: group.id, name: group.name, kind: "section" }); }}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", display: "flex", padding: 2, flexShrink: 0 }}
+      >
+        <Trash2 size={14} />
+      </button>
+    ) : null;
+
+  /** Last cell of a section bar: the total, then the delete control at the bar's far right. */
+  const sectionTotalCell = (total: string, group: Group, isOwnSection: boolean): React.ReactNode => {
+    const del = sectionDeleteButton(group, isOwnSection);
+    if (!del) return total;
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+        <span>{total}</span>
+        {del}
+      </div>
+    );
+  };
 
   const netColor = (n: number): string => {
     if (!n) return '#6b7280';
@@ -1505,6 +1519,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
             <div style={{ flex: 1, fontSize: 12, fontWeight: 800, color: "#fff", textTransform: "uppercase", letterSpacing: 0.5 }}>
               {sectionNameCell(rootGroup, isOwnRoot, "#fff")}
             </div>
+            {sectionDeleteButton(rootGroup, isOwnRoot)}
           </div>
         );
       })()}
@@ -1629,7 +1644,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                          {sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
+                          {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group, isOwnSection)}
                         </td>
                       </tr>
                     ) : (
@@ -1651,7 +1666,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                         ))}
                         <td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                          {sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale)}
+                          {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group, isOwnSection)}
                         </td>
                       </tr>
                     )}
