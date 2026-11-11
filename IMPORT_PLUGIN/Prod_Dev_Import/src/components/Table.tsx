@@ -959,17 +959,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const TAX_RATE_DISPLAY_IDS = new Set(["TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT"]);
   const isTaxRateRow = (v: ValueRow): boolean => matchesAny(v, TAX_RATE_DISPLAY_IDS);
 
-  // Any percentage row — bypasses fx/scale (K/M/B) conversion entirely and
-  // enforces 0–100 / 2-decimal input rules. Prod Dev's template only has Tax
-  // Rate %, EBIT Margin %, and Post Tax Return %, plus any custom row whose
-  // display name carries a "%".
-  const PERCENT_DISPLAY_IDS = new Set([
-    "TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT",
-    "EBITMARGIN", "EBITMARGINPCT", "EBITMARGINPERCENT",
-    "POSTTAXRETURN", "POSTTAXRETURNPCT", "POSTTAXRETURNPERCENT",
-  ]);
-  const isPercentRow = (v: ValueRow): boolean =>
-    matchesAny(v, PERCENT_DISPLAY_IDS) || /%/.test(v.name ?? "");
+  // A percentage row is one the backend flags with is_percentage = "Y" — the
+  // name is not consulted. It bypasses fx/scale (K/M/B) conversion and gets the
+  // percent input rules; "N" or null is a money row and is scaled.
+  const isPercentRow = (v: ValueRow): boolean => v.isPercentage === "Y";
 
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like percent rows.
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
@@ -981,18 +974,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return editable.length > 0 && editable.every(isNonFinancialRow);
   };
 
-  // Raw formatter: no fx, no scale, trailing zero decimals trimmed (26 not
-  // 26.00) — used for percentage rows (Tax Rate %, EBIT Margin %, Post Tax
-  // Return %); the row label already carries the "%". Fully independent of
-  // the K/M/B toggle — neither the value nor its precision shifts when scale changes.
-  const rawFmt = (n: number): string => {
-    if (!n) return "—";
-    // A non-zero value that rounds to zero at the shown decimals (e.g. 0.001 at 2dp)
-    // must still read as empty, same as a true zero — not "0.00".
-    if (Number(Math.abs(n).toFixed(2)) === 0) return "—";
-    const formatted = formatGroupedTrimmed(n, numberFormat, 2);
-    return n < 0 ? `(${formatted})` : formatted;
-  };
+  // Raw formatter for percentage (is_percentage = "Y") and NON_FINANCIAL rows:
+  // no fx, no scale and no rounding — the value shows exactly as stored (12.5 →
+  // 12.5, 41.5584 → 41.5584). Independent of the K/M/B toggle.
+  const rawFmt = (n: number): string => nonFinFmt(n);
 
   // NON_FINANCIAL formatter: no fx, no scale and no rounding — counts/metrics
   // show exactly what was entered (2 → 2, 2.35 → 2.35). 10dp only strips float noise.
@@ -1766,12 +1751,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           {renderAssetCells(group, value, "4px 8px")}
                           {data.years.map((year: number, yi: number) => {
                             const val = value.yearValues[year] ?? 0;
-                            // Any percentage row bypasses fx conversion, K/M/B scaling, and
-                            // decimal precision — a fixed 2 decimals is used regardless of scale.
+                            // Percentage rows (is_percentage = "Y") and NON_FINANCIAL rows bypass
+                            // fx conversion and K/M/B scaling, and are unrounded (display and editor seed).
                             const pctRow = isPercentRow(value);
                             const rawRow = pctRow || isNonFinancialRow(value);
-                            // NON_FINANCIAL is unrounded (display and editor seed); percent keeps 2dp.
-                            const decimals = rawRow ? (pctRow ? 2 : NON_FIN_DECIMALS) : decimalsForScale(displayScale);
+                            const decimals = rawRow ? NON_FIN_DECIMALS : decimalsForScale(displayScale);
                             return (
                               <td key={year} style={{ ...TD, padding: "4px 12px" }}>
                                 <input type="text"

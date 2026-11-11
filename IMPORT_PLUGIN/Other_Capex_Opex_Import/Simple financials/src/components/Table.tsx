@@ -29,7 +29,7 @@ import Toast, { type ToastState } from "./Toast";
 import KpiPanel from "./KpiPanel";
 import {
   SCALE_OPTIONS, SCALE_DIVISOR, SCALE_TOOLTIP, decimalsForScale, type ScaleCode,
-  NUMBER_FORMAT_OPTIONS, formatSignedAmount, formatSignedTrimmed, formatDisplayValue, type NumberFormatCode,
+  NUMBER_FORMAT_OPTIONS, formatSignedTrimmed, formatDisplayValue, type NumberFormatCode,
   DATE_FORMAT_OPTIONS, type DateFormatCode,
 } from "../lib/value-format";
 
@@ -904,21 +904,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const TAX_RATE_DISPLAY_IDS = new Set(["TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT"]);
   const isTaxRateRow = (v: ValueRow): boolean => matchesAny(v, TAX_RATE_DISPLAY_IDS);
 
-  // Any percentage row — used to enforce 0–100 / 2-decimal input rules.
-  // Covers Tax Rate %, EBIT Margin %, Post Tax Return %, Gross Margin %, etc.,
-  // plus any custom row whose display name carries a "%".
-  const PERCENT_DISPLAY_IDS = new Set([
-    "TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT",
-    "EBITMARGIN", "EBITMARGINPCT", "EBITMARGINPERCENT",
-    "POSTTAXRETURN", "POSTTAXRETURNPCT", "POSTTAXRETURNPERCENT",
-    "GROSSMARGIN", "GROSSMARGINPCT", "GROSSMARGINPERCENT",
-  ]);
-  const isPercentRow = (v: ValueRow): boolean =>
-    matchesAny(v, PERCENT_DISPLAY_IDS) || /%/.test(v.name ?? "");
+  // A percentage row is one the backend flags with is_percentage = "Y" — the
+  // name is not consulted. It bypasses fx/scale (K/M/B) conversion and gets the
+  // percent input rules; "N" or null is a money row and is scaled.
+  const isPercentRow = (v: ValueRow): boolean => v.isPercentage === "Y";
 
-  // Rows shown as-is, with no fx / K-M-B scale: Tax Rate %, and any line whose
-  // name contains "%" (EBIT Margin %, custom % rows, …).
-  const isUnscaledRow = (v: ValueRow): boolean => isTaxRateRow(v) || isPercentRow(v);
+  // Rows shown as-is, with no fx / K-M-B scale: only is_percentage = "Y" lines.
+  const isUnscaledRow = (v: ValueRow): boolean => isPercentRow(v);
 
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like Tax Rate %.
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
@@ -937,10 +929,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
   };
 
   // Raw formatter: no fx, no scale — used for pure percentage rows like Tax Rate %
-  // Percentage (% in the name) / Tax Rate rows: default decimals, independent of
-  // the K/M/B toggle (same as the FinEval plugin) — tying decimals to the scale
-  // made "EBIT Margin %" read 23 at K but 23.45 at B.
-  const rawFmt = (n: number): string => formatSignedAmount(n, numberFormat);
+  // Percentage (is_percentage = "Y") rows: no fx, no scale and no rounding —
+  // the value shows exactly as stored (12.5 → 12.5), independent of the K/M/B toggle.
+  const rawFmt = (n: number): string => formatSignedTrimmed(n, numberFormat);
 
   // NON_FINANCIAL values show exactly as entered (2 → 2, 2.35 → 2.35) — never
   // rounded, and never tied to the K/M/B scale toggle.
@@ -1704,11 +1695,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                     : val === 0 ? "" : (rawRow ? (isNonFinancialRow(value) ? rawFmtNonFinancial(val) : rawFmt(val)) : displayFmt(val))}
                                   placeholder="—"
                                   onFocus={() => {
-                                    // NON_FINANCIAL seeds the exact stored value (10dp only strips float noise).
-                                    const displayed = val === 0 ? "" : isNonFinancialRow(value)
+                                    // Percentage and NON_FINANCIAL rows seed the exact stored value (10dp only strips float noise).
+                                    const displayed = val === 0 ? "" : rawRow
                                       ? String(parseFloat(val.toFixed(10)))
-                                      : rawRow
-                                      ? String(parseFloat(val.toFixed(3)))
                                       : String(parseFloat(((val * fxMultiplier) / SCALE_DIVISOR[displayScale]).toFixed(decimalsForScale(displayScale))));
                                     setEditingCell({ gId: group.id, vId: value.id, year, raw: displayed });
                                   }}

@@ -33,6 +33,8 @@ export type ValueRow = {
   isCalculated?:      string;
   isMandatory?:       string;
   isCustom?:          string;
+  /** "Y" = percentage line: no FX, no K/M/B scale. "N" / null = money. */
+  isPercentage?:      string;
   displayOrder?:      number;
   status?:            string;
   languageCode?:      string;
@@ -102,6 +104,9 @@ export type StagingLine = {
   isMandatory?:         string;
   isReadOnly?:          string;
   isCustom?:            string;
+  isPercentage?:        string | null;
+  /** Accepted too, in case staging sends the snake_case name. */
+  is_percentage?:       string | null;
   account:              string | null;
   displayOrder:         number;
   yearValues:           Record<string, YearEntry>;
@@ -571,6 +576,7 @@ function transformStagingData(
             isCalculated:     line.isCalculated ?? "N",
             isMandatory:      line.isMandatory  ?? "N",
             isCustom:         line.isCustom     ?? "Y",
+            isPercentage:     line.isPercentage ?? line.is_percentage ?? "N",
             displayOrder:     line.displayOrder,
             status:           line.status       ?? "ACTIVE",
             languageCode:     line.languageCode ?? "EN",

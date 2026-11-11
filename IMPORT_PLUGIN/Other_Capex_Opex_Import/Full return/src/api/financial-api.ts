@@ -28,6 +28,8 @@ export type ValueRow = {
   isCalculated?:    string;
   isMandatory?:     string;
   isCustom?:        string;
+  /** "Y" = percentage line: no FX, no K/M/B scale. "N" / null = money. */
+  isPercentage?:    string;
   // Per-line asset fields — only editable on Capital Investment lines.
   amortizationPeriod?:  number | null;
   datePlacedInService?: string | null;
@@ -93,6 +95,7 @@ export type ApiLine = {
   is_mandatory?:              string;
   is_read_only?:              string;
   is_custom?:                 string;
+  is_percentage?:             string | null;
   account:                    string | null;
   amortization_period?:       number | null;
   date_placed_in_service?:    string | null;
@@ -326,6 +329,7 @@ export function transformApiData(
             isCalculated:   line.is_calculated    ?? "N",
             isMandatory:    line.is_mandatory     ?? "N",
             isCustom:       line.is_custom        ?? "Y",
+            isPercentage:   line.is_percentage    ?? "N",
             displayOrder:   line.display_order,
             status:         line.status           ?? "ACTIVE",
             languageCode:   line.language_code    ?? "EN",
@@ -674,6 +678,7 @@ function mapStagingLine(l: Record<string, unknown>): ApiLine {
     is_mandatory:        (l.isMandatory as string) ?? "N",
     is_read_only:        (l.isReadOnly as string) ?? "N",
     is_custom:           (l.isCustom as string) ?? "Y",
+    is_percentage:       ((l.isPercentage ?? l.is_percentage) as string | null) ?? "N",
     account:             (l.account as string) ?? null,
     amortization_period:    num(l.amortizationPeriod),
     date_placed_in_service: (l.datePlacedInService as string | null) ?? null,

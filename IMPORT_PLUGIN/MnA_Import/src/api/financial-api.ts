@@ -157,6 +157,8 @@ export interface FinEvalGridRow {
   lineType: string | null;
   /** Template identifier for the line, when the endpoint supplies one. */
   lineIdentifier: string | null;
+  /** The line's `is_percentage` is "Y": shown unscaled, without FX. */
+  isPercentage: boolean;
   /** "Y" rows cannot be deleted (Prod parity). */
   isMandatory: boolean;
   /** Non-custom template rows are not deletable (Prod parity). */
@@ -389,6 +391,7 @@ const mapLine = (
     // `buildFinancialEvaluationPayload` writes `line_type ?? line_item_code`.
     lineType: line.line_type ?? line.line_item_code ?? null,
     lineIdentifier: line.line_identifier ?? null,
+    isPercentage: line.is_percentage === "Y",
     // The staging GET sends `cagrPercent` as a string ("11.1812"); the
     // formatter only takes numbers, so coerce it or the cell renders blank.
     cagrPercent: toCagrPercent(line.cagr_percent),

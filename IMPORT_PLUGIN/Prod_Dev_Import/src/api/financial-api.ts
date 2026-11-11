@@ -28,6 +28,8 @@ export type ValueRow = {
   isCalculated?:    string;
   isMandatory?:     string;
   isCustom?:        string;
+  /** "Y" = percentage line: no FX, no K/M/B scale. "N" / null = money. */
+  isPercentage?:    string;
   // Per-line asset fields — only editable on Capital Investment lines.
   amortizationPeriod?:  number | string | null;
   datePlacedInService?: string | null;
@@ -173,6 +175,9 @@ export type StagingLine = {
   isMandatory?:         string;
   isReadOnly?:          string;
   isCustom?:            string;
+  isPercentage?:        string | null;
+  /** Accepted too, in case staging sends the snake_case name. */
+  is_percentage?:       string | null;
   account:              string | null;
   amortizationPeriod?:  string | number | null;
   datePlacedInService?: string | null;
@@ -590,6 +595,7 @@ function transformStagingData(
             isCalculated:   line.isCalculated ?? "N",
             isMandatory:    line.isMandatory  ?? "N",
             isCustom:       line.isCustom     ?? "Y",
+            isPercentage:   line.isPercentage ?? line.is_percentage ?? "N",
             amortizationPeriod:  line.amortizationPeriod  ?? null,
             datePlacedInService: line.datePlacedInService ?? null,
             displayOrder:   line.displayOrder,

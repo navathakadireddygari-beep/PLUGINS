@@ -43,7 +43,6 @@ import { useSaveModel } from "@/context/SaveModelContext";
 import { DARK_HEADER } from "@/components/strip-styles";
 import {
   formatNonFinancial,
-  formatNumber,
   formatPercent,
   isPartialNumberInput,
   nonFinancialPlain,
@@ -120,6 +119,8 @@ type Row = {
   allowsNewLines?: boolean;
   /** Template identifier for the line, same purpose as `lineType`. */
   lineIdentifier?: string | null;
+  /** The line's `is_percentage` is "Y": shown unscaled, without FX. */
+  isPercentage?: boolean;
   /** True when server computes/owns this row. */
   isCalculated?: boolean;
   /** Mandatory rows should not show delete icon. */
@@ -209,6 +210,7 @@ const rowFromApi = (
     lineId: line.lineId,
     lineType: line.lineType,
     lineIdentifier: line.lineIdentifier,
+    isPercentage: line.isPercentage,
     sectionType: line.sectionType,
     sectionName: line.sectionName,
     sectionKey: line.sectionKey,
@@ -298,8 +300,9 @@ const GridColgroup: React.FC<{
 const identityOf = (row: Row): RowIdentity => ({
   lineIdentifier: row.lineIdentifier,
   lineType: row.lineType,
-  // A money row's label is not consulted, so a "%" in it cannot unscale it.
   name: row.money ? undefined : row.label,
+  // A money row (NPV) is never a percentage.
+  isPercentage: row.money ? false : row.isPercentage,
 });
 
 /**
@@ -1413,20 +1416,11 @@ const Table: React.FC = () => {
     if (value.trim() === "") return "—";
     const n = Number(value);
     if (Number.isFinite(n) && n === 0) return "—";
-    // EVERY percentage row, not just Tax Rate: margins, growth and post-tax
-    // return are percentages too, and running one through the FX/scale
-    // pipeline turns 58.3333 into "58" at K or "0.1" at M.
-    if (isPercentRow(identityOf(row))) {
-      if (!Number.isFinite(n)) return "—";
-      const trimmed = String(parseFloat(Math.abs(n).toFixed(2)));
-      const decimals = trimmed.includes(".") ? trimmed.split(".")[1].length : 0;
-      // Scale "K" divides by 1 — this is only for grouping and separators.
-      return formatNumber(n, "K", numberFormat, decimals);
-    }
-    // NON_FINANCIAL rows (custom counts/metrics) also bypass FX + scale entirely.
-    if (isNonFinancialRow(identityOf(row))) {
+    // Percentage rows (is_percentage = "Y") and NON_FINANCIAL rows (custom
+    // counts/metrics) bypass FX + scale entirely, and are shown exactly as
+    // stored (58.3333 stays 58.3333, 2.35 stays 2.35) — never rounded.
+    if (isPercentRow(identityOf(row)) || isNonFinancialRow(identityOf(row))) {
       if (!Number.isFinite(n) || trimNonFinancial(n) === 0) return "—";
-      // Shown exactly as entered (2.35 stays 2.35) — never rounded to a count.
       return formatNonFinancial(n, numberFormat);
     }
     const shown = formatBaseToDisplayed(value);

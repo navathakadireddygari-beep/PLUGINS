@@ -7,9 +7,10 @@
  * is showing USD thousands or EUR billions — and a cross-year total of a
  * percentage is meaningless, so those rows render "—" instead.
  *
- * Matching is deliberately loose: the API may return `line_identifier` as null,
- * so the row's type and its display name are checked too, and a custom row
- * whose name simply contains "%" counts as a percentage row.
+ * Whether a row is a percentage comes from the backend alone: the line's
+ * `is_percentage` flag ("Y"). Its name and type are no longer consulted for
+ * that. The other rules (Tax Rate, no-total) still match on the row's
+ * identifier, type or name, since the API may return `line_identifier` as null.
  */
 
 /** Normalise an identifier for comparison: upper-case, alphanumerics only. */
@@ -21,6 +22,8 @@ export interface RowIdentity {
   lineIdentifier?: string | null;
   lineType?: string | null;
   name?: string | null;
+  /** The line's `is_percentage` flag is "Y". */
+  isPercentage?: boolean;
 }
 
 const matchesAny = (row: RowIdentity, ids: ReadonlySet<string>): boolean =>
@@ -46,61 +49,29 @@ const NO_TOTAL_IDS: ReadonlySet<string> = new Set([
   "STANDALONEEBITMARGINPCT",
 ]);
 
-/** Tax Rate % — exempt from currency AND scale conversion, and from totals. */
+/** Tax Rate % — clamped on entry. */
 const TAX_RATE_IDS: ReadonlySet<string> = new Set([
   "TAXRATE",
   "TAXRATEPCT",
   "TAXRATEPERCENT",
 ]);
 
-/**
- * Any percentage row. These are exempt from FX and scale conversion — 58.33%
- * is 58.33% whether the screen shows USD thousands or CAD billions — and they
- * drive the 0-100 / 2-decimal input rules.
- *
- * The M&A template's percentage `line_type`s are all listed here. Without them
- * a margin was run through the money formatter, so 58.3333 rendered as "58" at
- * K scale and "0.1" at M scale.
- */
-const PERCENT_IDS: ReadonlySet<string> = new Set([
-  ...TAX_RATE_IDS,
-  "EBITMARGIN",
-  "EBITMARGINPCT",
-  "EBITMARGINPERCENT",
-  "EBITGROWTHPCT",
-  "EBITDAMARGINPCT",
-  "EBITDAGROWTHPCT",
-  "STANDALONEEBITMARGINPCT",
-  "POSTTAXRETURN",
-  "POSTTAXRETURNPCT",
-  "POSTTAXRETURNPERCENT",
-  "GROSSMARGIN",
-  "GROSSMARGINPCT",
-  "GROSSMARGINPERCENT",
-]);
-
 /** A row whose cross-year total is meaningless. */
 export const isNoTotalRow = (row: RowIdentity): boolean =>
   matchesAny(row, NO_TOTAL_IDS);
 
-/** A pure percentage exempt from all currency and scale conversion. */
+/** The Tax Rate row: its entry is clamped. */
 export const isTaxRateRow = (row: RowIdentity): boolean =>
   matchesAny(row, TAX_RATE_IDS);
 
 /**
- * Any row whose name contains a "%" anywhere is treated as a percentage — no
- * currency conversion, no K/M/B scale. Same rule as the other SPC plugins.
- *
- * Note: this deliberately includes a "%" in the MIDDLE of a name. A money row
- * labelled e.g. "NPV @ 23% Discount Rate" would therefore also show unscaled;
- * keep "%" out of money-row labels.
+ * A percentage row: the backend's `is_percentage` is "Y". These are exempt
+ * from FX and K/M/B scale — 58.33% is 58.33% whether the screen shows USD
+ * thousands or CAD billions. "N" or null is a money row and is scaled, whatever
+ * its name says.
  */
-const nameLooksLikePercent = (name: string | null | undefined): boolean =>
-  (name ?? "").includes("%");
-
-/** Any percentage row, including a custom one whose name carries a "%". */
 export const isPercentRow = (row: RowIdentity): boolean =>
-  matchesAny(row, PERCENT_IDS) || nameLooksLikePercent(row.name);
+  row.isPercentage === true;
 
 /** A NON_FINANCIAL row (e.g. a custom count/metric) — bypasses FX and scale, same as a percentage row. */
 export const isNonFinancialRow = (row: RowIdentity): boolean =>

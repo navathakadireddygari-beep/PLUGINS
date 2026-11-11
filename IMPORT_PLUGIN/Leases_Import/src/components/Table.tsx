@@ -95,8 +95,9 @@ const isValidPercentInput = (s: string): boolean => {
 const clampPercent = (n: number): number =>
   Math.min(100, Math.max(0, Math.round(n * 100) / 100));
 
-// Any line whose name contains "%" is a percentage — never K/M/B scaled or FX-converted.
-const isPercentRow = (v?: { name?: string }): boolean => /%/.test(v?.name ?? "");
+// A percentage row is one the backend flags with is_percentage = "Y" — never
+// K/M/B scaled or FX-converted. The name is not consulted.
+const isPercentRow = (v?: { isPercentage?: string }): boolean => v?.isPercentage === "Y";
 
 
 /* API types, transformStagingData, and buildFinEvaluationStagingPutPayload live in src/api/financial-api.ts */
@@ -674,19 +675,21 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // NON_FINANCIAL lines (e.g. custom counts/metrics) are stored and shown as-is — no K/M/B scale, no FX.
   const isNonFinancialRow = (v?: { lineIdentifier?: string }): boolean =>
     tok(v?.lineIdentifier) === "NONFINANCIAL"; // NON_FINANCIAL / NONFINANCIAL / "Non Financial"
-  // Row-level "show as-is" rule: NON_FINANCIAL lines, and any line whose name
-  // contains "%" (percentages) — no K/M/B scale, no FX. The section-level rule
-  // (isSectionNonFinancial) stays NON_FINANCIAL-only.
-  const isUnscaledRow = (v?: { lineIdentifier?: string; name?: string }): boolean =>
+  // Row-level "show as-is" rule: NON_FINANCIAL lines, and lines the backend
+  // flags with is_percentage = "Y" — no K/M/B scale, no FX. The name is not
+  // consulted. The section-level rule (isSectionNonFinancial) stays
+  // NON_FINANCIAL-only.
+  const isUnscaledRow = (v?: { lineIdentifier?: string; isPercentage?: string }): boolean =>
     isNonFinancialRow(v) || isPercentRow(v);
 
-  // bypassScale: no fx / K-M-B scale, up to 2 decimals with trailing zeros
-  // trimmed (12.5 → 12.5, 26 → 26) — percentage / unscaled rows.
+  // bypassScale: no fx / K-M-B scale and no rounding — percentage
+  // (is_percentage = "Y") / unscaled rows show exactly as stored (10 dp only
+  // strips float noise).
   const displayFmt = (n: number, bypassScale = false): string => {
     if (!n) return "—";
     if (bypassScale) {
-      if (Number(Math.abs(n).toFixed(2)) === 0) return "—";
-      const formatted = formatNumberTrimmed(n, numberFormat, 2);
+      if (Number(Math.abs(n).toFixed(10)) === 0) return "—";
+      const formatted = formatNumberTrimmed(n, numberFormat, 10);
       return n < 0 ? `(${formatted})` : formatted;
     }
     const v = (n * fxMultiplier) / scaleDivisorFor(displayScale);
@@ -731,8 +734,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const netFmt = (n: number, bypassScale = false): string => {
     if (!n) return '–';
     if (bypassScale) {
-      if (Number(Math.abs(n).toFixed(2)) === 0) return '–';
-      const formatted = formatNumberTrimmed(Math.abs(n), numberFormat, 2);
+      if (Number(Math.abs(n).toFixed(10)) === 0) return '–';
+      const formatted = formatNumberTrimmed(Math.abs(n), numberFormat, 10);
       return n < 0 ? `-${formatted}` : `+${formatted}`;
     }
     const v = (n * fxMultiplier) / scaleDivisorFor(displayScale);
@@ -1009,7 +1012,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         if (g.id !== gId) return g;
         const idx     = g.values.findIndex((v) => v.id === vId);
         const pastedIdent = newRowIdentifier(g);
-        const newRows: ValueRow[] = parsed.map((r): ValueRow => { const yv: YearValues = {}; p.years.forEach((y, i) => { const v = r.values[i] ?? 0; yv[y] = isPercentRow({ name: r.name }) ? clampPercent(v) : isUnscaledRow({ lineIdentifier: pastedIdent, name: r.name }) ? v : v * scaleDivisorFor(displayScale) / fxMultiplier; }); return { id: generateId(), name: r.name, yearValues: yv, lineType: "CUSTOM", lineIdentifier: pastedIdent, isCalculated: "N", isCustom: "Y", status: "ACTIVE", languageCode: "EN" }; });
+        const newRows: ValueRow[] = parsed.map((r): ValueRow => { const yv: YearValues = {}; p.years.forEach((y, i) => { const v = r.values[i] ?? 0; yv[y] = isUnscaledRow({ lineIdentifier: pastedIdent }) ? v : v * scaleDivisorFor(displayScale) / fxMultiplier; }); return { id: generateId(), name: r.name, yearValues: yv, lineType: "CUSTOM", lineIdentifier: pastedIdent, isCalculated: "N", isCustom: "Y", status: "ACTIVE", languageCode: "EN" }; });
         const ex      = g.values[idx];
         const isBlank = (!ex?.name || ex?.name === "New Line Item") && Object.values(ex.yearValues).every((v) => v === 0);
         const withRows: Group = { ...g, values: isBlank ? [...g.values.slice(0, idx), ...newRows, ...g.values.slice(idx + 1)] : [...g.values.slice(0, idx + 1), ...newRows, ...g.values.slice(idx + 1)] };
@@ -1621,11 +1624,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           {(() => { const pctRow = isPercentRow(value); const nonFinancial = !pctRow && isNonFinancialRow(value); return data.years.map((year: number, yi: number) => {
                             const val = value.yearValues[year] ?? 0;
                             const isEditingThis = editingCell?.gId === src.id && editingCell?.vId === value.id && editingCell?.year === year;
-                            // Shown (display-unit) value: % rows raw at ≤2dp, NON_FINANCIAL raw
-                            // (float noise trimmed), FINANCIAL × fx ÷ K/M/B scale.
+                            // Shown (display-unit) value: % and NON_FINANCIAL rows raw, exactly
+                            // as stored (float noise trimmed), FINANCIAL × fx ÷ K/M/B scale.
                             const shown = val === 0 ? ""
-                              : pctRow ? String(parseFloat(val.toFixed(2)))
-                              : nonFinancial ? String(parseFloat(val.toFixed(10)))
+                              : pctRow || nonFinancial ? String(parseFloat(val.toFixed(10)))
                               : String(parseFloat(((val * fxMultiplier) / scaleDivisorFor(displayScale)).toFixed(decimalsForScale(displayScale))));
                             return (
                               <td key={year} style={{ ...TD, padding: "4px 14px", background: isReadonly ? "#f3f4f6" : "#fff" }}>
