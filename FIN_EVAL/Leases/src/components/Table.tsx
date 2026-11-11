@@ -604,16 +604,18 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // NON_FINANCIAL lines (e.g. custom counts/metrics) are stored and shown as-is — no K/M/B scale, no FX.
   const isNonFinancialRow = (v?: { lineIdentifier?: string }): boolean =>
     tok(v?.lineIdentifier) === "NONFINANCIAL"; // NON_FINANCIAL / NONFINANCIAL / "Non Financial"
-  // Row-level "show as-is" rule: NON_FINANCIAL lines, and any line whose name
-  // contains "%" (percentages) — no K/M/B scale, no FX. The section-level rule
-  // (isSectionNonFinancial) stays NON_FINANCIAL-only.
-  const isUnscaledRow = (v?: { lineIdentifier?: string; name?: string }): boolean =>
-    isNonFinancialRow(v) || /%/.test(v?.name ?? "");
+  // Row-level "show as-is" rule: NON_FINANCIAL lines, and lines the backend
+  // flags with is_percentage = "Y" — no K/M/B scale, no FX. The name is not
+  // consulted. The section-level rule (isSectionNonFinancial) stays
+  // NON_FINANCIAL-only.
+  const isUnscaledRow = (v?: { lineIdentifier?: string; isPercentage?: string }): boolean =>
+    isNonFinancialRow(v) || v?.isPercentage === "Y";
 
-  // Unscaled rows (percentages) show as entered, up to 2 decimals trimmed.
+  // Unscaled rows (is_percentage = "Y") show exactly as stored — no rounding;
+  // 10 dp only strips float noise.
   const formatUnscaledValue = (n: number, zero = "—"): string => {
-    if (!parseFloat(Math.abs(n).toFixed(2))) return zero;
-    const formatted = formatNumberTrimmed(Math.abs(n), numberFormat, 2);
+    if (!parseFloat(Math.abs(n).toFixed(10))) return zero;
+    const formatted = formatNumberTrimmed(Math.abs(n), numberFormat, 10);
     return n < 0 ? `(${formatted})` : formatted;
   };
 
@@ -1001,7 +1003,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         if (g.id !== gId) return g;
         const idx     = g.values.findIndex((v) => v.id === vId);
         const pastedIdent = newRowIdentifier(g);
-        const newRows: ValueRow[] = parsed.map((r): ValueRow => { const yv: YearValues = {}; p.years.forEach((y, i) => { const v = r.values[i] ?? 0; yv[y] = isUnscaledRow({ lineIdentifier: pastedIdent, name: r.name }) ? v : v * scaleDivisorFor(displayScale) / fxMultiplier; }); return { id: generateId(), name: r.name, yearValues: yv, lineType: "CUSTOM", lineIdentifier: pastedIdent, isCalculated: "N", status: "ACTIVE", languageCode: "EN" }; });
+        const newRows: ValueRow[] = parsed.map((r): ValueRow => { const yv: YearValues = {}; p.years.forEach((y, i) => { const v = r.values[i] ?? 0; yv[y] = isUnscaledRow({ lineIdentifier: pastedIdent }) ? v : v * scaleDivisorFor(displayScale) / fxMultiplier; }); return { id: generateId(), name: r.name, yearValues: yv, lineType: "CUSTOM", lineIdentifier: pastedIdent, isCalculated: "N", status: "ACTIVE", languageCode: "EN" }; });
         const ex      = g.values[idx];
         const isBlank = (!ex?.name || ex?.name === "New Line Item") && Object.values(ex.yearValues).every((v) => v === 0);
         const withRows: Group = { ...g, values: isBlank ? [...g.values.slice(0, idx), ...newRows, ...g.values.slice(idx + 1)] : [...g.values.slice(0, idx + 1), ...newRows, ...g.values.slice(idx + 1)] };

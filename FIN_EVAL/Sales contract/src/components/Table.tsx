@@ -639,13 +639,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return v < 0 ? `(${formatted})` : formatted;
   };
 
-  /* Percentage rows (e.g. "Margin %") are currency-agnostic — they must not be
-     multiplied by the exchange rate or divided by the scale factor. */
-  const isPercentRow = (value: ValueRow): boolean => {
-    const name = (value.name || "").trim();
-    const ident = `${value.lineIdentifier || ""} ${value.lineType || ""}`.toUpperCase();
-    return name.includes("%") || /PCT|PERCENT|MARGIN_?%/.test(ident);
-  };
+  /* Percentage rows are currency-agnostic — not multiplied by the exchange
+     rate or divided by the scale factor. Only lines the backend flags with
+     is_percentage = "Y" count; "N" or null is a money row, whatever its name. */
+  const isPercentRow = (value: ValueRow): boolean => value.isPercentage === "Y";
 
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like percent rows.
   const isNonFinancialRow = (value: ValueRow): boolean =>
@@ -663,8 +660,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   const displayPercent = (n: number): string => {
     if (!n) return "—";
-    // Up to 2 decimals (trailing zeros trimmed) — same precision the input accepts.
-    const formatted = formatNumber(Math.abs(n), numFmt, 2);
+    // Exactly as stored, not rounded (EXACT_DECIMALS only strips float noise).
+    if (roundsToZero(n)) return "—";
+    const formatted = formatNumber(Math.abs(n), numFmt, EXACT_DECIMALS);
     return n < 0 ? `(${formatted}%)` : `${formatted}%`;
   };
 

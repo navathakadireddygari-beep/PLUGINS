@@ -37,6 +37,8 @@ export interface FinEvalLine {
   is_read_only: YesNo;
   is_mandatory: YesNo;
   is_custom: YesNo;
+  /** "Y" marks a percentage line: no FX, no K/M/B scale. "N" or null is money. */
+  is_percentage?: YesNo | null;
   display_order: number;
   year_values: FinEvalYearValues | null;
   /** Server-computed CAGR across the line's fiscal years, as a plain percentage. */

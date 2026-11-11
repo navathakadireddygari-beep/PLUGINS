@@ -30,6 +30,8 @@ export type ValueRow = {
   isCalculated?:    string;
   isMandatory?:     string;
   isCustom?:        string;
+  /** "Y" = percentage line: no FX, no K/M/B scale. "N" / null = money. */
+  isPercentage?:    string;
   isReadOnly?:      string;
   displayOrder?:    number;
   status?:          string;
@@ -90,6 +92,7 @@ export type ApiLine = {
   is_read_only?:              string;
   is_mandatory?:              string;
   is_custom?:                 string;
+  is_percentage?:             string | null;
   account:                    string | null;
   display_order:              number;
   year_values:                Record<string, YearEntry>;
@@ -331,6 +334,7 @@ export function transformApiData(
             isCalculated:   line.is_calculated    ?? "N",
             isMandatory:    line.is_mandatory     ?? "N",
             isCustom:       line.is_custom        ?? "Y",
+            isPercentage:   line.is_percentage    ?? "N",
             isReadOnly:     line.is_read_only     ?? "N",
             displayOrder:   line.display_order,
             status:         line.status           ?? "ACTIVE",
@@ -412,6 +416,7 @@ export function buildPutPayload(
         is_read_only:        value.isReadOnly     ?? "N",
         is_mandatory:        value.isMandatory    ?? "N",
         is_custom:           value.isCustom       ?? "Y",
+        is_percentage:       value.isPercentage   ?? "N",
         account:             value.accountId      ?? null,
         display_order:       value.displayOrder   ?? lineIdx + 1,
         year_values,

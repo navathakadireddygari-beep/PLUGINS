@@ -29,6 +29,8 @@ export type ValueRow = {
   lineIdentifier?:    string;
   isCalculated?:      string;
   isCustom?:          string;
+  /** "Y" = percentage line: no FX, no K/M/B scale. "N" / null = money. */
+  isPercentage?:      string;
   isMandatory?:       string;
   displayOrder?:      number;
   status?:            string;
@@ -83,6 +85,7 @@ export type ApiLine = {
   line_identifier:            string;
   is_calculated:              string;
   is_custom?:                 string;
+  is_percentage?:             string | null;
   is_mandatory?:              string;
   account:                    string | null;
   target_go_live_date:        string | null;
@@ -311,6 +314,7 @@ export function transformApiData(
             lineIdentifier: (line.line_identifier ?? "FINANCIAL").toUpperCase(),
             isCalculated:   line.is_calculated    ?? "N",
             isCustom:       line.is_custom        ?? "Y",
+            isPercentage:   line.is_percentage    ?? "N",
             isMandatory:    line.is_mandatory     ?? "N",
             displayOrder:   line.display_order,
             status:         line.status           ?? "ACTIVE",
@@ -402,6 +406,7 @@ export function buildPutPayload(
         line_identifier:       (value.lineIdentifier ?? "FINANCIAL").toUpperCase(),
         is_calculated:         value.isCalculated      ?? "N",
         is_custom:             value.isCustom          ?? "Y",
+        is_percentage:       value.isPercentage   ?? "N",
         account:               value.accountId         ?? null,
         target_go_live_date:   value.targetGoLiveDate  ?? null,
         display_order:       value.displayOrder   ?? lineIdx + 1,

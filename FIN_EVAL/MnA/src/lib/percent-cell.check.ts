@@ -2,10 +2,9 @@
  * Percentage cells carry the "%" — the unit belongs in the cell, not only in
  * the row label.
  *
- * Rows whose label contains "%" anywhere ("% EBIT Margin", "Standalone EBIT
- * Margin %"), plus the ones matched by line_type (POST_TAX_RETURN, TAX_RATE),
- * used to print their stored value raw: a margin the engine computes to four
- * decimals rendered as "41.5584" beside a label reading "% EBIT Margin".
+ * Percentage rows (the line's is_percentage is "Y") used to print their stored
+ * value raw: a margin the engine computes to four decimals rendered as
+ * "41.5584" beside a label reading "% EBIT Margin".
  *
  * Run: npx tsx src/lib/percent-cell.check.ts
  */
@@ -37,7 +36,7 @@ const cell = (stored: string): string => {
   return formatPercent(n, "us");
 };
 
-console.log("The rows from the screenshot are recognised as percentages");
+console.log("Percentage rows come from is_percentage, not the name");
 for (const name of [
   "% EBIT Margin",
   "% EBIT Growth",
@@ -45,16 +44,15 @@ for (const name of [
   "% EBITDA Growth",
   "Standalone EBIT Margin %",
 ]) {
-  eq(`"${name}"`, isPercentRow({ name }), true);
+  eq(`"${name}" with is_percentage Y`, isPercentRow({ name, isPercentage: true }), true);
+  eq(`"${name}" with is_percentage N`, isPercentRow({ name, isPercentage: false }), false);
 }
-// ...and by line_type, for the ones whose label carries no "%".
-eq('"Post tax return" by line_type',
-   isPercentRow({ name: "Post tax return", lineType: "POST_TAX_RETURN" }), true);
-// Any "%" in the name marks a percentage row (rule shared across SPC plugins).
-eq('"NPV @ 10% Discount Rate" counts as a percentage',
-   isPercentRow({ name: "NPV @ 10% Discount Rate" }), true);
+eq('"Post tax return" with is_percentage Y',
+   isPercentRow({ name: "Post tax return", lineType: "POST_TAX_RETURN", isPercentage: true }), true);
+eq('"NPV @ 10% Discount Rate" with no flag is NOT a percentage',
+   isPercentRow({ name: "NPV @ 10% Discount Rate" }), false);
 eq('"Standalone Revenues" is NOT a percentage',
-   isPercentRow({ name: "Standalone Revenues" }), false);
+   isPercentRow({ name: "Standalone Revenues", isPercentage: false }), false);
 
 console.log("\nThe cell carries the % (screenshot values)");
 eq("40 -> 40%", cell("40"), "40%");

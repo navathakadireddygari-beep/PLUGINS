@@ -1,27 +1,24 @@
 import { isPercentRow, isNoTotalRow } from "./row-rules";
 
+// Only the backend's is_percentage flag makes a percentage row; the name and
+// line_type no longer do.
 const rows = [
-  { name: "% EBIT Margin", lineType: "EBIT_MARGIN_PCT", want: true },
-  { name: "% EBIT Growth", lineType: "EBIT_GROWTH_PCT", want: true },
-  { name: "Post Tax Return %", lineType: "POST_TAX_RETURN", want: true },
-  { name: "Tax rate", lineType: "TAX_RATE", want: true },
-  { name: "Standalone Revenues", lineType: "STANDALONE_REVENUES", want: false },
-  { name: "Revenue", lineType: "REVENUE_TOTAL", want: false },
-  { name: "EBIT", lineType: "EBIT", want: false },
-  { name: "Total Costs", lineType: "COSTS_TOTAL", want: false },
-  // Any "%" in the name marks a percentage row (rule shared across SPC plugins).
-  { name: "NPV @ 23% Discount Rate", lineType: null, want: true },
-  { name: "PV of Yrs 0-7", lineType: null, want: false },
-  { name: "Net Purchase Price", lineType: null, want: false },
+  { name: "% EBIT Margin", lineType: "EBIT_MARGIN_PCT", isPercentage: true, want: true },
+  { name: "Tax rate", lineType: "TAX_RATE", isPercentage: true, want: true },
+  { name: "Post tax return", lineType: "POST_TAX_RETURN", isPercentage: true, want: true },
+  { name: "% EBIT Margin", lineType: "EBIT_MARGIN_PCT", isPercentage: false, want: false },
+  { name: "Tax rate", lineType: "TAX_RATE", isPercentage: undefined, want: false },
+  { name: "NPV @ 23% Discount Rate", lineType: null, isPercentage: false, want: false },
+  { name: "Standalone Revenues", lineType: "STANDALONE_REVENUES", isPercentage: false, want: false },
 ];
 
 let fail = 0;
 for (const r of rows) {
-  const got = isPercentRow({ name: r.name, lineType: r.lineType });
+  const got = isPercentRow({ name: r.name, lineType: r.lineType, isPercentage: r.isPercentage });
   const ok = got === r.want;
   if (!ok) fail += 1;
   console.log(
-    `${ok ? "  ok  " : "  FAIL"} isPercentRow(${JSON.stringify(r.name).padEnd(28)}) = ${String(got).padEnd(5)} want=${r.want}`,
+    `${ok ? "  ok  " : "  FAIL"} isPercentRow(${JSON.stringify(r.name).padEnd(28)} is_percentage=${String(r.isPercentage).padEnd(9)}) = ${String(got).padEnd(5)} want=${r.want}`,
   );
 }
 console.log("");

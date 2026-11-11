@@ -29,6 +29,8 @@ export type ValueRow = {
   isCalculated?:      string;
   isMandatory?:       string;
   isCustom?:          string;
+  /** "Y" = percentage line: no FX, no K/M/B scale. "N" / null = money. */
+  isPercentage?:      string;
   displayOrder?:      number;
   status?:            string;
   languageCode?:      string;
@@ -77,6 +79,7 @@ export type ApiLine = {
   is_calculated:              string;
   is_mandatory?:              string;
   is_custom?:                 string;
+  is_percentage?:             string | null;
   account:                    string | null;
   target_go_live_date:        string | null;
   display_order:              number;
@@ -283,6 +286,7 @@ export function transformApiData(
             // Default missing is_custom to "Y" so only lines the backend
             // explicitly marks "N" become locked (preserves existing behavior).
             isCustom:       line.is_custom         ?? "Y",
+            isPercentage:   line.is_percentage    ?? "N",
             displayOrder:   line.display_order,
             status:         line.status           ?? "ACTIVE",
             languageCode:   line.language_code    ?? "EN",
@@ -366,6 +370,7 @@ export function buildPutPayload(
         line_identifier:       (value.lineIdentifier ?? "FINANCIAL").toUpperCase(),
         is_calculated:         value.isCalculated      ?? "N",
         is_custom:             value.isCustom          ?? "Y",
+        is_percentage:       value.isPercentage   ?? "N",
         account:               value.accountId         ?? null,
         target_go_live_date:   value.targetGoLiveDate  ?? null,
         display_order:       value.displayOrder   ?? lineIdx + 1,

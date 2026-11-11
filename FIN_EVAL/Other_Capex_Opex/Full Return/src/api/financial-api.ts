@@ -28,6 +28,8 @@ export type ValueRow = {
   isCalculated?:    string;
   isMandatory?:     string;
   isCustom?:        string;
+  /** "Y" = percentage line: no FX, no K/M/B scale. "N" / null = money. */
+  isPercentage?:    string;
   // Per-line asset fields — only editable on Capital Investment lines.
   amortizationPeriod?:  number | null;
   datePlacedInService?: string | null;
@@ -88,6 +90,7 @@ export type ApiLine = {
   is_calculated:              string;
   is_mandatory?:              string;
   is_custom?:                 string;
+  is_percentage?:             string | null;
   account:                    string | null;
   amortization_period?:       number | null;
   date_placed_in_service?:    string | null;
@@ -325,6 +328,7 @@ export function transformApiData(
             isCalculated:   line.is_calculated    ?? "N",
             isMandatory:    line.is_mandatory     ?? "N",
             isCustom:       line.is_custom        ?? "Y",
+            isPercentage:   line.is_percentage    ?? "N",
             displayOrder:   line.display_order,
             status:         line.status           ?? "ACTIVE",
             languageCode:   line.language_code    ?? "EN",
@@ -391,6 +395,7 @@ export function buildPutPayload(
         line_identifier:     (value.lineIdentifier ?? "FINANCIAL").toUpperCase(),
         is_calculated:       value.isCalculated   ?? "N",
         is_custom:           value.isCustom       ?? "Y",
+        is_percentage:       value.isPercentage   ?? "N",
         account:             value.accountId      ?? null,
         amortization_period:    value.amortizationPeriod  ?? null,
         date_placed_in_service: value.datePlacedInService || null,

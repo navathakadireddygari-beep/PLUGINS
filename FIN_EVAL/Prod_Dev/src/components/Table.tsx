@@ -816,17 +816,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const TAX_RATE_DISPLAY_IDS = new Set(["TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT"]);
   const isTaxRateRow = (v: ValueRow): boolean => matchesAny(v, TAX_RATE_DISPLAY_IDS);
 
-  // Any percentage row — bypasses fx/scale (K/M/B) conversion entirely and
-  // enforces 0–100 / 2-decimal input rules. Prod Dev's template only has Tax
-  // Rate %, EBIT Margin %, and Post Tax Return %, plus any custom row whose
-  // display name carries a "%".
-  const PERCENT_DISPLAY_IDS = new Set([
-    "TAXRATE", "TAXRATEPCT", "TAXRATEPERCENT",
-    "EBITMARGIN", "EBITMARGINPCT", "EBITMARGINPERCENT",
-    "POSTTAXRETURN", "POSTTAXRETURNPCT", "POSTTAXRETURNPERCENT",
-  ]);
-  const isPercentRow = (v: ValueRow): boolean =>
-    matchesAny(v, PERCENT_DISPLAY_IDS) || /%/.test(v.name ?? "");
+  // A percentage row is one the backend flags with is_percentage = "Y" — the
+  // name is not consulted. It bypasses fx/scale (K/M/B) conversion and gets the
+  // percent input rules; "N" or null is a money row and is scaled.
+  const isPercentRow = (v: ValueRow): boolean => v.isPercentage === "Y";
 
   // NON_FINANCIAL lines (e.g. custom counts/metrics) also bypass fx/scale, like percent rows.
   const isNonFinancialRow = (v: ValueRow): boolean => tok(v.lineIdentifier) === "NONFINANCIAL";
@@ -838,17 +831,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return editable.length > 0 && editable.every(isNonFinancialRow);
   };
 
-  // Raw formatter: no fx, no scale, trailing zero decimals trimmed (26 not
-  // 26.00) — used for percentage rows. Fully independent of the K/M/B toggle —
-  // neither the value nor its decimal precision shifts when scale changes.
-  const rawFmt = (n: number): string => {
-    if (!n) return "—";
-    // A non-zero value that rounds to zero at the shown decimals (e.g. 0.001 at 2dp)
-    // must still read as empty, same as a true zero — not "0.00".
-    if (Number(Math.abs(n).toFixed(2)) === 0) return "—";
-    const formatted = groupNumberTrimmed(n, numberFormat, 2);
-    return n < 0 ? `(${formatted})` : formatted;
-  };
+  // Raw formatter for percentage (is_percentage = "Y") and NON_FINANCIAL rows:
+  // no fx, no scale and no rounding — the value shows exactly as stored (12.5 →
+  // 12.5, 41.5584 → 41.5584). Independent of the K/M/B toggle.
+  const rawFmt = (n: number): string => nonFinFmt(n);
 
   // NON_FINANCIAL formatter: no fx, no scale and no rounding — counts/metrics
   // show exactly what was entered (2 → 2, 2.35 → 2.35). 10dp only strips float noise.
@@ -870,11 +856,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // Value shown in an editable cell when it is NOT being edited — same scale +
   // number format as the totals (blank for zero → placeholder "—"). On focus the
   // cell swaps to a plain, un-grouped number for easy editing (see onFocus).
-  // NON_FINANCIAL cells (nonFin) are unrounded; percent cells keep 2dp.
-  const cellDisplay = (val: number, rawRow: boolean, nonFin = false): string => {
+  // Percentage and NON_FINANCIAL cells (rawRow) are unrounded.
+  const cellDisplay = (val: number, rawRow: boolean): string => {
     if (val === 0) return "";
     const sv = rawRow ? val : (val * fxMultiplier) / scaleDivisor(displayScale);
-    const rawDecimals = nonFin ? NON_FIN_DECIMALS : 2;
+    const rawDecimals = NON_FIN_DECIMALS;
     if (Number(Math.abs(sv).toFixed(rawRow ? rawDecimals : scaleDecimalsOf(displayScale))) === 0) return "";
     const formatted = rawRow
       ? groupNumberTrimmed(sv, numberFormat, rawDecimals)
@@ -1665,12 +1651,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                   onKeyDown={(e) => handleCellArrowNav(e, value.id, year)}
                                   value={editingCell?.gId === group.id && editingCell?.vId === value.id && editingCell?.year === year
                                     ? editingCell.raw
-                                    : cellDisplay(val, rawRow, nonFinRow && !pctRow)}
+                                    : cellDisplay(val, rawRow)}
                                   placeholder="—"
                                   onFocus={() => {
                                     // NON_FINANCIAL seeds the exact stored value (float noise trimmed).
                                     const displayed = val === 0 ? "" : rawRow
-                                      ? String(parseFloat(val.toFixed(nonFinRow && !pctRow ? NON_FIN_DECIMALS : 3)))
+                                      ? String(parseFloat(val.toFixed(NON_FIN_DECIMALS)))
                                       : String(parseFloat(((val * fxMultiplier) / scaleDivisor(displayScale)).toFixed(3)));
                                     setEditingCell({ gId: group.id, vId: value.id, year, raw: displayed });
                                   }}
