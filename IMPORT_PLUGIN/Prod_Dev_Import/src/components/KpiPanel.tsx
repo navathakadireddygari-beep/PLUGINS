@@ -164,7 +164,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, isReadonly, numberFormat,
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
+    <div data-kpi-panel="" style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
 
       {/* ── KPI cards ── */}
       <div style={{ display: "flex", gap: 12, marginTop: 5 }}>

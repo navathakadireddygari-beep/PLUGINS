@@ -63,7 +63,7 @@ function KpiPanel({ rawHeader, displayScale, numberFormat, fxMultiplier }: Props
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
+    <div data-kpi-panel="" style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
       <div style={{ display: "flex", gap: 12, marginTop: 5 }}>
         <div style={{ ...cardShell, borderLeftColor: "#4ECDC4" }}>
           <div style={labelStyle}>Total Investment</div>

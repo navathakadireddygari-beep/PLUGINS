@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { Trash2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X, RefreshCw, Save, Check } from "lucide-react";
+import { ERROR_FLASH_CSS, flashErrorTarget } from "../lib/error-flash";
 import { getAppConfig } from "../config/app-config";
 import {
   getFinEvaluationStaging,
@@ -172,6 +173,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // current data still matches it; any edit after validating needs a re-validate.
   const [validatedSnapshot, setValidatedSnapshot] = useState<string | null>(null);
   const [highlightLineId,  setHighlightLineId]  = useState<string | null>(null);
+  // Bumped by every error click, so clicking the same error again re-scrolls and re-flashes.
+  const [errorNavSeq, setErrorNavSeq] = useState(0);
+  // Set by an error click on a section: the scroll effect flashes the section bar it lands on.
+  const flashSectionRef = useRef(false);
   const [highlightHeaderField, setHighlightHeaderField] = useState<string | null>(null);
   const [saveError,    setSaveError]    = useState<string | null>(null);
   const [toast,        setToast]        = useState<ToastState>(null);
@@ -207,6 +212,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const headerRef    = useRef<HTMLDivElement>(null);
   const sentinelRef  = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  /** Header-level error with no field of its own: flash the KPI panel. */
+  const flashKpiPanel = (): void => {
+    const panel = containerRef.current?.querySelector<HTMLElement>("[data-kpi-panel]");
+    if (panel) flashErrorTarget(panel);
+  };
 
   // Master edit gate — set by the host page (APEX plugin), based on
   // proposal ownership / collaborator access level / role. When true,
@@ -492,6 +502,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       // scroll-margin-top offsets the section header below the APEX sticky navbar
       el.style.scrollMarginTop = "120px";
       el.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (flashSectionRef.current) { flashSectionRef.current = false; flashErrorTarget(el); }
       setScrollTarget(null);
     };
 
@@ -511,6 +522,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       if (el) {
         el.style.scrollMarginTop = "120px";
         el.scrollIntoView({ behavior: "smooth", block: "center" });
+        flashErrorTarget(el);
       } else if (attempts < 20) {
         attempts++;
         retry = setTimeout(tryScroll, 50);
@@ -519,17 +531,18 @@ export default function PivotTableWithAPI(): React.ReactElement {
     tryScroll();
     const clear = setTimeout(() => setHighlightLineId(null), 3000);
     return () => { clearTimeout(clear); if (retry) clearTimeout(retry); };
-  }, [highlightLineId]);
+  }, [highlightLineId, errorNavSeq]);
 
   /* ── Header-level validation error ──
      The KPI panel has no editable header fields, so bring the top of the
-     widget (KPI cards) into view. */
+     widget (KPI cards) into view and flash them. */
   useEffect(() => {
     if (!highlightHeaderField) return;
     containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    flashKpiPanel();
     const clear = setTimeout(() => setHighlightHeaderField(null), 3000);
     return () => clearTimeout(clear);
-  }, [highlightHeaderField]);
+  }, [highlightHeaderField, errorNavSeq]);
 
   /* ── Save Draft ──────────────────────────────────────────────
      PUT/POST the current state, re-fetch, then run the full-DCF
@@ -889,6 +902,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const goToError = (idx: number): void => {
     const err = validationErrors[idx];
     if (!err) return;
+    setErrorNavSeq((n) => n + 1);
     if (err.headerField) {
       setHighlightHeaderField(String(err.headerField));
       return;
@@ -902,6 +916,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     if (err.sectionId != null) {
       const owningGroup = data.groups.find((g) => g.sectionId === err.sectionId);
       if (owningGroup) revealGroup(owningGroup);
+      flashSectionRef.current = true;
       setScrollTarget(String(err.sectionId));
     }
   };
@@ -1069,6 +1084,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   return (
     <div ref={containerRef} onInputCapture={onAnyInput} style={{ width: "100%", maxWidth: WIDGET_MAX_WIDTH, margin: "0 auto", background: "#fff" }}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <style>{ERROR_FLASH_CSS}</style>
       {/* Sentinel — IntersectionObserver watches this to detect when header should pin */}
       <div ref={sentinelRef} style={{ height: 1, marginBottom: -1 }} />
 

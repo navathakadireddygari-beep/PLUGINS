@@ -385,6 +385,8 @@ const partitionClass = (col: number, actualsCount: number): string =>
 
 /** Flash on the target of a validation-error click, defined in globals.css. */
 const FLASH_CLASS = "mna_flash";
+/** Ring-only flash for a dark section bar, where the fill would hide its white text. */
+const RING_CLASS = "mna_ring";
 
 /**
  * Which panel a template section the upload is MISSING belongs in, keyed by
@@ -1237,6 +1239,7 @@ const Table: React.FC = () => {
     let attempts = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let flashed: HTMLElement | null = null;
+    let flashClass = FLASH_CLASS;
     /** Present AND drawn (a collapsed / display:none node has no boxes). */
     const visible = (e: HTMLElement | null): e is HTMLElement =>
       !!e && e.getClientRects().length > 0;
@@ -1266,19 +1269,20 @@ const Table: React.FC = () => {
       // Clears the APEX sticky navbar, as Prod Dev does.
       el.style.scrollMarginTop = "120px";
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add(FLASH_CLASS);
+      flashClass = el.matches("[data-section-key]") ? RING_CLASS : FLASH_CLASS;
+      el.classList.add(flashClass);
       flashed = el;
       // A Key Input target: put the caret in the field too.
       if (el.matches("[data-key-input]")) {
         el.querySelector<HTMLInputElement>("input[data-key-input-field]")
           ?.focus({ preventScroll: true });
       }
-      timer = setTimeout(() => el.classList.remove(FLASH_CLASS), 3000);
+      timer = setTimeout(() => el.classList.remove(flashClass), 3000);
     };
     tryScroll();
     return () => {
       if (timer) clearTimeout(timer);
-      flashed?.classList.remove(FLASH_CLASS);
+      flashed?.classList.remove(flashClass);
     };
   }, [errorFocus]);
 

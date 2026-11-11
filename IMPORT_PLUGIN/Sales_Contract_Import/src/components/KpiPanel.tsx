@@ -76,7 +76,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, fxMultiplier, numFmt }: P
   const symbol  = currencySymbol(display);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, margin: "0 0 16px 0" }}>
+    <div data-kpi-panel="" style={{ display: "flex", flexDirection: "column", gap: 18, margin: "0 0 16px 0" }}>
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         <div style={{ ...cardShell, borderLeftColor: GREEN }}>
           <div style={labelStyle}>Total Contract Value</div>

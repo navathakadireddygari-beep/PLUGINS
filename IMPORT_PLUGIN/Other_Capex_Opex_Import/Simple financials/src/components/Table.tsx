@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Save, Check } from "lucide-react";
+import { ERROR_FLASH_CSS, flashErrorTarget } from "../lib/error-flash";
 import { getAppConfig } from "../config/app-config";
 import { subscribeAllActions, publishToBridge } from "../lib";
 import type {} from "../types/fin-eval-bridge";
@@ -296,6 +297,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [validatedSnapshot,  setValidatedSnapshot]  = useState<string | null>(null);
   const [errorsDismissed,    setErrorsDismissed]     = useState<boolean>(false);
   const [highlightLineId,      setHighlightLineId]      = useState<string | null>(null);
+  // Bumped by every error click, so clicking the same error again re-scrolls and re-flashes.
+  const [errorNavSeq, setErrorNavSeq] = useState(0);
+  // Set by an error click on a section: the scroll effect flashes the section bar it lands on.
+  const flashSectionRef = useRef(false);
   const [highlightHeaderField, setHighlightHeaderField] = useState<string | null>(null);
   const [highlightSectionId,   setHighlightSectionId]   = useState<string | null>(null);
 
@@ -324,6 +329,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const headerRef    = useRef<HTMLDivElement>(null);
   const sentinelRef  = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  /** Header-level error with no field of its own: flash the KPI panel. */
+  const flashKpiPanel = (): void => {
+    const panel = containerRef.current?.querySelector<HTMLElement>("[data-kpi-panel]");
+    if (panel) flashErrorTarget(panel);
+  };
   const tableRef     = useRef<HTMLTableElement>(null);
 
   /* ── Sticky header: walk DOM to find APEX scroll container, listen directly ── */
@@ -596,6 +606,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       // scroll-margin-top offsets the section header below the APEX sticky navbar
       el.style.scrollMarginTop = "80px";
       el.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (flashSectionRef.current) { flashSectionRef.current = false; flashErrorTarget(el); }
       setScrollTarget(null);
     };
 
@@ -609,10 +620,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
     let attempts = 0;
     let retry: ReturnType<typeof setTimeout> | undefined;
     const tryScroll = (): void => {
-      const el = document.querySelector<HTMLElement>(`[data-line-id="${highlightLineId}"]`);
+      const el = Array.from(document.querySelectorAll<HTMLElement>(`[data-line-id="${highlightLineId}"]`))
+        .find((c) => c.offsetParent !== null) ?? null;
       if (el) {
         el.style.scrollMarginTop = "120px";
         el.scrollIntoView({ behavior: "smooth", block: "center" });
+        flashErrorTarget(el);
       } else if (attempts < 20) {
         attempts++;
         retry = setTimeout(tryScroll, 50);
@@ -621,7 +634,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     tryScroll();
     const t = setTimeout(() => setHighlightLineId(null), 3000);
     return () => { clearTimeout(t); if (retry) clearTimeout(retry); };
-  }, [highlightLineId]);
+  }, [highlightLineId, errorNavSeq]);
 
   // Scroll a highlighted header/KPI field into view, then auto-clear the highlight.
   useEffect(() => {
@@ -630,14 +643,16 @@ export default function PivotTableWithAPI(): React.ReactElement {
     if (el) {
       el.style.scrollMarginTop = "80px";
       el.scrollIntoView({ behavior: "smooth", block: "center" });
+      flashErrorTarget(el);
     } else {
       // Header fields this widget doesn't render (hurdle, discount, …) — bring
-      // the top of the widget (KPI cards) into view instead of doing nothing.
+      // the top of the widget (KPI cards) into view and flash them.
       containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      flashKpiPanel();
     }
     const t = setTimeout(() => setHighlightHeaderField(null), 3000);
     return () => clearTimeout(t);
-  }, [highlightHeaderField]);
+  }, [highlightHeaderField, errorNavSeq]);
 
   // Auto-clear a highlighted section header (scrolling there is already
   // handled by the scrollTarget effect above).
@@ -651,10 +666,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
   // field, a section (expand + scroll), or a specific line (expand its
   // parent section, then scroll/highlight the line row itself).
   const goToError = (issue: ValidationIssue): void => {
+    setErrorNavSeq((n) => n + 1);
     if (issue.headerField) {
       setHighlightHeaderField(issue.headerField);
     } else if (issue.sectionId != null) {
       setData((p) => p ? ({ ...p, groups: p.groups.map((g) => g.sectionId === issue.sectionId ? { ...g, expanded: true } : g) }) : p);
+      flashSectionRef.current = true;
       setScrollTarget(String(issue.sectionId));
       setHighlightSectionId(String(issue.sectionId));
     } else if (issue.lineId) {
@@ -1115,6 +1132,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   return (
     <div ref={containerRef} onInputCapture={onAnyInput}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <style>{ERROR_FLASH_CSS}</style>
       {/* Sentinel — IntersectionObserver watches this to detect when header should pin */}
       <div ref={sentinelRef} style={{ height: 1, marginBottom: -1 }} />
 

@@ -218,6 +218,10 @@
  * Import plugin: the row / section / panel a validation-error click landed on,
  * flashed for 3s the way Prod Dev's import does (#fef08a fill, amber ring).
  * Element-qualified and !important so it out-ranks the row's own bg utility.
+ * A row is filled cell by cell, and the inputs inside are cleared too (a
+ * selected cell's sky tint would otherwise leave a gap). The ring is drawn on
+ * the cells, so it sits on top of their fills rather than on the <tr> beneath.
+ * mna_ring is the ring alone, for the dark section bars.
  */
 @layer utilities {
   tr.mna_flash,
@@ -226,7 +230,24 @@
     background-color: #fef08a !important;
     transition: background-color 0.4s !important;
   }
-  tr.mna_flash,
+  tr.mna_flash input,
+  tr.mna_flash > td > div {
+    background-color: transparent !important;
+  }
+  tr.mna_flash > td,
+  tr.mna_ring > td {
+    box-shadow: inset 0 2px 0 #f59e0b, inset 0 -2px 0 #f59e0b !important;
+  }
+  tr.mna_flash > td:first-child,
+  tr.mna_ring > td:first-child {
+    box-shadow: inset 2px 0 0 #f59e0b, inset 0 2px 0 #f59e0b, inset 0 -2px 0 #f59e0b !important;
+  }
+  tr.mna_flash > td:last-child,
+  tr.mna_ring > td:last-child {
+    box-shadow: inset -2px 0 0 #f59e0b, inset 0 2px 0 #f59e0b, inset 0 -2px 0 #f59e0b !important;
+  }
+  tr.mna_flash > td:only-child,
+  tr.mna_ring > td:only-child,
   div.mna_flash {
     box-shadow: inset 0 0 0 2px #f59e0b !important;
   }

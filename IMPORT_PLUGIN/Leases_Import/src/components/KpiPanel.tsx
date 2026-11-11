@@ -57,7 +57,7 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, fxMultiplie
   const term    = rawHeader.lease_terms_years;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
+    <div data-kpi-panel="" style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
       <div style={{ display: "flex", gap: 12, marginTop: 5 }}>
         <div style={{ ...cardShell, borderLeftColor: GREEN }}>
           <div style={labelStyle}>Total Contract Value</div>

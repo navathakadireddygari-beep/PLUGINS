@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { Trash2, ChevronDown, ChevronLeft, ChevronUp, X, RefreshCw, Save, Check, Calendar } from "lucide-react";
+import { ERROR_FLASH_CSS, flashErrorTarget } from "../lib/error-flash";
 import { getAppConfig, type AppConfig } from "../config/app-config";
 import { subscribeAllActions, publishToBridge } from "../lib";
 import type {} from "../types/fin-eval-bridge";
@@ -399,6 +400,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [toast,        setToast]        = useState<ToastState>(null);
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   const [highlightLineId,      setHighlightLineId]      = useState<string | null>(null);
+  // Bumped by every error click, so clicking the same error again re-scrolls and re-flashes.
+  const [errorNavSeq, setErrorNavSeq] = useState(0);
+  // Set by an error click on a section: the scroll effect flashes the section bar it lands on.
+  const flashSectionRef = useRef(false);
   const [highlightHeaderField, setHighlightHeaderField] = useState<string | null>(null);
   // PUT payload of the last clean validate (no API error, no validation
   // errors). Save Model is only enabled — and Validate disabled — while the
@@ -430,6 +435,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const headerRef    = useRef<HTMLDivElement>(null);
   const sentinelRef  = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  /** Header-level error with no field of its own: flash the KPI panel. */
+  const flashKpiPanel = (): void => {
+    const panel = containerRef.current?.querySelector<HTMLElement>("[data-kpi-panel]");
+    if (panel) flashErrorTarget(panel);
+  };
 
   /* ── Live USD→local exchange rate (usd_fbr) ──────────────────────
      Fetched once per local_currency (skipped for USD) — it drives both the
@@ -704,6 +714,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       // scroll-margin-top offsets the section header below the APEX sticky navbar
       el.style.scrollMarginTop = "80px";
       el.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (flashSectionRef.current) { flashSectionRef.current = false; flashErrorTarget(el); }
       setScrollTarget(null);
     };
 
@@ -718,10 +729,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
     let attempts = 0;
     let retry: ReturnType<typeof setTimeout> | undefined;
     const tryScroll = (): void => {
-      const el = document.querySelector<HTMLElement>(`[data-line-id="${highlightLineId}"]`);
+      const el = Array.from(document.querySelectorAll<HTMLElement>(`[data-line-id="${highlightLineId}"]`))
+        .find((c) => c.offsetParent !== null) ?? null;
       if (el) {
         el.style.scrollMarginTop = "120px";
         el.scrollIntoView({ behavior: "smooth", block: "center" });
+        flashErrorTarget(el);
       } else if (attempts < 20) {
         attempts++;
         retry = setTimeout(tryScroll, 50);
@@ -730,7 +743,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     tryScroll();
     const t = setTimeout(() => setHighlightLineId(null), 3000);
     return () => { clearTimeout(t); if (retry) clearTimeout(retry); };
-  }, [highlightLineId]);
+  }, [highlightLineId, errorNavSeq]);
 
   /* ── Validation error click → scroll to a Financial Parameters field ── */
   useEffect(() => {
@@ -740,13 +753,15 @@ export default function PivotTableWithAPI(): React.ReactElement {
       el.style.scrollMarginTop = "120px";
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.focus?.();
+      flashErrorTarget(el);
     } else {
       // Field not rendered — bring the top of the widget (KPI cards) into view.
       containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      flashKpiPanel();
     }
     const t = setTimeout(() => setHighlightHeaderField(null), 3000);
     return () => clearTimeout(t);
-  }, [highlightHeaderField]);
+  }, [highlightHeaderField, errorNavSeq]);
 
   /* ── Silent re-fetch — replace local state with the server result. ──
      After a successful save/validate the backend holds the source of
@@ -1131,9 +1146,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   };
 
   const goToError = (err: ValidationError): void => {
+    setErrorNavSeq((n) => n + 1);
     if (err.isHeader) {
       if (err.headerField) setHighlightHeaderField(err.headerField);
-      else containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      else { containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); flashKpiPanel(); }
       return;
     }
     if (!err.groupId) return;
@@ -1146,6 +1162,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       return;
     }
     if (owner?.sectionId != null) {
+      flashSectionRef.current = true;
       setScrollTarget(String(owner.sectionId));
       return;
     }
@@ -1153,7 +1170,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     let attempts = 0;
     const tryScroll = (): void => {
       const el = document.querySelector<HTMLElement>(`[data-error-group-id="${err.groupId}"]`);
-      if (el) { el.style.scrollMarginTop = "120px"; el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      if (el) { el.style.scrollMarginTop = "120px"; el.scrollIntoView({ behavior: "smooth", block: "start" }); flashErrorTarget(el); }
       else if (attempts++ < 20) setTimeout(tryScroll, 50);
     };
     tryScroll();
@@ -1311,6 +1328,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   return (
     <div ref={containerRef} onInputCapture={onAnyInput}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <style>{ERROR_FLASH_CSS}</style>
       {/* Sentinel — IntersectionObserver watches this to detect when header should pin */}
       <div ref={sentinelRef} style={{ height: 1, marginBottom: -1 }} />
 
