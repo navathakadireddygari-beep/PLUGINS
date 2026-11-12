@@ -629,7 +629,7 @@ function mapStagingLine(line: Record<string, any>): ApiLine {
     is_read_only:        line.isReadOnly   ?? "N",
     is_mandatory:        line.isMandatory  ?? "N",
     is_custom:           line.isCustom     ?? "Y",
-    is_percentage:       line.isPercentage ?? line.is_percentage ?? "N",
+    is_percentage:       line.isPercentage ?? "N",
     account:             line.account      ?? null,
     display_order:       line.displayOrder ?? 0,
     year_values:         line.yearValues   ?? {},

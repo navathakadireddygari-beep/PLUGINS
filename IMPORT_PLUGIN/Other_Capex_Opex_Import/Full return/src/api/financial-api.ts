@@ -678,7 +678,7 @@ function mapStagingLine(l: Record<string, unknown>): ApiLine {
     is_mandatory:        (l.isMandatory as string) ?? "N",
     is_read_only:        (l.isReadOnly as string) ?? "N",
     is_custom:           (l.isCustom as string) ?? "Y",
-    is_percentage:       ((l.isPercentage ?? l.is_percentage) as string | null) ?? "N",
+    is_percentage:       (l.isPercentage as string | null) ?? "N",
     account:             (l.account as string) ?? null,
     amortization_period:    num(l.amortizationPeriod),
     date_placed_in_service: (l.datePlacedInService as string | null) ?? null,

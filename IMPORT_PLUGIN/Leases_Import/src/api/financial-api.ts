@@ -105,8 +105,6 @@ export type StagingLine = {
   isReadOnly?:          string;
   isCustom?:            string;
   isPercentage?:        string | null;
-  /** Accepted too, in case staging sends the snake_case name. */
-  is_percentage?:       string | null;
   account:              string | null;
   displayOrder:         number;
   yearValues:           Record<string, YearEntry>;
@@ -576,7 +574,7 @@ function transformStagingData(
             isCalculated:     line.isCalculated ?? "N",
             isMandatory:      line.isMandatory  ?? "N",
             isCustom:         line.isCustom     ?? "Y",
-            isPercentage:     line.isPercentage ?? line.is_percentage ?? "N",
+            isPercentage:     line.isPercentage ?? "N",
             displayOrder:     line.displayOrder,
             status:           line.status       ?? "ACTIVE",
             languageCode:     line.languageCode ?? "EN",
