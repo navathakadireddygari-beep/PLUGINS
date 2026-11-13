@@ -2853,7 +2853,7 @@ const Table: React.FC = () => {
               <div className="mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-xs mna:font-bold mna:uppercase mna:text-white">
                 Key Inputs
               </div>
-              <div className="mna:overflow-auto mna:rounded-b">
+              <div data-hscroll className="mna:overflow-auto mna:rounded-b">
                 <table className="mna:w-full mna:table-fixed mna:border-collapse mna:text-sm">
                   <thead>
                     <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
@@ -2905,7 +2905,7 @@ const Table: React.FC = () => {
                 <div className="mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-xs mna:font-bold mna:uppercase mna:text-white">
                   Consideration
                 </div>
-                <div className="mna:overflow-auto mna:rounded-b">
+                <div data-hscroll className="mna:overflow-auto mna:rounded-b">
                   <table className="mna:w-full mna:table-fixed mna:border-collapse mna:text-sm">
                     <GridColgroup showActions={!isReadonly} yearCount={conYearIdx.length} />
                     <thead>
@@ -2939,7 +2939,7 @@ const Table: React.FC = () => {
             <div className="mna:rounded-t mna:bg-[#2d3748] mna:px-3 mna:py-2 mna:text-xs mna:font-bold mna:text-white">
               Combined Operating Results
             </div>
-            <div className="mna:overflow-auto mna:rounded-b">
+            <div data-hscroll className="mna:overflow-auto mna:rounded-b">
               <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={allYearIdx.length} cagr />
                 {gridHead(true, true)}
@@ -2955,7 +2955,7 @@ const Table: React.FC = () => {
           <div className="mna:mt-6" data-panel="fcf">
             {panelTitle("fcf", "Combined Free Cash Flows")}
             {!isPanelCollapsed("fcf") && (
-            <div className="mna:overflow-auto mna:rounded-b">
+            <div data-hscroll className="mna:overflow-auto mna:rounded-b">
               <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={allYearIdx.length} />
                 {gridHead(false)}
@@ -2972,7 +2972,7 @@ const Table: React.FC = () => {
           <div className="mna:mt-6" data-panel="ptr">
             {panelTitle("ptr", "Post Tax Return")}
             {!isPanelCollapsed("ptr") && (
-            <div className="mna:overflow-auto mna:rounded-b">
+            <div data-hscroll className="mna:overflow-auto mna:rounded-b">
               <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                 <GridColgroup showActions={!isReadonly} yearCount={projYearIdx.length} />
                 <thead>
@@ -3077,7 +3077,7 @@ const Table: React.FC = () => {
               and a wrapper would be a title for a block that has no name. */}
           {cusRows.length > 0 && (
             <div className="mna:mt-6">
-              <div className="mna:overflow-auto mna:rounded">
+              <div data-hscroll className="mna:overflow-auto mna:rounded">
                 <table className="mna:w-full mna:min-w-[700px] mna:table-fixed mna:border-collapse mna:text-sm">
                   <GridColgroup
                     showActions={!isReadonly}

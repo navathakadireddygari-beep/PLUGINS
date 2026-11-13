@@ -21,6 +21,7 @@ import {
 } from "../api/financial-api";
 import { deleteLine, deleteSection } from "../api/delete-api";
 import KpiPanel from "./KpiPanel";
+import StickyHScroll, { hostTopInset } from "./StickyHScroll";
 import NetSummaryCards from "./NetSummaryCards";
 import Toast, { type ToastState } from "./Toast";
 import {
@@ -207,6 +208,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [headerHeight,     setHeaderHeight]     = useState<number>(0);
   const [leftOffset,       setLeftOffset]       = useState<number>(0);
   const [containerWidth,   setContainerWidth]   = useState<number>(0);
+  const [topInset,         setTopInset]         = useState<number>(0);
   const dbYearsRef   = useRef<Set<number>>(new Set());
   const headerRef    = useRef<HTMLDivElement>(null);
   const sentinelRef  = useRef<HTMLDivElement>(null);
@@ -243,7 +245,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
     const check = () => {
       if (!sentinelRef.current) return;
-      const pinned = sentinelRef.current.getBoundingClientRect().top < 0;
+      // Pin below the host's fixed top bar (APEX navbar), not behind it —
+      // behind it the bar hid the action buttons, leaving only the strip.
+      const inset = hostTopInset(containerRef.current);
+      setTopInset(inset);
+      const pinned = sentinelRef.current.getBoundingClientRect().top < inset;
       setHeaderPinned(pinned);
       if (pinned) measure();
     };
@@ -1076,6 +1082,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       {/* Sentinel — IntersectionObserver watches this to detect when header should pin */}
       <div ref={sentinelRef} style={{ height: 1, marginBottom: -1 }} />
+      <StickyHScroll rootRef={containerRef} />
 
       {/* Toast notifications */}
       <Toast toast={toast} onClose={() => setToast(null)} />
@@ -1237,7 +1244,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
       {/* ── Sticky action bar + currency/scale strip ── */}
       {headerPinned && <div style={{ height: headerHeight }} />}
-      <div ref={headerRef} style={{ position: headerPinned ? "fixed" : "sticky", top: 0, left: headerPinned ? leftOffset : undefined, width: headerPinned ? containerWidth : undefined, zIndex: 200, background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
+      <div ref={headerRef} style={{ position: headerPinned ? "fixed" : "sticky", top: headerPinned ? topInset : 0, left: headerPinned ? leftOffset : undefined, width: headerPinned ? containerWidth : undefined, zIndex: 200, background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
         {/* Action bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "8px 24px", minHeight: 44 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1523,7 +1530,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       })()}
 
       {/* ── Main pivot table ── */}
-      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      <div data-hscroll style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           <table style={{ width: "100%", minWidth: 700, borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>
               <col style={{ width: 28 }} />

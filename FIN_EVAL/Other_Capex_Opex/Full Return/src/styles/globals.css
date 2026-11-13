@@ -395,3 +395,21 @@
   font-family: inherit;
 }
 
+
+/* Exception: the frozen horizontal scrollbar (StickyHScroll) exists only to
+   be seen, so it keeps a visible bar despite the rule above. */
+#fin-eval-widget-root .sticky-hscroll {
+  scrollbar-width: thin !important;      /* Firefox */
+  -ms-overflow-style: auto !important;
+}
+#fin-eval-widget-root .sticky-hscroll::-webkit-scrollbar {
+  height: 10px !important;
+  display: block !important;
+}
+#fin-eval-widget-root .sticky-hscroll::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 5px;
+}
+#fin-eval-widget-root .sticky-hscroll::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
