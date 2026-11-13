@@ -180,7 +180,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [activeAutocomplete, setActiveAutocomplete] = useState<string | null>(null);
   const [autocompleteSearch, setAutocompleteSearch] = useState<string>("");
   const [allExpanded,        setAllExpanded]        = useState<boolean>(true);
-  const [hoveredColIdx,      setHoveredColIdx]      = useState<number | null>(null);
   const [editingYearIdx,     setEditingYearIdx]     = useState<{ gId: string; yi: number } | null>(null);
   const [editingYearLabel,   setEditingYearLabel]   = useState<string>("");
   const [editingYearError,   setEditingYearError]   = useState<boolean>(false);
@@ -291,8 +290,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   useEffect(() => { dataRef.current = data; });
 
   const lovRef          = useRef<HTMLDivElement>(null);
-  const hoverTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (hoverTimer.current) clearTimeout(hoverTimer.current); }, []);
   // Stable, so the memoised KpiPanel only re-renders when its data changes.
   const onKpiChange = useCallback((patch: Partial<ApiHeader>) => setRawHeader((p) => p ? { ...p, ...patch } : p), []);
 
@@ -935,7 +932,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   /* ── Year management ────────────────────────────────────────── */
   const increaseYears   = (): void => { if (isReadOnly) return; setData((p) => { if (!p) return p; const y = Math.max(...p.years) + 1; return { ...p, years: [...p.years, y], columnLabels: { ...p.columnLabels, [y]: `FY${String(y).slice(2)}` }, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => ({ ...v, yearValues: { ...v.yearValues, [y]: 0 } })) })) }; }); };
   const decreaseYears   = (): void => { if (isReadOnly) return; if (data.years.length <= 1) return; setData((p) => { if (!p) return p; const y = p.years[p.years.length - 1]; const lbl = { ...p.columnLabels }; delete lbl[y]; return { ...p, years: p.years.slice(0, -1), columnLabels: lbl, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => { const nv = { ...v.yearValues }; delete nv[y]; return { ...v, yearValues: nv }; }) })) }; }); };
-  const insertYearAfter = (idx: number): void => { if (isReadOnly) return; setData((p) => { if (!p) return p; const y = Math.max(...p.years) + 1; return { ...p, years: [...p.years.slice(0, idx + 1), y, ...p.years.slice(idx + 1)], columnLabels: { ...p.columnLabels, [y]: `FY${String(y).slice(2)}` }, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => ({ ...v, yearValues: { ...v.yearValues, [y]: 0 } })) })) }; }); setHoveredColIdx(null); };
   const removeYear = (year: number): void => { if (isReadOnly) return; if (data.years.length <= 1) return; setData((p) => { if (!p) return p; const lbl = { ...p.columnLabels }; delete lbl[year]; return { ...p, years: p.years.filter((y) => y !== year), columnLabels: lbl, groups: p.groups.map((g) => ({ ...g, values: g.values.map((v) => { const nv = { ...v.yearValues }; delete nv[year]; return { ...v, yearValues: nv }; }) })) }; }); setConfirmDeleteYear(null); };
   const updateColumnLabel = (year: number, lbl: string): void => {
     if (isReadOnly) return;
@@ -1712,17 +1708,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       </th>
                       {data.years.map((year: number, yi: number) => (
                         <th key={year} style={TH({ textAlign: "right", whiteSpace: "nowrap", position: "relative", background: "#e5e7eb" })}
-                          onMouseMove={(e) => { if (hoverTimer.current) clearTimeout(hoverTimer.current); const r = e.currentTarget.getBoundingClientRect(); setHoveredColIdx(e.clientX - r.left > r.width * 0.8 ? yi : null); }}
-                          onMouseLeave={() => { if (hoverTimer.current) clearTimeout(hoverTimer.current); hoverTimer.current = setTimeout(() => setHoveredColIdx(null), 150); }}
                         >
-                          {hoveredColIdx === yi && !isReadOnly && (
-                            <div style={{ position: "absolute", right: 0, top: "50%", transform: "translate(50%,-50%)", zIndex: 20 }}
-                              onMouseEnter={() => { if (hoverTimer.current) clearTimeout(hoverTimer.current); setHoveredColIdx(yi); }}
-                              onMouseLeave={() => { if (hoverTimer.current) clearTimeout(hoverTimer.current); setHoveredColIdx(null); }}
-                            >
-                              <button type="button" onClick={() => insertYearAfter(yi)} style={{ width: 20, height: 20, background: "#fff", border: "1px solid #9ca3af", borderRadius: 4, cursor: "pointer", fontSize: 14, boxShadow: "0 1px 4px rgba(0,0,0,.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
-                            </div>
-                          )}
                           {editingYearIdx?.gId === group.id && editingYearIdx?.yi === yi ? (
                             <input type="text" autoFocus value={editingYearLabel}
                               onChange={(e) => { setEditingYearLabel(e.target.value); setEditingYearError(false); }}
