@@ -134,13 +134,14 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, isReadonly,
     onChange({ performance_metrics: { ...pm, hurdle_checks: updated } });
   };
 
-  // `status` ("Pass"/"Fail") is the only source of truth for the pill;
-  // anything else (null/missing) means the metric hasn't been evaluated
-  // yet — show neutral, not fail.
+  // `pass` almost always comes back null from the API even when the check
+  // has a result, so `status` ("Pass"/"Fail") is the source of truth; only
+  // fall back to the boolean if status is missing. Anything else (both
+  // null) means the metric hasn't been evaluated yet — show neutral, not fail.
   const statusPill = (m: HurdleCheck) => {
     const status = (m.status ?? "").trim().toUpperCase();
-    const isPass = status === "PASS";
-    const isFail = status === "FAIL";
+    const isPass = status === "PASS" || (status === "" && m.pass === true);
+    const isFail = status === "FAIL" || (status === "" && m.pass === false);
     if (!isPass && !isFail) {
       return (
         <span style={{
