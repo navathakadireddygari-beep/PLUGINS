@@ -20,9 +20,9 @@ export interface UseDeleteFinEvalLineResult {
 }
 
 export const useDeleteFinEvalLine = (
-  options: { proposalId?: string | number } = {},
+  options: { fileId?: string | number } = {},
 ): UseDeleteFinEvalLineResult => {
-  const { proposalId } = options;
+  const { fileId } = options;
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
@@ -38,7 +38,7 @@ export const useDeleteFinEvalLine = (
       setError(null);
       try {
         await deleteFinEvalLine(lineId, {
-          proposalId,
+          fileId,
           signal: controller.signal,
         });
         return !controller.signal.aborted;
@@ -52,7 +52,7 @@ export const useDeleteFinEvalLine = (
         if (!controller.signal.aborted) setDeleting(false);
       }
     },
-    [proposalId],
+    [fileId],
   );
 
   const clearError = useCallback(() => setError(null), []);

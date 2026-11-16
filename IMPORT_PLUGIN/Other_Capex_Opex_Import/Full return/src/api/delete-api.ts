@@ -1,14 +1,16 @@
 /**
- * Delete API — removes a line or a section from the Financial evaluation.
+ * Delete API — removes a custom line or a custom section from the staged
+ * (imported) Financial evaluation.
  *
  * Backend endpoint (single proc for both):
- *   DELETE {api_endpoint}/Financial/delete/{proposal_id}
+ *   DELETE {api_endpoint}/GIS/proposalAuthoring/finEvaluationStaging/{file_id}
  *
- * Request body (matches XXEX_GIS_FIN_EVAL_PKG.delete_fin_eval_prc):
- *   { user_email, section_id, line_id }   // pass null for the one you're not targeting
+ * Request body:
+ *   { finEvalLineStgId }      // deleting a line
+ *   { finEvalSectionStgId }   // deleting a section
  *
  * Response body:
- *   { api_status: "S" | "E", api_message: "..." }
+ *   { apiStatus: "S" | "E", apiMessage: "...", data: { file, header } }
  */
 import type { AppConfig } from "../config/app-config";
 // Same token as every other call (load / save / validate): one auth request
@@ -16,8 +18,8 @@ import type { AppConfig } from "../config/app-config";
 import { authFetch } from "./financial-api";
 
 type DeleteBody =
-  | { fin_eval_section_id: number }
-  | { fin_eval_line_id:    number };
+  | { finEvalSectionStgId: number }
+  | { finEvalLineStgId:    number };
 
 type DeleteResponse = {
   api_status?:  string;
@@ -26,7 +28,8 @@ type DeleteResponse = {
 };
 
 async function sendDelete(cfg: AppConfig, body: DeleteBody): Promise<DeleteResponse> {
-  const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/${cfg.proposal_id}/financialEvaluation`;
+  if (cfg.file_id == null) throw new Error("Missing file_id — cannot delete from the staged evaluation.");
+  const url   = `${cfg.api_endpoint}/GIS/proposalAuthoring/finEvaluationStaging/${cfg.file_id}`;
 
   //console.log("[delete-api] → DELETE", url, body);
 
@@ -62,10 +65,10 @@ async function sendDelete(cfg: AppConfig, body: DeleteBody): Promise<DeleteRespo
 
 /** Delete a single line item. */
 export async function deleteLine(cfg: AppConfig, lineId: number): Promise<DeleteResponse> {
-  return sendDelete(cfg, { fin_eval_line_id: lineId });
+  return sendDelete(cfg, { finEvalLineStgId: lineId });
 }
 
 /** Delete an entire section and all its lines. */
 export async function deleteSection(cfg: AppConfig, sectionId: number): Promise<DeleteResponse> {
-  return sendDelete(cfg, { fin_eval_section_id: sectionId });
+  return sendDelete(cfg, { finEvalSectionStgId: sectionId });
 }

@@ -22,9 +22,9 @@ export interface UseDeleteFinEvalSectionResult {
 }
 
 export const useDeleteFinEvalSection = (
-  options: { proposalId?: string | number } = {},
+  options: { fileId?: string | number } = {},
 ): UseDeleteFinEvalSectionResult => {
-  const { proposalId } = options;
+  const { fileId } = options;
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
@@ -40,7 +40,7 @@ export const useDeleteFinEvalSection = (
       setError(null);
       try {
         await deleteFinEvalSection(sectionId, {
-          proposalId,
+          fileId,
           signal: controller.signal,
         });
         return !controller.signal.aborted;
@@ -54,7 +54,7 @@ export const useDeleteFinEvalSection = (
         if (!controller.signal.aborted) setDeleting(false);
       }
     },
-    [proposalId],
+    [fileId],
   );
 
   const clearError = useCallback(() => setError(null), []);
