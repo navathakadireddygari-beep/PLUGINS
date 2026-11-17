@@ -1600,7 +1600,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             const text = isNonFinancialRow(value) ? rawFmtNonFinancial(val) : isUnscaledRow(value) ? rawFmt(val) : displayFmt(val);
                             return (
                               <td key={year} style={{ ...TD, padding: "10px 14px" }}>
-                                {roValueCell(text, { fontWeight: bold ? 700 : 400, color: val < 0 ? "#ff1f3d" : "#111827" })}
+                                {roValueCell(text, { fontWeight: bold ? 700 : 400, color: val < 0 ? "#DC2626" : "#111827" })}
                               </td>
                             );
                           })}
@@ -1610,7 +1610,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                 const t = lineTotal(value, data.years);
                                 const text = t == null ? "" : isNonFinancialRow(value) ? rawFmtNonFinancial(t) : isUnscaledRow(value) ? rawFmt(t) : displayFmt(t);
                                 return (
-                                  <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: bold ? 700 : 400, color: (t ?? 0) < 0 ? "#ff1f3d" : "#111827" }}>
+                                  <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 12, fontWeight: bold ? 700 : 400, color: (t ?? 0) < 0 ? "#DC2626" : "#111827" }}>
                                     {text}
                                   </td>
                                 );
@@ -1715,7 +1715,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                   onClick={(e) => e.stopPropagation()}
                                   onPaste={isReadonly ? undefined : (e) => handleValueCellPaste(e, group.id, value.id, yi)}
                                   className="feval-line-value"
-                                  style={{ width: "100%", textAlign: "right", border: "none", background: isReadonly ? "#f3f4f6" : "transparent", fontSize: 12, color: val < 0 ? "#ff1f3d" : "#1f2937", outline: "none", height: 30, cursor: isReadonly ? "default" : "text" }}
+                                  style={{ width: "100%", textAlign: "right", border: "none", background: isReadonly ? "#f3f4f6" : "transparent", fontSize: 12, color: val < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 30, cursor: isReadonly ? "default" : "text" }}
                                 />
                               </td>
                               );

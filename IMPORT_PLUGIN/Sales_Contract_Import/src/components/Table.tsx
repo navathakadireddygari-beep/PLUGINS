@@ -862,10 +862,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
     }
   };
 
-  // Section-bar figures: negatives (bracketed) in red — a lighter red on the
-  // dark bars so it stays readable on navy.
+  // Section-bar figures: negatives (bracketed) in the same red as every cell.
   const barNumColor = (text: string, base: string): string =>
-    text.startsWith("(") ? (base === "#fff" ? "#f87171" : "#DC2626") : base;
+    text.startsWith("(") ? "#DC2626" : base;
 
   /* ── Loading / error gates ──────────────────────────────────── */
   if (loading) return (
