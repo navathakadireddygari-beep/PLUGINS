@@ -626,8 +626,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
     if (!n) return useNetStyle ? "–" : "—";
     if (bypassScale) return formatUnscaledValue(n);
     // Decimals follow the scale: K = 0, M = 2, B = 2.
-    const formatted = formatScaledValue(n, numberFormat, displayScale, fxMultiplier, undefined, false, !useNetStyle);
-    return useNetStyle ? formatted.replace(/^-/, '–') : formatted;
+    // Negatives are bracketed on every tab, Net Summary included.
+    return formatScaledValue(n, numberFormat, displayScale, fxMultiplier, undefined, false, true);
   };
 
   // NON_FINANCIAL values (counts / metrics) show exactly what was entered:
@@ -750,6 +750,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
     const v = (n * fxMultiplier) / scaleDivisorFor(displayScale);
     return v < 0 ? '#dc2626' : '#111827';
   };
+
+  // Section-bar figures: negatives (bracketed) in red — a lighter red on the
+  // dark bars so it stays readable on navy.
+  const barNumColor = (text: string, base: string): string =>
+    text.startsWith("(") ? (base === "#fff" ? "#f87171" : "#DC2626") : base;
 
   /* ── Loading / error gates ──────────────────────────────────── */
   if (loading) return (
@@ -1636,14 +1641,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           <td style={{ ...TD, padding: "8px 14px", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", textTransform: "uppercase", letterSpacing: 0.5 }}>
                             {sectionNameCell(group, isOwnSection, "#fff")}
                           </td>
-                          {data.years.map((year: number) => (
-                            <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                              {sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                          {data.years.map((year: number) => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
+                            <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
+                              {text}
                             </td>
-                          ))}
-                          <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                            {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group, isOwnSection)}
-                          </td>
+                          ); })}
+                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
+                            {sectionTotalCell(text, group, isOwnSection)}
+                          </td>); })()}
                         </>)}
                       </tr>
                     ) : (
@@ -1667,14 +1672,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           <td style={{ ...TD, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
                             {sectionNameCell(group, isOwnSection, "#1f2937")}
                           </td>
-                          {data.years.map((year: number) => (
-                            <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                              {sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                          {data.years.map((year: number) => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
+                            <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
+                              {text}
                             </td>
-                          ))}
-                          <td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                            {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group, isOwnSection)}
-                          </td>
+                          ); })}
+                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
+                            {sectionTotalCell(text, group, isOwnSection)}
+                          </td>); })()}
                         </>)}
                       </tr>
                     )}

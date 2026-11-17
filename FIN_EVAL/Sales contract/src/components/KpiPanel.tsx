@@ -61,13 +61,21 @@ function fmtMoney(
   if (raw == null) return "—";
   const { divisor, suffix, decimals } = scaleUnit(scale);
   const v = (raw * fxMult) / divisor;
-  return `${symbol}${formatNumber(v, numFmt, decimals)}${suffix}`;
+  const body = formatNumber(Math.abs(v), numFmt, decimals);
+  const text = `${symbol}${body}${suffix}`;
+  // A value that rounds to zero at this scale is not shown as "(0)".
+  return v < 0 && body !== "0" ? `(${text})` : text;
 }
 
 function fmtPercent(raw: number | null | undefined): string {
   if (raw == null) return "—";
-  return `${Math.round(raw)}%`;
+  const r = Math.round(raw);
+  return r < 0 ? `(${-r}%)` : `${r}%`;
 }
+
+/** Negative KPI figures (shown in brackets) are red, like the table cells. */
+const kpiValueStyle = (text: string): React.CSSProperties =>
+  text.startsWith("(") ? { ...valueStyle, color: "#DC2626" } : valueStyle;
 
 function KpiPanel({ rawHeader, onChange, displayScale, fxMultiplier, numFmt }: Props): React.ReactElement {
   void onChange;
@@ -80,17 +88,17 @@ function KpiPanel({ rawHeader, onChange, displayScale, fxMultiplier, numFmt }: P
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         <div style={{ ...cardShell, borderLeftColor: GREEN }}>
           <div style={labelStyle}>Total Contract Value</div>
-          <div style={valueStyle}>{fmtMoney(rawHeader.total_contract_value, symbol, fxMultiplier, displayScale, numFmt)}</div>
+          {(() => { const t = fmtMoney(rawHeader.total_contract_value, symbol, fxMultiplier, displayScale, numFmt); return <div style={kpiValueStyle(t)}>{t}</div>; })()}
           <div style={subStyle}>TCV</div>
         </div>
         <div style={{ ...cardShell, borderLeftColor: NAVY }}>
           <div style={labelStyle}>Annual Contract Value</div>
-          <div style={valueStyle}>{fmtMoney(rawHeader.annual_contract_value, symbol, fxMultiplier, displayScale, numFmt)}</div>
+          {(() => { const t = fmtMoney(rawHeader.annual_contract_value, symbol, fxMultiplier, displayScale, numFmt); return <div style={kpiValueStyle(t)}>{t}</div>; })()}
           <div style={subStyle}>ACV</div>
         </div>
         <div style={{ ...cardShell, borderLeftColor: MAGENTA }}>
           <div style={labelStyle}>Margin</div>
-          <div style={valueStyle}>{fmtPercent(rawHeader.contribution_margin_percent)}</div>
+          {(() => { const t = fmtPercent(rawHeader.contribution_margin_percent); return <div style={kpiValueStyle(t)}>{t}</div>; })()}
           <div style={subStyle}>Contribution Margin %</div>
         </div>
         <div style={{ ...cardShell, borderLeftColor: PURPLE }}>

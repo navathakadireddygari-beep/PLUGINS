@@ -187,5 +187,6 @@ export function formatCurrencyValue(
 ): string {
   const body = formatScaledValue(raw, formatKey, scale, fxMultiplier, maximumFractionDigits, includeScaleSuffix, useParenthesesForNegative);
   if (body === "—") return body;
-  return `${symbol}${body}`;
+  // The bracket wraps the symbol too: ($1,234K), not $(1,234K).
+  return body.startsWith("(") ? `(${symbol}${body.slice(1)}` : `${symbol}${body}`;
 }

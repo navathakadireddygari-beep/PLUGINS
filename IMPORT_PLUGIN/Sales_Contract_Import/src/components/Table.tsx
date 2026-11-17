@@ -862,6 +862,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
     }
   };
 
+  // Section-bar figures: negatives (bracketed) in red — a lighter red on the
+  // dark bars so it stays readable on navy.
+  const barNumColor = (text: string, base: string): string =>
+    text.startsWith("(") ? (base === "#fff" ? "#f87171" : "#DC2626") : base;
+
   /* ── Loading / error gates ──────────────────────────────────── */
   if (loading) return (
     <div style={{ padding: 60, textAlign: "center", color: "#6b7280", fontSize: 13 }}>
@@ -1004,8 +1009,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const numCellText = (cellKey: string, storedVal: number, bypassScale = false): string => {
     if (numEdit && numEdit.key === cellKey) return numEdit.text;
     if (storedVal === 0) return "";
-    if (bypassScale) return roundsToZero(storedVal) ? "" : formatNumber(storedVal, numFmt, EXACT_DECIMALS);   // exact, unrounded
-    return formatNumber((storedVal * fxMultiplier) / scaleDivisor(displayScale), numFmt, scaleDecimals(displayScale));
+    const text = bypassScale
+      ? (roundsToZero(storedVal) ? "" : formatNumber(storedVal, numFmt, EXACT_DECIMALS))   // exact, unrounded
+      : formatNumber((storedVal * fxMultiplier) / scaleDivisor(displayScale), numFmt, scaleDecimals(displayScale));
+    // Negatives read in accounting brackets, like the calculated cells.
+    // A tiny negative that rounds to zero reads "0", not "(0)".
+    if (!text.startsWith("-")) return text;
+    return /[1-9]/.test(text) ? `(${text.slice(1)})` : text.slice(1);
   };
   const numCellFocus = (cellKey: string, storedVal: number, bypassScale = false): void => {
     if (isReadOnly) return;
@@ -1555,14 +1565,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       <td colSpan={2} style={{ ...TD, padding: "8px 14px", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", borderRight: "1px solid #31415e" }}>
                         {group.name}
                       </td>
-                      {data.years.map((year) => (
-                        <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", borderRight: "1px solid #31415e" }}>
-                          {calc ? displayRow(calc, sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                      {data.years.map((year) => { const text = calc ? displayRow(calc, sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
+                        <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59", borderRight: "1px solid #31415e" }}>
+                          {text}
                         </td>
-                      ))}
-                      <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                        {calc ? displayRow(calc, sectionTotal) : displayFmt(sectionTotal)}
-                      </td>
+                      ); })}
+                      {(() => { const text = calc ? displayRow(calc, sectionTotal) : displayFmt(sectionTotal); return (<td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
+                        {text}
+                      </td>); })()}
                     </tr>
 
                     {editable.map((value) => {

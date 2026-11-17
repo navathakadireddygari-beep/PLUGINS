@@ -64,14 +64,14 @@ export default function NetSummaryCards({ rawHeader, displayScale, numberFormat,
       {/* 5-Year Net Saving */}
       <div style={{ ...cardShell, borderLeftColor: "#16a34a" }}>
         <div style={labelStyle}>Net Saving</div>
-        <div style={valueStyle}>{formatMetric(totalNetSaving)}</div>
+        {(() => { const t = formatMetric(totalNetSaving); return <div style={t.startsWith("(") ? { ...valueStyle, color: "#DC2626" } : valueStyle}>{t}</div>; })()}
         <div style={descStyle}>Total net across all cash flow lines</div>
       </div>
 
       {/* Annual Rent Saving */}
       <div style={{ ...cardShell, borderLeftColor: "#2563eb" }}>
         <div style={labelStyle}>Annual Rent Saving</div>
-        <div style={valueStyle}>{formatMetric(annualRentSaving)}</div>
+        {(() => { const t = formatMetric(annualRentSaving); return <div style={t.startsWith("(") ? { ...valueStyle, color: "#DC2626" } : valueStyle}>{t}</div>; })()}
         <div style={descStyle}>Run-rate saving</div>
       </div>
 

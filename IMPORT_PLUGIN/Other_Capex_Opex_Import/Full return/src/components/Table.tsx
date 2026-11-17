@@ -1044,6 +1044,16 @@ export default function PivotTableWithAPI(): React.ReactElement {
     return v < 0 ? `(${formatted})` : formatted;
   };
 
+  // Input cells that are not being edited: grouped like the calculated cells,
+  // negatives in brackets, "" for zero. Raw rows keep up to `rawDecimals`.
+  const inputCellFmt = (n: number, rawRow: boolean, rawDecimals: number): string => {
+    if (!rawRow) return displayFmt(n).replace(/^—$/, "");
+    const abs = parseFloat(Math.abs(n).toFixed(rawDecimals));
+    if (!abs) return "";
+    const formatted = formatNumber(abs, numberFormat, { minimumFractionDigits: 0, maximumFractionDigits: rawDecimals });
+    return n < 0 ? `(${formatted})` : formatted;
+  };
+
   const sectionTree = orderWithSubSections(data?.groups ?? []);
   const isSubSection = (g: Group): boolean => isPnlChildGroup(g, sectionTree.pnl);
   // Shown on the collapsed P&L header so hidden sub-sections aren't missed.
@@ -1845,9 +1855,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                   inputMode={pctRow ? "decimal" : undefined}
                                   value={editingCell?.gId === group.id && editingCell?.vId === value.id && editingCell?.year === year
                                     ? editingCell.raw
-                                    : val === 0 ? "" : rawRow
-                                      ? parseFloat(val.toFixed(rawDecimals))
-                                      : parseFloat(applyScale(val * fxMultiplier, displayScale).toFixed(decimalsForScale(displayScale)))}
+                                    : inputCellFmt(val, rawRow, rawDecimals)}
                                   placeholder="—"
                                   onFocus={() => {
                                     const displayed = val === 0 ? "" : rawRow

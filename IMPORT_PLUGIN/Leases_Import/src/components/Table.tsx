@@ -734,23 +734,23 @@ export default function PivotTableWithAPI(): React.ReactElement {
   };
 
   // bypassScale: unscaled rows (% / NON_FINANCIAL) — no fx, no K/M/B, no currency sign.
+  // Same figures as the other tabs (negatives bracketed); only the zero
+  // placeholder differs.
   const netFmt = (n: number, bypassScale = false): string => {
-    if (!n) return '–';
-    if (bypassScale) {
-      if (Number(Math.abs(n).toFixed(10)) === 0) return '–';
-      const formatted = formatNumberTrimmed(Math.abs(n), numberFormat, 10);
-      return n < 0 ? `-${formatted}` : `+${formatted}`;
-    }
-    const v = (n * fxMultiplier) / scaleDivisorFor(displayScale);
-    const formatted = formatNumber(v, numberFormat, decimalsForScale(displayScale));
-    return v < 0 ? `-€${formatted}` : `+€${formatted}`;
+    const text = displayFmt(n, bypassScale);
+    return text === '—' ? '–' : text;
   };
 
   const netColor = (n: number): string => {
     if (!n) return '#6b7280';
     const v = (n * fxMultiplier) / scaleDivisorFor(displayScale);
-    return v < 0 ? '#059669' : '#dc2626';
+    return v < 0 ? '#dc2626' : '#111827';
   };
+
+  // Section-bar figures: negatives (bracketed) in red — a lighter red on the
+  // dark bars so it stays readable on navy.
+  const barNumColor = (text: string, base: string): string =>
+    text.startsWith("(") ? (base === "#fff" ? "#f87171" : "#DC2626") : base;
 
   /* ── Loading / error gates ──────────────────────────────────── */
   if (loading) return (
@@ -1628,14 +1628,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           <td style={{ ...TD, padding: "8px 14px", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59", textTransform: "uppercase", letterSpacing: 0.5 }}>
                             {sectionNameCell(group, "#fff")}
                           </td>
-                          {data.years.map((year: number) => (
-                            <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                              {sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                          {data.years.map((year: number) => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
+                            <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
+                              {text}
                             </td>
-                          ))}
-                          <td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: "#fff", borderBottom: "1px solid #293a59" }}>
-                            {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group)}
-                          </td>
+                          ); })}
+                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
+                            {sectionTotalCell(text, group)}
+                          </td>); })()}
                         </>)}
                       </tr>
                     ) : (
@@ -1652,14 +1652,14 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           <td style={{ ...TD, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
                             {sectionNameCell(group, "#1f2937")}
                           </td>
-                          {data.years.map((year: number) => (
-                            <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                              {sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0)}
+                          {data.years.map((year: number) => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
+                            <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
+                              {text}
                             </td>
-                          ))}
-                          <td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #e5e7eb" }}>
-                            {sectionTotalCell(sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale), group)}
-                          </td>
+                          ); })}
+                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
+                            {sectionTotalCell(text, group)}
+                          </td>); })()}
                         </>)}
                       </tr>
                     )}
@@ -1706,7 +1706,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                   data-nav-row={navRow}
                                   data-nav-col={yi}
                                   inputMode={pctRow ? "decimal" : undefined}
-                                  value={isEditingThis ? editingCell.raw : nonFinancial ? formatNonFinancialValue(val, "") : pctRow ? (val === 0 ? "" : displayFmt(val, true).replace(/^—$/, "")) : shown}
+                                  value={isEditingThis ? editingCell.raw : nonFinancial ? formatNonFinancialValue(val, "") : pctRow ? (val === 0 ? "" : displayFmt(val, true).replace(/^—$/, "")) : (val === 0 ? "" : displayFmt(val).replace(/^—$/, ""))}
                                   placeholder="—"
                                   readOnly={isReadonly}
                                   onFocus={() => {

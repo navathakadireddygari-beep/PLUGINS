@@ -576,12 +576,18 @@ const PercentInput: React.FC<{
     onValueChange(nonFinancialPlain(bounded));
   };
 
+  const negative =
+    draft !== null ? /^-.*[1-9]/.test(draft) : canonical !== "" && Number(canonical) < 0;
+  const surface = readOnly
+    ? "mna:cursor-default mna:bg-[#f3f4f6] mna:text-[#6b7280]"
+    : `mna:bg-transparent ${negative ? "mna:text-[#DC2626]" : "mna:text-[#1f2937]"}`;
+
   return (
     <input
       type="text"
       readOnly={readOnly}
       data-key-input-field={inputCode}
-      className={`mna:w-20 mna:text-right mna:text-[13px] mna:text-[#1f2937] mna:outline-none ${readOnly ? "mna:cursor-default mna:bg-[#f3f4f6] mna:text-[#6b7280]" : "mna:bg-transparent"}`}
+      className={`mna:w-20 mna:text-right mna:text-[13px] mna:outline-none ${surface}`}
       value={draft ?? shown}
       placeholder="—"
       inputMode="decimal"

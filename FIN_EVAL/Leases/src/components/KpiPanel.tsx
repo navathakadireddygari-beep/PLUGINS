@@ -36,6 +36,10 @@ function currencySymbol(code: string): string {
   return CURRENCY_SYMBOLS[(code || "").toUpperCase()] ?? code;
 }
 
+/** Negative KPI figures (shown in brackets) are red, like the table cells. */
+const kpiValueStyle = (text: string): React.CSSProperties =>
+  text.startsWith("(") ? { ...valueStyle, color: "#DC2626" } : valueStyle;
+
 function fmtMoney(
   raw: number | null | undefined,
   symbol: string,
@@ -58,12 +62,12 @@ function KpiPanel({ rawHeader, onChange, displayScale, numberFormat, fxMultiplie
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         <div style={{ ...cardShell, borderLeftColor: GREEN }}>
           <div style={labelStyle}>Total Contract Value</div>
-          <div style={valueStyle}>{fmtMoney(rawHeader.total_contract_value, symbol, fxMultiplier, displayScale, numberFormat)}</div>
+          {(() => { const t = fmtMoney(rawHeader.total_contract_value, symbol, fxMultiplier, displayScale, numberFormat); return <div style={kpiValueStyle(t)}>{t}</div>; })()}
           <div style={subStyle}>{term != null ? `${term}-Year Total` : "Total"}</div>
         </div>
         <div style={{ ...cardShell, borderLeftColor: PURPLE }}>
           <div style={labelStyle}>Total Lease Value</div>
-          <div style={valueStyle}>{fmtMoney(rawHeader.total_lease_value, symbol, fxMultiplier, displayScale, numberFormat)}</div>
+          {(() => { const t = fmtMoney(rawHeader.total_lease_value, symbol, fxMultiplier, displayScale, numberFormat); return <div style={kpiValueStyle(t)}>{t}</div>; })()}
           <div style={subStyle}>{term != null ? `Over ${term} Years` : "Lease Value"}</div>
         </div>
         <div style={{ ...cardShell, borderLeftColor: ORANGE }}>
