@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import CurrencyToggle from "@/components/CurrencyToggle";
 import FxCard from "@/components/FxCard";
 import DateFormatToolbar from "@/components/DateFormatToolbar";
@@ -5,6 +6,7 @@ import NumberFormatToolbar from "@/components/NumberFormatToolbar";
 import { useCurrencyFormat } from "@/context/CurrencyFormatContext";
 import { useSaveModel } from "@/context/SaveModelContext";
 import { isHostReadonly } from "@/api";
+import { hostTopInset } from "@/components/StickyHScroll";
 import {
   stripCard,
   stripDivider,
@@ -43,8 +45,51 @@ export default function Header() {
   // fall back to the host flag alone before it has loaded.
   const isReadonly = readonly || isHostReadonly();
 
+  // Pin the header (buttons + strips) to the top once it scrolls past it,
+  // below the host's fixed top bar (APEX navbar). The wrapper stays in the
+  // flow: its top says when to pin and its height holds the space meanwhile.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const [pin, setPin] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const wrap = wrapRef.current, header = headerRef.current;
+      if (!wrap || !header) return;
+      const inset = hostTopInset(wrap);
+      const r = wrap.getBoundingClientRect();
+      if (r.top >= inset) { setPin(null); return; }
+      const next = { top: inset, left: r.left, width: r.width, height: header.offsetHeight };
+      setPin((p) =>
+        p && p.top === next.top && p.left === next.left && p.width === next.width && p.height === next.height ? p : next,
+      );
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+
+    schedule();
+    // Capture phase sees page scrolls and APEX's inner scroll containers.
+    window.addEventListener("scroll", schedule, { passive: true, capture: true });
+    window.addEventListener("resize", schedule);
+    // The header's height changes with read-only state, wrapping, etc.
+    const ro = new ResizeObserver(schedule);
+    if (headerRef.current) ro.observe(headerRef.current);
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule, { capture: true });
+      window.removeEventListener("resize", schedule);
+      ro.disconnect();
+    };
+  }, []);
+
   return (
-    <header className="mna:overflow-hidden mna:rounded-3xl mna:border mna:border-slate-200 mna:bg-white mna:shadow-sm">
+    <div ref={wrapRef} style={pin ? { height: pin.height } : undefined}>
+    <header
+      ref={headerRef}
+      style={pin ? { position: "fixed", top: pin.top, left: pin.left, width: pin.width, zIndex: 200 } : undefined}
+      className="mna:overflow-hidden mna:rounded-3xl mna:border mna:border-slate-200 mna:bg-white mna:shadow-sm">
       <div className="mna:flex mna:items-center mna:gap-4 mna:border-b mna:border-slate-200 mna:bg-white mna:px-6 mna:py-4">
         {/* Errors show only in the top-right toast. This empty block takes the
             free width so the buttons stay right-aligned. */}
@@ -170,5 +215,6 @@ export default function Header() {
         </div>
       </div>
     </header>
+    </div>
   );
 }
