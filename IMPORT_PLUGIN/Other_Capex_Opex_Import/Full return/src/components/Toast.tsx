@@ -25,8 +25,8 @@ export default function Toast({ toast, onClose, autoDismissMs = 3500 }: Props): 
   if (!toast) return null;
 
   const isSuccess = toast.kind === "success";
-  const bg        = isSuccess ? "#f4fceb" : "#fff";
-  const color     = isSuccess ? "#436b1d" : "#111827";
+  const bg        = isSuccess ? "#f4fceb" : "#fef2f2";
+  const color     = isSuccess ? "#436b1d" : "#DC2626";
   const Icon      = isSuccess ? CheckCircle2 : AlertCircle;
 
   return (

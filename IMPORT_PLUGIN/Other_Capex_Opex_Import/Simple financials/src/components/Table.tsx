@@ -288,8 +288,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   const [savingDraft,  setSavingDraft]  = useState<boolean>(false);
   const [validating,   setValidating]   = useState<boolean>(false);
-  const [saveError,    setSaveError]    = useState<string | null>(null);
   const [toast,        setToast]        = useState<ToastState>(null);
+  const showPasted = (count: number) =>
+    setToast({ kind: "success", message: `${count} row${count !== 1 ? "s" : ""} pasted from Excel` });
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   const [validationErrors,   setValidationErrors]   = useState<ValidationIssue[]>([]);
   // PUT payload of the last clean validate (no API error, no validation
@@ -314,7 +315,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [editingGroupId,     setEditingGroupId]     = useState<string | null>(null);
   const [editingGroupName,   setEditingGroupName]   = useState<string>("");
   const [editingCell,        setEditingCell]        = useState<{ gId: string; vId: string; year: number; raw: string } | null>(null);
-  const [pasteToast,         setPasteToast]         = useState<{ gId: string; count: number } | null>(null);
   const [confirmDelete,      setConfirmDelete]      = useState<{ gId: string; vId?: string; name: string; kind: "line" | "section" } | null>(null);
   const [deletingRow,        setDeletingRow]        = useState<boolean>(false);
   const [confirmDeleteYear,  setConfirmDeleteYear]  = useState<{ year: number; label: string } | null>(null);
@@ -438,7 +438,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const loadData = useCallback(async (): Promise<{ table: PivotTableData; rawHeader: ApiHeader } | null> => {
     setLoading(true);
     setFetchError(null);
-    setSaveError(null);
     try {
       const cfg = getAppConfig();
       const result = await getFinancialData(cfg);
@@ -742,7 +741,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
     if (!data || !rawHeader) return;
     const cfg = getAppConfig();
     setValidating(true);
-    setSaveError(null);
     setValidatedSnapshot(null);
     try {
       const response = await validateFinancialData(cfg, data, rawHeader);
@@ -764,7 +762,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown validation error";
-      setSaveError(msg);
       setToast({ kind: "error", message: msg });
     } finally {
       setValidating(false);
@@ -782,7 +779,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
     const cfg = getAppConfig();
     const proposalId = cfg.proposal_id ?? rawHeader.proposal_id;
     setSavingDraft(true);
-    setSaveError(null);
     try {
       const response = await migrateFinEvalStaging(cfg, cfg.file_id);
       setToast({
@@ -803,7 +799,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown save error";
-      setSaveError(msg);
       setToast({ kind: "error", message: msg });
     } finally {
       setSavingDraft(false);
@@ -858,14 +853,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   }, []);
 
   /* ── Side-effects ───────────────────────────────────────────── */
-  useEffect(() => {
-    if (pasteToast) { const t = setTimeout(() => setPasteToast(null), 3000); return () => clearTimeout(t); }
-  }, [pasteToast]);
-
-  // Only one toast-style notification should be visible at a time.
-  useEffect(() => { if (toast) setPasteToast(null); }, [toast]);
-  useEffect(() => { if (pasteToast) setToast(null); }, [pasteToast]);
-
   /* ── FX multiplier for display currency conversion ────────────── */
   // All values are stored in USD in the database.
   // fxRate (usd_fbr) means "1 USD = fxRate <local currency>" — multiply (not
@@ -943,38 +930,48 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const displayFmt = (n: number): string =>
     formatDisplayValue(n, { fxMultiplier, scale: displayScale, numberFormat });
 
-  // Arrow-key navigation across all year-value cells (editable + read-only).
-  // Every row renders exactly `numYears` `.feval-line-value` inputs in DOM
-  // order, so a flat index + numYears stride gives row/column math for free.
-  const handleValueCellKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+  // Arrow-key navigation between value cells, as in Prod Dev (Excel-style):
+  //  • Up / Down    → always move to the cell above / below (same column).
+  //  • Left / Right → move to the next cell only when the caret is already at
+  //    the start / end of the text; otherwise let the caret move normally.
+  // Navigable cells are the visible inputs marked data-cell-nav="1" — the year
+  // values and the Total of each line row — in DOM order, which matches the
+  // visual order.
+  const handleCellArrowNav = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     const { key } = e;
-    if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "ArrowUp" && key !== "ArrowDown") return;
+    if (key !== "ArrowUp" && key !== "ArrowDown" && key !== "ArrowLeft" && key !== "ArrowRight") return;
     const input = e.currentTarget;
-    const cells = Array.from(
-      (tableRef.current ?? document).querySelectorAll<HTMLInputElement>("input.feval-line-value"),
-    );
-    const i = cells.indexOf(input);
-    if (i === -1) return;
-
-    let target = -1;
-    if (key === "ArrowLeft") {
-      if ((input.selectionStart ?? 0) > 0) return; // caret still has room to move within the text
-      target = i - 1;
-    } else if (key === "ArrowRight") {
-      if ((input.selectionEnd ?? input.value.length) < input.value.length) return;
-      target = i + 1;
-    } else if (key === "ArrowUp") {
-      target = i - numYears;
-    } else {
-      target = i + numYears;
+    // For editable cells, only jump on Left/Right when the caret is already at
+    // the edge (so arrows still move the caret mid-text). Read-only cells have
+    // no caret to preserve, so every arrow navigates.
+    if ((key === "ArrowLeft" || key === "ArrowRight") && !input.readOnly) {
+      const pos = input.selectionStart ?? 0;
+      if (key === "ArrowLeft"  && pos > 0)                  return; // caret not at start
+      if (key === "ArrowRight" && pos < input.value.length) return; // caret not at end
     }
-    if (target < 0 || target >= cells.length) return;
-    e.preventDefault();
-    const el = cells[target];
-    el.focus();
-    const pos = key === "ArrowLeft" ? el.value.length : 0;
-    requestAnimationFrame(() => el.setSelectionRange?.(pos, pos));
+    const root = containerRef.current;
+    if (!root) return;
+    const rows = Array.from(root.querySelectorAll("tr"))
+      .map((tr) => Array.from(tr.querySelectorAll<HTMLInputElement>('input[data-cell-nav="1"]')))
+      .filter((cells) => cells.length > 0 && cells[0].offsetParent !== null);
+    const r = rows.findIndex((cells) => cells.includes(input));
+    if (r === -1) return;
+    const c = rows[r].indexOf(input);
+    const target = key === "ArrowUp"   ? rows[r - 1]?.[c]
+                 : key === "ArrowDown" ? rows[r + 1]?.[c]
+                 : rows[r][c + (key === "ArrowRight" ? 1 : -1)];
+    if (target) {
+      e.preventDefault();
+      target.focus();
+      target.select();
+    }
   };
+
+  // Read-only Total cell the arrow keys can reach (Tab skips it), as in Prod Dev.
+  const navTotalCell = (text: string, style: React.CSSProperties): React.ReactElement => (
+    <input type="text" readOnly tabIndex={-1} data-cell-nav="1" value={text} onKeyDown={handleCellArrowNav}
+      style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", outline: "none", cursor: "default", ...style }} />
+  );
 
   // Read-only (but still focusable/arrow-navigable) value cell — used for
   // calculated / server-driven rows where the number itself can't be edited.
@@ -983,7 +980,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
       type="text"
       readOnly
       value={text}
-      onKeyDown={handleValueCellKeyDown}
       className="feval-line-value"
       style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 12, outline: "none", cursor: "default", ...extra }}
     />
@@ -1101,7 +1097,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         return withRows;
       }) };
     });
-    setPasteToast({ gId, count: parsed.length }); setActiveAutocomplete(null); setAutocompleteSearch("");
+    showPasted(parsed.length); setActiveAutocomplete(null); setAutocompleteSearch("");
   };
 
   const handleValueCellPaste = (e: React.ClipboardEvent<HTMLInputElement>, gId: string, vId: string, startYearIdx: number): void => {
@@ -1118,7 +1114,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; const vIsPct = isPercentRow(v); parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = vIsPct ? clampPercent(val) : val; }); return { ...v, yearValues: nv }; }) }; return withValues; }) }; });
     const grp = data.groups.find((g) => g.id === gId);
     const si  = grp ? grp.values.findIndex((v) => v.id === vId) : 0;
-    setPasteToast({ gId, count: grp ? Math.min(parsedRows.length, grp.values.length - si) : parsedRows.length });
+    showPasted(grp ? Math.min(parsedRows.length, grp.values.length - si) : parsedRows.length);
   };
 
   /* ────────────────────────────── JSX ────────────────────────── */
@@ -1195,7 +1191,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   } catch (e) {
                     clearCachedToken();
                     const msg = e instanceof Error ? e.message : (kind === "section" ? "Failed to delete section" : "Failed to delete line");
-                    setSaveError(msg);
                     setToast({ kind: "error", message: msg });
                     setConfirmDelete(null);
                   } finally {
@@ -1244,22 +1239,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Paste toast */}
-      {pasteToast && (
-        <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 200, padding: "10px 16px", background: "#059669", color: "#fff", borderRadius: 8, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,.15)" }}>
-          <span>✓ {pasteToast.count} row{pasteToast.count !== 1 ? "s" : ""} pasted from Excel</span>
-          <button type="button" onClick={() => setPasteToast(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={12} /></button>
-        </div>
-      )}
-
-      {/* Save error banner */}
-      {saveError && (
-        <div style={{ marginBottom: 12, padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, color: "#dc2626", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <span><strong>Error:</strong> {saveError}</span>
-          <button type="button" onClick={() => setSaveError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626" }}><X size={12} /></button>
         </div>
       )}
 
@@ -1710,7 +1689,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                                       setEditingCell(null);
                                     }
                                   }}
-                                  onKeyDown={handleValueCellKeyDown}
+                                  data-cell-nav="1"
+                                  onKeyDown={handleCellArrowNav}
                                   readOnly={isReadonly}
                                   onClick={(e) => e.stopPropagation()}
                                   onPaste={isReadonly ? undefined : (e) => handleValueCellPaste(e, group.id, value.id, yi)}
@@ -1721,8 +1701,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               );
                             })}
                           {(isNoTotalRow(value) || isNonFinancialRow(value) || isAllNonFinancialGroup(group))
-                            ? <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 12, fontWeight: 600, color: "#1f2937" }}>{isNoTotalRow(value) ? "—" : ""}</td>
-                            : (() => { const t = lineTotal(value, data.years); return <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 12, fontWeight: 600, color: (t ?? 0) < 0 ? "#DC2626" : "#1f2937" }}>{isNonFinancialRow(value) ? (t == null ? "" : rawFmtNonFinancial(t)) : isUnscaledRow(value) ? (t == null ? "" : rawFmt(t)) : (t == null ? "" : displayFmt(t))}</td>; })()
+                            ? <td style={{ ...TD, padding: "4px 12px" }}>{navTotalCell(isNoTotalRow(value) ? "—" : "", { fontSize: 12, fontWeight: 600, color: "#1f2937", height: 30 })}</td>
+                            : (() => { const t = lineTotal(value, data.years); return <td style={{ ...TD, padding: "4px 12px" }}>{navTotalCell(isNonFinancialRow(value) ? (t == null ? "" : rawFmtNonFinancial(t)) : isUnscaledRow(value) ? (t == null ? "" : rawFmt(t)) : (t == null ? "" : displayFmt(t)), { fontSize: 12, fontWeight: 600, color: (t ?? 0) < 0 ? "#DC2626" : "#1f2937", height: 30 })}</td>; })()
                           }
                         </tr>
                       );

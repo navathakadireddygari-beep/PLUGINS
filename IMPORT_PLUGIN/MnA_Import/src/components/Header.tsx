@@ -35,7 +35,6 @@ export default function Header() {
     migrating,
     issueCount,
     validated,
-    error: saveError,
     ready,
     readonly,
   } = useSaveModel();
@@ -47,17 +46,9 @@ export default function Header() {
   return (
     <header className="mna:overflow-hidden mna:rounded-3xl mna:border mna:border-slate-200 mna:bg-white mna:shadow-sm">
       <div className="mna:flex mna:items-center mna:gap-4 mna:border-b mna:border-slate-200 mna:bg-white mna:px-6 mna:py-4">
-        {/* The error sits to the LEFT of the buttons, in the space that grows,
-            and wraps to show the whole message. The buttons are a separate
-            non-shrinking group, so a message appearing or changing never moves
-            Back / Validate / Save Model. The block is always rendered (empty
-            when there is no error) so the buttons stay right-aligned. */}
-        <div
-          className="mna:min-w-0 mna:flex-1 mna:text-right mna:text-sm mna:break-words mna:text-red-600"
-          role={saveError && !saving && !migrating ? "alert" : undefined}
-        >
-          {saveError && !saving && !migrating ? saveError : null}
-        </div>
+        {/* Errors show only in the top-right toast. This empty block takes the
+            free width so the buttons stay right-aligned. */}
+        <div className="mna:min-w-0 mna:flex-1" />
         <div className="mna:flex mna:shrink-0 mna:items-center mna:gap-2">
           <button
             id="fin-eval-back-btn"

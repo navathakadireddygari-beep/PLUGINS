@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, ChevronDown, ChevronUp, ChevronLeft, X, RefreshCw, MessageSquare, Download, Upload, Save, Calendar } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, ChevronLeft, RefreshCw, MessageSquare, Download, Upload, Save, Calendar } from "lucide-react";
 import { getAppConfig } from "../config/app-config";
 import { subscribeAllActions, publishToBridge } from "../lib";
 import type {} from "../types/fin-eval-bridge";
@@ -349,8 +349,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [dateFormat,    setDateFormat]    = useState<DateFormatId>(loadDateFormat);
 
   const [savingDraft,  setSavingDraft]  = useState<boolean>(false);
-  const [saveError,    setSaveError]    = useState<string | null>(null);
   const [toast,        setToast]        = useState<ToastState>(null);
+  const showPasted = (count: number) =>
+    setToast({ kind: "success", message: `${count} row${count !== 1 ? "s" : ""} pasted from Excel` });
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
 
   const [activeAutocomplete, setActiveAutocomplete] = useState<string | null>(null);
@@ -362,7 +363,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [editingGroupId,     setEditingGroupId]     = useState<string | null>(null);
   const [editingGroupName,   setEditingGroupName]   = useState<string>("");
   const [editingCell,        setEditingCell]        = useState<{ gId: string; vId: string; year: number; raw: string } | null>(null);
-  const [pasteToast,         setPasteToast]         = useState<{ gId: string; count: number } | null>(null);
   const [confirmDelete,      setConfirmDelete]      = useState<{ gId: string; vId?: string; name: string; kind: "line" | "section" } | null>(null);
   const [deletingRow,        setDeletingRow]        = useState<boolean>(false);
   const [confirmDeleteYear,  setConfirmDeleteYear]  = useState<{ year: number; label: string } | null>(null);
@@ -481,7 +481,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const loadData = useCallback(async (reason = "unknown"): Promise<{ table: PivotTableData; rawHeader: ApiHeader } | null> => {
     setLoading(true);
     setFetchError(null);
-    setSaveError(null);
     try {
       const cfg = getAppConfig();
       const result = await getFinancialData(cfg, { reason });
@@ -671,7 +670,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
       return;
     }
     setSavingDraft(true);
-    setSaveError(null);
     try {
       const { method, response } = await saveFinancialData(cfg, data, rawHeader);
       setToast({
@@ -724,7 +722,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown save error";
-      setSaveError(msg);
       setToast({ kind: "error", message: msg });
     } finally {
       setSavingDraft(false);
@@ -779,14 +776,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   }, []);
 
   /* ── Side-effects ───────────────────────────────────────────── */
-  useEffect(() => {
-    if (pasteToast) { const t = setTimeout(() => setPasteToast(null), 3000); return () => clearTimeout(t); }
-  }, [pasteToast]);
-
-  // Only one toast-style notification should be visible at a time.
-  useEffect(() => { if (toast) setPasteToast(null); }, [toast]);
-  useEffect(() => { if (pasteToast) setToast(null); }, [pasteToast]);
-
   /* ── FX multiplier for display currency conversion ────────────── */
   // All values are stored in USD in the database. fxRate (usd_fbr) means
   // "1 USD = fxRate <local currency>" — multiply (not divide) to convert a
@@ -1054,7 +1043,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         return withRows;
       }) };
     });
-    setPasteToast({ gId, count: parsed.length }); setActiveAutocomplete(null); setAutocompleteSearch("");
+    showPasted(parsed.length); setActiveAutocomplete(null); setAutocompleteSearch("");
   };
 
   const handleValueCellPaste = (e: React.ClipboardEvent<HTMLInputElement>, gId: string, vId: string, startYearIdx: number): void => {
@@ -1071,7 +1060,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; const vIsPct = isPercentRow(v); parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = vIsPct ? clampPercent(val) : val; }); return { ...v, yearValues: nv }; }) }; return withValues; }) }; });
     const grp = data.groups.find((g) => g.id === gId);
     const si  = grp ? grp.values.findIndex((v) => v.id === vId) : 0;
-    setPasteToast({ gId, count: grp ? Math.min(parsedRows.length, grp.values.length - si) : parsedRows.length });
+    showPasted(grp ? Math.min(parsedRows.length, grp.values.length - si) : parsedRows.length);
   };
 
   // Smart arrow-key navigation between value cells (like Tab):
@@ -1184,7 +1173,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   } catch (e) {
                     clearCachedToken();
                     const msg = e instanceof Error ? e.message : (kind === "section" ? "Failed to delete section" : "Failed to delete line");
-                    setSaveError(msg);
                     setToast({ kind: "error", message: msg });
                     setConfirmDelete(null);
                   } finally {
@@ -1233,22 +1221,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Paste toast */}
-      {pasteToast && (
-        <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 200, padding: "10px 16px", background: "#059669", color: "#fff", borderRadius: 8, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,.15)" }}>
-          <span>✓ {pasteToast.count} row{pasteToast.count !== 1 ? "s" : ""} pasted from Excel</span>
-          <button type="button" onClick={() => setPasteToast(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={12} /></button>
-        </div>
-      )}
-
-      {/* Save error banner */}
-      {saveError && (
-        <div style={{ marginBottom: 12, padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, color: "#dc2626", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <span><strong>Save failed:</strong> {saveError}</span>
-          <button type="button" onClick={() => setSaveError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626" }}><X size={12} /></button>
         </div>
       )}
 

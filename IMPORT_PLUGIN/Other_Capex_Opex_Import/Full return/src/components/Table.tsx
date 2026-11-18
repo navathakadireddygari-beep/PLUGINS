@@ -73,7 +73,6 @@ const toggleBtn = (active: boolean, first: boolean): React.CSSProperties => ({
   whiteSpace: "nowrap",
 });
 
-const FIN_CELL_CLASS = "fin-cell-input";
 
 const generateId  = (): string => `id-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
@@ -397,8 +396,9 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   const [savingDraft,  setSavingDraft]  = useState<boolean>(false);
   const [validating,   setValidating]   = useState<boolean>(false);
-  const [saveError,    setSaveError]    = useState<string | null>(null);
   const [toast,        setToast]        = useState<ToastState>(null);
+  const showPasted = (count: number) =>
+    setToast({ kind: "success", message: `${count} row${count !== 1 ? "s" : ""} pasted from Excel` });
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   const [highlightLineId,      setHighlightLineId]      = useState<string | null>(null);
   // Bumped by every error click, so clicking the same error again re-scrolls and re-flashes.
@@ -420,7 +420,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const [editingGroupId,     setEditingGroupId]     = useState<string | null>(null);
   const [editingGroupName,   setEditingGroupName]   = useState<string>("");
   const [editingCell,        setEditingCell]        = useState<{ gId: string; vId: string; year: number; raw: string } | null>(null);
-  const [pasteToast,         setPasteToast]         = useState<{ gId: string; count: number } | null>(null);
   const [confirmDelete,      setConfirmDelete]      = useState<{ gId: string; vId?: string; name: string; kind: "line" | "section" } | null>(null);
   const [deletingRow,        setDeletingRow]        = useState<boolean>(false);
   const [confirmDeleteYear,  setConfirmDeleteYear]  = useState<{ year: number; label: string } | null>(null);
@@ -559,7 +558,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const loadData = useCallback(async (): Promise<{ table: PivotTableData; rawHeader: ApiHeader } | null> => {
     setLoading(true);
     setFetchError(null);
-    setSaveError(null);
     try {
       const cfg = getAppConfig();
       const result = await getFinancialData(cfg);
@@ -828,7 +826,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
       return;
     }
     setValidating(true);
-    setSaveError(null);
     setValidatedSnapshot(null);
     try {
       const response = await importFinancialData(cfg, data, rawHeader);
@@ -850,7 +847,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown validation error";
-      setSaveError(msg);
       setToast({ kind: "error", message: msg });
     } finally {
       setValidating(false);
@@ -884,7 +880,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
       return;
     }
     setSavingDraft(true);
-    setSaveError(null);
     try {
       const response = await migrateFinEvalStaging(cfg, cfg.file_id);
       setToast({
@@ -900,7 +895,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
     } catch (e: unknown) {
       clearCachedToken();
       const msg = e instanceof Error ? e.message : "Unknown save error";
-      setSaveError(msg);
       setToast({ kind: "error", message: msg });
     } finally {
       setSavingDraft(false);
@@ -955,14 +949,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
   }, []);
 
   /* ── Side-effects ───────────────────────────────────────────── */
-  useEffect(() => {
-    if (pasteToast) { const t = setTimeout(() => setPasteToast(null), 3000); return () => clearTimeout(t); }
-  }, [pasteToast]);
-
-  // Only one toast-style notification should be visible at a time.
-  useEffect(() => { if (toast) setPasteToast(null); }, [toast]);
-  useEffect(() => { if (pasteToast) setToast(null); }, [pasteToast]);
-
   /* ── FX multiplier for display currency conversion ────────────── */
   // All values are stored in USD in the database.
   // fxRate (usd_fbr) means "1 USD = fxRate <local currency>" — multiply (not
@@ -1194,35 +1180,41 @@ export default function PivotTableWithAPI(): React.ReactElement {
   const validateDisabled  = validating || savingDraft || loading || isValidated;
   const saveModelDisabled = savingDraft || validating || loading || !isValidated;
 
-  /* ── Arrow-key cell navigation ───────────────────────────────
-     Every navigable cell (line name, year value, row total — editable or
-     read-only/calculated) shares the FIN_CELL_CLASS. A flat, row-major
-     DOM query plus a fixed row length (name + years + total) lets Left/
-     Right fall through to normal caret movement until the caret hits the
-     text edge, and Up/Down jump by exactly one row. */
-  const navRowLength = numYears + 2;
+  // Arrow-key navigation between value cells, as in Prod Dev (Excel-style):
+  //  • Up / Down    → always move to the cell above / below (same column).
+  //  • Left / Right → move to the next cell only when the caret is already at
+  //    the start / end of the text; otherwise let the caret move normally.
+  // Navigable cells are the visible inputs marked data-cell-nav="1" — the year
+  // values and the Total of each line row — in DOM order, which matches the
+  // visual order.
   const handleCellArrowNav = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     const { key } = e;
-    if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "ArrowUp" && key !== "ArrowDown") return;
-
-    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>(`.${FIN_CELL_CLASS}`));
-    const i = inputs.indexOf(e.currentTarget);
-    if (i === -1) return;
-
-    if (key === "ArrowUp" || key === "ArrowDown") {
-      const target = inputs[key === "ArrowUp" ? i - navRowLength : i + navRowLength];
-      if (target) { e.preventDefault(); target.focus(); }
-      return;
+    if (key !== "ArrowUp" && key !== "ArrowDown" && key !== "ArrowLeft" && key !== "ArrowRight") return;
+    const input = e.currentTarget;
+    // For editable cells, only jump on Left/Right when the caret is already at
+    // the edge (so arrows still move the caret mid-text). Read-only cells have
+    // no caret to preserve, so every arrow navigates.
+    if ((key === "ArrowLeft" || key === "ArrowRight") && !input.readOnly) {
+      const pos = input.selectionStart ?? 0;
+      if (key === "ArrowLeft"  && pos > 0)                  return; // caret not at start
+      if (key === "ArrowRight" && pos < input.value.length) return; // caret not at end
     }
-
-    const el    = e.currentTarget;
-    const start = el.selectionStart ?? 0;
-    const end   = el.selectionEnd ?? el.value.length;
-    const atStart = start === 0 && end === 0;
-    const atEnd   = start === el.value.length && end === el.value.length;
-
-    if (key === "ArrowLeft" && atStart && inputs[i - 1]) { e.preventDefault(); inputs[i - 1].focus(); }
-    else if (key === "ArrowRight" && atEnd && inputs[i + 1]) { e.preventDefault(); inputs[i + 1].focus(); }
+    const root = containerRef.current;
+    if (!root) return;
+    const rows = Array.from(root.querySelectorAll("tr"))
+      .map((tr) => Array.from(tr.querySelectorAll<HTMLInputElement>('input[data-cell-nav="1"]')))
+      .filter((cells) => cells.length > 0 && cells[0].offsetParent !== null);
+    const r = rows.findIndex((cells) => cells.includes(input));
+    if (r === -1) return;
+    const c = rows[r].indexOf(input);
+    const target = key === "ArrowUp"   ? rows[r - 1]?.[c]
+                 : key === "ArrowDown" ? rows[r + 1]?.[c]
+                 : rows[r][c + (key === "ArrowRight" ? 1 : -1)];
+    if (target) {
+      e.preventDefault();
+      target.focus();
+      target.select();
+    }
   };
 
   /* ── Year management ────────────────────────────────────────── */
@@ -1308,7 +1300,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
         return withRows;
       }) };
     });
-    setPasteToast({ gId, count: parsed.length }); setActiveAutocomplete(null); setAutocompleteSearch("");
+    showPasted(parsed.length); setActiveAutocomplete(null); setAutocompleteSearch("");
   };
 
   const handleValueCellPaste = (e: React.ClipboardEvent<HTMLInputElement>, gId: string, vId: string, startYearIdx: number): void => {
@@ -1325,7 +1317,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     setData((p) => { if (!p) return p; return { ...p, groups: p.groups.map((g) => { if (g.id !== gId) return g; const si = g.values.findIndex((v) => v.id === vId); if (si === -1) return g; const withValues: Group = { ...g, values: g.values.map((v, ri) => { const off = ri - si; if (off < 0 || off >= parsedRows.length) return v; const nv: YearValues = { ...v.yearValues }; const vIsPct = isPercentRow(v); parsedRows[off].forEach((val, ci) => { const yi = startYearIdx + ci; if (yi < p.years.length) nv[p.years[yi]] = vIsPct ? clampPercent(val) : val; }); return { ...v, yearValues: nv }; }) }; return withValues; }) }; });
     const grp = data.groups.find((g) => g.id === gId);
     const si  = grp ? grp.values.findIndex((v) => v.id === vId) : 0;
-    setPasteToast({ gId, count: grp ? Math.min(parsedRows.length, grp.values.length - si) : parsedRows.length });
+    showPasted(grp ? Math.min(parsedRows.length, grp.values.length - si) : parsedRows.length);
   };
 
   /* ────────────────────────────── JSX ────────────────────────── */
@@ -1402,7 +1394,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
                   } catch (e) {
                     clearCachedToken();
                     const msg = e instanceof Error ? e.message : (kind === "section" ? "Failed to delete section" : "Failed to delete line");
-                    setSaveError(msg);
                     setToast({ kind: "error", message: msg });
                     setConfirmDelete(null);
                   } finally {
@@ -1451,22 +1442,6 @@ export default function PivotTableWithAPI(): React.ReactElement {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Paste toast */}
-      {pasteToast && (
-        <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 200, padding: "10px 16px", background: "#059669", color: "#fff", borderRadius: 8, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,.15)" }}>
-          <span>✓ {pasteToast.count} row{pasteToast.count !== 1 ? "s" : ""} pasted from Excel</span>
-          <button type="button" onClick={() => setPasteToast(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={12} /></button>
-        </div>
-      )}
-
-      {/* Validate / save error banner — full API message, wrapped */}
-      {saveError && (
-        <div style={{ marginBottom: 12, padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, color: "#dc2626", fontSize: 12, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-          <span style={{ flex: 1, minWidth: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}><strong>Error:</strong> {saveError}</span>
-          <button type="button" onClick={() => setSaveError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", flexShrink: 0 }}><X size={12} /></button>
         </div>
       )}
 
@@ -1805,13 +1780,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                           <td colSpan={group.isAccountRequired !== "Y" ? 2 + assetSpan(group) : 1} style={{ ...TD, padding: sub ? `4px 12px 4px ${12 + SUB_INDENT}px` : "4px 12px", position: "relative", overflow: "hidden" }} title={value.name}>
                             <input type="text"
-                              className={FIN_CELL_CLASS}
                               value={isAC ? autocompleteSearch : value.name}
                               onChange={(e) => { if (value.isCustom === "N") return; updateValueName(group.id, value.id, e.target.value); if (isAC) setAutocompleteSearch(e.target.value); }}
                               onFocus={(e) => { if (value.isCustom === "N") { e.stopPropagation(); return; } e.stopPropagation(); setActiveAutocomplete(acKey); setAutocompleteSearch(value.name); }}
                               onPaste={(e) => { if (value.isCustom === "N") return; handleNamePaste(e, group.id, value.id); }}
                               onClick={(e) => e.stopPropagation()}
-                              onKeyDown={handleCellArrowNav}
                               placeholder="Enter line item name"
                               readOnly={nameLocked}
                               style={{ width: isTaxRateRow(value) ? `${(value.name ?? "").length + 1}ch` : "100%", border: "none", background: isTemplateName ? "transparent" : (nameLocked ? "#f3f4f6" : "transparent"), fontSize: 12, fontWeight: isTemplateName ? 700 : 400, color: isTemplateName ? "#111827" : "#1f2937", outline: "none", textOverflow: "ellipsis", height: 28, cursor: nameLocked ? "default" : "text" }}
@@ -1851,7 +1824,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             return (
                               <td key={year} style={{ ...TD, padding: "4px 12px" }}>
                                 <input type="text"
-                                  className={FIN_CELL_CLASS}
+                                  data-cell-nav="1"
                                   inputMode={pctRow ? "decimal" : undefined}
                                   value={editingCell?.gId === group.id && editingCell?.vId === value.id && editingCell?.year === year
                                     ? editingCell.raw
@@ -1889,8 +1862,8 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               );
                             })}
                           {(isNoTotalRow(value) || groupNoTotal || isNonFinancialRow(value))
-                            ? <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={groupNoTotal || isNonFinancialRow(value) ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>
-                            : (() => { const t = lineTotal(value, data.years); return <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={(isUnscaledRow(value) || isNonFinancialRow(value) || groupIsCustomSection) ? (t == null ? "" : (isPercentRow(value) ? nonFinFmt(t) : rawFmt(t))) : (t == null ? "" : displayFmt(t))} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: (t ?? 0) < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>; })()
+                            ? <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly tabIndex={-1} data-cell-nav="1" onKeyDown={handleCellArrowNav} value={groupNoTotal || isNonFinancialRow(value) ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>
+                            : (() => { const t = lineTotal(value, data.years); return <td style={{ ...TD, padding: "4px 12px" }}><input type="text" readOnly tabIndex={-1} data-cell-nav="1" onKeyDown={handleCellArrowNav} value={(isUnscaledRow(value) || isNonFinancialRow(value) || groupIsCustomSection) ? (t == null ? "" : (isPercentRow(value) ? nonFinFmt(t) : rawFmt(t))) : (t == null ? "" : displayFmt(t))} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: (t ?? 0) < 0 ? "#DC2626" : "#1f2937", outline: "none", height: 28, cursor: "default" }} /></td>; })()
                           }
                         </tr>
                       );
@@ -1905,7 +1878,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                     const renderCalcRow = (value: ValueRow) => (
                       <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#FEF3C7" : "#f3f4f6", transition: "background 0.3s" }}>
                         <td colSpan={3 + assetSpan(group)} style={{ ...TD, padding: sub ? `8px 12px 8px ${ICON_COL + 12 + SUB_INDENT}px` : "8px 12px", ...subGutter(sub) }}>
-                          <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={value.name} style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} />
+                          <input type="text" readOnly value={value.name} style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} />
                         </td>
                         {renderAssetCells(group, value, "4px 8px")}
                         {data.years.map((year: number) => {
@@ -1913,13 +1886,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection;
                           return (
                             <td key={year} style={{ ...TD, padding: "8px 12px" }}>
-                              <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={(isNonFinancialRow(value) || groupAllNonFinancial) && !isUnscaledRow(value) ? nonFinFmt(val) : rawRow ? (isPercentRow(value) ? nonFinFmt(val) : rawFmt(val)) : displayFmt(val)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} />
+                              <input type="text" readOnly value={(isNonFinancialRow(value) || groupAllNonFinancial) && !isUnscaledRow(value) ? nonFinFmt(val) : rawRow ? (isPercentRow(value) ? nonFinFmt(val) : rawFmt(val)) : displayFmt(val)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} />
                             </td>
                           );
                         })}
                         {(isNoTotalRow(value) || groupNoTotal || isNonFinancialRow(value))
-                          ? <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={groupNoTotal || isNonFinancialRow(value) ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} /></td>
-                          : (() => { const t = lineTotal(value, data.years); const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? (t == null ? "" : (isPercentRow(value) ? nonFinFmt(t) : rawFmt(t))) : (t == null ? "" : displayFmt(t))} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: (t ?? 0) < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
+                          ? <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly value={groupNoTotal || isNonFinancialRow(value) ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} /></td>
+                          : (() => { const t = lineTotal(value, data.years); const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "8px 12px" }}><input type="text" readOnly value={rawRow ? (t == null ? "" : (isPercentRow(value) ? nonFinFmt(t) : rawFmt(t))) : (t == null ? "" : displayFmt(t))} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: (t ?? 0) < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
                         }
                       </tr>
                     );
@@ -1936,7 +1909,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                       </>) : calc.map((value: ValueRow) => (
                         <tr key={value.id} data-line-id={value.id} style={{ background: value.id === highlightLineId ? "#FEF3C7" : "#f3f4f6", transition: "background 0.3s" }}>
                           <td colSpan={3 + assetSpan(group)} style={{ ...TD, padding: sub ? `10px 14px 10px ${ICON_COL + 12 + SUB_INDENT}px` : "10px 14px", ...subGutter(sub) }}>
-                            <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={value.name} style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} />
+                            <input type="text" readOnly value={value.name} style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} />
                           </td>
                           {renderAssetCells(group, value, "4px 8px")}
                           {data.years.map((year: number) => {
@@ -1944,13 +1917,13 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection;
                             return (
                               <td key={year} style={{ ...TD, padding: "10px 14px" }}>
-                                <input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={(isNonFinancialRow(value) || groupAllNonFinancial) && !isUnscaledRow(value) ? nonFinFmt(val) : rawRow ? (isPercentRow(value) ? nonFinFmt(val) : rawFmt(val)) : displayFmt(val)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} />
+                                <input type="text" readOnly value={(isNonFinancialRow(value) || groupAllNonFinancial) && !isUnscaledRow(value) ? nonFinFmt(val) : rawRow ? (isPercentRow(value) ? nonFinFmt(val) : rawFmt(val)) : displayFmt(val)} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} />
                               </td>
                             );
                           })}
                           {(isNoTotalRow(value) || groupNoTotal || isNonFinancialRow(value))
-                            ? <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={groupNoTotal || isNonFinancialRow(value) ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} /></td>
-                            : (() => { const t = lineTotal(value, data.years); const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly className={FIN_CELL_CLASS} onKeyDown={handleCellArrowNav} value={rawRow ? (t == null ? "" : (isPercentRow(value) ? nonFinFmt(t) : rawFmt(t))) : (t == null ? "" : displayFmt(t))} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: (t ?? 0) < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
+                            ? <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly value={groupNoTotal || isNonFinancialRow(value) ? "" : "—"} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#111", outline: "none", height: 28, cursor: "default" }} /></td>
+                            : (() => { const t = lineTotal(value, data.years); const rawRow = isUnscaledRow(value) || isNonFinancialRow(value) || groupAllNonFinancial || groupIsCustomSection; return <td style={{ ...TD, padding: "10px 14px" }}><input type="text" readOnly value={rawRow ? (t == null ? "" : (isPercentRow(value) ? nonFinFmt(t) : rawFmt(t))) : (t == null ? "" : displayFmt(t))} style={{ width: "100%", textAlign: "right", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: (t ?? 0) < 0 ? "#DC2626" : "#111", outline: "none", height: 28, cursor: "default" }} /></td>; })()
                           }
                         </tr>
                       ))}

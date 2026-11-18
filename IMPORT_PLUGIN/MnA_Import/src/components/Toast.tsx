@@ -40,7 +40,7 @@ export default function Toast({ toast, onClose, autoDismissMs = 3500 }: Props) {
     <div
       role="status"
       className={`mna:fixed mna:top-[50px] mna:right-5 mna:z-[400] mna:mt-2.5 mna:flex mna:max-w-[472px] mna:min-w-[260px] mna:items-center mna:gap-2.5 mna:rounded-lg mna:px-3.5 mna:py-3 mna:text-[13px] mna:font-semibold mna:shadow-[0_6px_20px_rgba(0,0,0,.18)] ${
-        isSuccess ? "mna:bg-[#f4fceb] mna:text-[#436b1d]" : "mna:bg-white mna:text-[#111827]"
+        isSuccess ? "mna:bg-[#f4fceb] mna:text-[#436b1d]" : "mna:bg-[#fef2f2] mna:text-[#DC2626]"
       }`}
     >
       <Icon size={18} className="mna:shrink-0" />
