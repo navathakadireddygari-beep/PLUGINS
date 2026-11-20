@@ -39,6 +39,7 @@ import useDeleteFinEvalLine from "@/hooks/useDeleteFinEvalLine";
 import useDeleteFinEvalSection from "@/hooks/useDeleteFinEvalSection";
 import { useSaveModel } from "@/context/SaveModelContext";
 import { DARK_HEADER } from "@/components/strip-styles";
+import { fyEndingMonth } from "@/lib/date-helper";
 import {
   formatNonFinancial,
   formatPercent,
@@ -837,6 +838,18 @@ const Table: React.FC = () => {
     error: loadError,
     reload,
   } = useFinancialEvaluation();
+
+  /**
+   * "(FY ending <Month>)" from `target_year_end`, shown beside the LINE ITEM /
+   * TYPE heading of FINANCIAL sections only — a NON_FINANCIAL (custom) section
+   * holds counts and metrics, which skip scale and have no fiscal-year basis.
+   * Nothing when the response carries no year end.
+   */
+  const fyEndMonth = fyEndingMonth(template?.targetYearEnd);
+  const fyEndingTag = fyEndMonth ? (
+    <span className="mna:ml-1.5 mna:normal-case">(FY ending {fyEndMonth})</span>
+  ) : null;
+
   // Hand the last-imported file to <Header>'s "Financial model source" bar.
   const { setImportInfo } = useImportInfo();
   useEffect(() => {
@@ -1691,11 +1704,12 @@ const Table: React.FC = () => {
    * `cagr` ends the row with the "CAGR" heading, under the banner's "<n>YR",
    * exactly where the wireframe puts it.
    */
-  const sectionYearRow = (cols: number[], cagr: boolean) => (
+  const sectionYearRow = (cols: number[], cagr: boolean, financial = true) => (
     <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
       {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
       <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
         LINE ITEM
+        {financial && fyEndingTag}
       </th>
       {cols.map((i) => (
         <th
@@ -1778,7 +1792,8 @@ const Table: React.FC = () => {
         <React.Fragment key={row.id}>
           {sectionHeaderRow(gridId, rows, rowIdx, span)}
           {/* Per-section LINE ITEM / year row, under the section's bar. */}
-          {yearsInSections && startsSection && !collapsed && sectionYearRow(cols, cagr)}
+          {yearsInSections && startsSection && !collapsed &&
+            sectionYearRow(cols, cagr, !isNonFinancialSection(rows, row))}
           {/* Only the line itself is dropped: the bar above and the
               "+ Add Row" below still key off this row's index. */}
           {!collapsed && !hidden.has(row.id) && (
@@ -2529,7 +2544,7 @@ const Table: React.FC = () => {
                     <thead>
                       <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
                         {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
-                        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">TYPE</th>
+                        <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">TYPE{fyEndingTag}</th>
                         {conYearIdx.map((i) => (
                           <th key={i} className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
                             {fyLabel(i)}
@@ -2588,7 +2603,7 @@ const Table: React.FC = () => {
                 <thead>
                   <tr className="mna:h-[35px] mna:bg-[#e5e7eb] mna:text-xs mna:font-semibold mna:text-[#374151]">
                     {!isReadonly && <th className="mna:border-b mna:border-r mna:border-[#d1d5db]" />}
-                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">LINE ITEM</th>
+                    <th className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-left mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">LINE ITEM{fyEndingTag}</th>
                     {projYearIdx.map((i) => (
                       <th key={i} className="mna:border-b mna:border-r mna:border-[#d1d5db] mna:px-2 mna:py-1.5 mna:text-right mna:text-[10px] mna:font-bold mna:uppercase mna:text-[#374151]">
                         {fyLabel(i)}

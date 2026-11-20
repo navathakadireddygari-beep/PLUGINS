@@ -129,6 +129,8 @@ export interface FinancialEvaluationResponse {
   local_currency: string | null;
   display_currency: string | null;
   exchange_rate: number | null;
+  /** Target's financial year end (ISO timestamp); its month labels the grids. */
+  target_year_end?: string | null;
   /** Number of projection columns the template wants shown. */
   display_years: number | null;
   discount_rate_percent: number | null;

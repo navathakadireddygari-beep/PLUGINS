@@ -93,6 +93,23 @@ export const formatDate = (
   }
 };
 
+/**
+ * Full month name of the target's year end (`target_year_end`), e.g. "June"
+ * for "2026-06-30T00:00:00"; null when absent or unparseable. The month is
+ * read straight from the ISO text so a time-zone offset cannot shift a
+ * month-end date into the next month.
+ */
+export const fyEndingMonth = (
+  value: string | null | undefined,
+): string | null => {
+  const iso = /^\d{4}-(\d{2})/.exec((value ?? "").trim());
+  const fromIso = iso ? Number(iso[1]) - 1 : NaN;
+  if (fromIso >= 0 && fromIso < 12) return MONTHS[fromIso];
+  if (iso) return null;
+  const d = toDate(value);
+  return d ? MONTHS[d.getMonth()] : null;
+};
+
 /* ─────────────────── Persisted display preference ─────────────────── */
 /**
  * The active date format survives a reload, using the same localStorage key as

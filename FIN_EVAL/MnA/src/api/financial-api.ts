@@ -269,6 +269,8 @@ export interface FinancialEvaluationModel {
   exchangeRate: number | null;
   /** Owning proposal's workflow status; drives the view-only rule. */
   proposalStatus: string | null;
+  /** Target's financial year end (`target_year_end`); null when unset. */
+  targetYearEnd: string | null;
   /** Last imported financial-model file + import time; null when none. */
   lastImportedFileName: string | null;
   lastImportedDate: string | null;
@@ -502,6 +504,7 @@ export const mapFinancialEvaluation = (
         ? items.exchange_rate
         : null,
     proposalStatus: items.proposal_status ?? null,
+    targetYearEnd: items.target_year_end?.trim() || null,
     lastImportedFileName: items.last_imported_file_name?.trim() || null,
     lastImportedDate: items.last_imported_date?.trim() || null,
     keyInputs,
