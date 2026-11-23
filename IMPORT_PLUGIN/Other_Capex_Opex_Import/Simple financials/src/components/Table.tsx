@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Save, Check } from "lucide-react";
 import { ERROR_FLASH_CSS, flashErrorTarget } from "../lib/error-flash";
 import { getAppConfig } from "../config/app-config";
+import LoadMessageBanner from "./LoadMessageBanner";
 import { subscribeAllActions, publishToBridge } from "../lib";
 import type {} from "../types/fin-eval-bridge";
 import {
@@ -1247,6 +1248,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       <div ref={headerRef} style={{ position: headerPinned ? "fixed" : "sticky", top: headerPinned ? topInset : 0, left: headerPinned ? leftOffset : undefined, width: headerPinned ? containerWidth : undefined, zIndex: 200, background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
         {/* Action bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "10px 0" }}>
+          {!isReadonly && <LoadMessageBanner />}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
               id="fin-eval-back-btn"

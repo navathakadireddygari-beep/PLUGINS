@@ -3,6 +3,7 @@ import CurrencyToggle from "@/components/CurrencyToggle";
 import FxCard from "@/components/FxCard";
 import DateFormatToolbar from "@/components/DateFormatToolbar";
 import NumberFormatToolbar from "@/components/NumberFormatToolbar";
+import LoadMessageBanner from "@/components/LoadMessageBanner";
 import { useCurrencyFormat } from "@/context/CurrencyFormatContext";
 import { useSaveModel } from "@/context/SaveModelContext";
 import { isHostReadonly } from "@/api";
@@ -91,9 +92,12 @@ export default function Header() {
       style={pin ? { position: "fixed", top: pin.top, left: pin.left, width: pin.width, zIndex: 200 } : undefined}
       className="mna:overflow-hidden mna:rounded-3xl mna:border mna:border-slate-200 mna:bg-white mna:shadow-sm">
       <div className="mna:flex mna:items-center mna:gap-4 mna:border-b mna:border-slate-200 mna:bg-white mna:px-6 mna:py-4">
-        {/* Errors show only in the top-right toast. This empty block takes the
-            free width so the buttons stay right-aligned. */}
-        <div className="mna:min-w-0 mna:flex-1" />
+        {/* Errors show only in the top-right toast. This block takes the free
+            width so the buttons stay right-aligned, and holds the admin hint
+            right beside them. */}
+        <div className="mna:flex mna:min-w-0 mna:flex-1 mna:justify-end">
+          {!isReadonly && <LoadMessageBanner />}
+        </div>
         <div className="mna:flex mna:shrink-0 mna:items-center mna:gap-2">
           <button
             id="fin-eval-back-btn"

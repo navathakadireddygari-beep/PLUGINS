@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Save, CheckCircle2 } from "lucide-react";
 import { ERROR_FLASH_CSS, flashErrorTarget } from "../lib/error-flash";
 import { getAppConfig } from "../config/app-config";
+import LoadMessageBanner from "./LoadMessageBanner";
 import {
   getFinEvaluationStaging,
   validateFinEvaluationStaging,
@@ -1266,6 +1267,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
       <div ref={headerRef} style={{ position: headerPinned ? "fixed" : "sticky", top: headerPinned ? topInset : 0, left: headerPinned ? leftOffset : undefined, width: headerPinned ? containerWidth : undefined, zIndex: 200, background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
         {/* Action bar */}
         <div className="action-bar">
+          {!isReadOnly && <LoadMessageBanner />}
           <div className="action-bar-group">
             <button
               id="fin-eval-back-btn"

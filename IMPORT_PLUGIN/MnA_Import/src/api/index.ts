@@ -7,3 +7,4 @@ export * from "@/api/financial-api";
 export * from "@/api/delete-api";
 export * from "@/api/currency-exchange-api";
 export * from "@/api/staging-api";
+export * from "@/api/messages-api";
