@@ -23,9 +23,10 @@ export default function LoadMessageBanner() {
   return (
     <div
       role="note"
-      className="mna:flex mna:min-w-0 mna:items-center mna:gap-2 mna:rounded-md mna:border mna:border-l-4 mna:border-[#A7F3D0] mna:border-l-[#059669] mna:bg-[#ECFDF5] mna:px-3 mna:py-[7px] mna:text-[12.5px] mna:font-medium mna:leading-snug mna:text-[#065F46]"
+      // Colours match the success toast (Toast.tsx).
+      className="mna:flex mna:min-w-0 mna:items-center mna:gap-2 mna:rounded-md mna:border-l-4 mna:border-[#436b1d] mna:bg-[#f4fceb] mna:px-3 mna:py-[7px] mna:text-[12.5px] mna:font-medium mna:leading-snug mna:text-[#436b1d]"
     >
-      <Info size={15} className="mna:shrink-0 mna:text-[#059669]" />
+      <Info size={15} className="mna:shrink-0" />
       <span><strong style={{ fontWeight: 700 }}>Note:</strong> {text}</span>
     </div>
   );

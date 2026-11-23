@@ -94,8 +94,8 @@ export default function Header() {
       <div className="mna:flex mna:items-center mna:gap-4 mna:border-b mna:border-slate-200 mna:bg-white mna:px-6 mna:py-4">
         {/* Errors show only in the top-right toast. This block takes the free
             width so the buttons stay right-aligned, and holds the admin hint
-            right beside them. */}
-        <div className="mna:flex mna:min-w-0 mna:flex-1 mna:justify-end">
+            starting from the left edge. */}
+        <div className="mna:flex mna:min-w-0 mna:flex-1">
           {!isReadonly && <LoadMessageBanner />}
         </div>
         <div className="mna:flex mna:shrink-0 mna:items-center mna:gap-2">
