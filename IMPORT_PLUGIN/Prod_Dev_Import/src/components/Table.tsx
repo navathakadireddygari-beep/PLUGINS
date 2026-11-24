@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
+import { showClippedTitle } from "../lib/clipped-title";
 import { createPortal } from "react-dom";
 import { Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, RefreshCw, Save, CheckCircle2, Calendar } from "lucide-react";
 import { ERROR_FLASH_CSS, flashErrorTarget } from "../lib/error-flash";
@@ -318,6 +319,9 @@ const TH = (extra: CSSProperties = {}): CSSProperties => ({
   ...extra,
 });
 const TD: CSSProperties = { borderBottom: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", height: 40 };
+// Read-only figure cells: a value wider than its year column is cut with "…"
+// (full value on hover, see showClippedTitle) instead of spilling into the next column.
+const NUM_CLIP: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
 
 /* ─────────────────────────── Component ──────────────────────────── */
 export default function PivotTableWithAPI(): React.ReactElement {
@@ -1008,7 +1012,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     // Disabled: the whole cell is filled grey, same as the calculated rows
     // (#f3f4f6) — no inner box; a saved value, if any, shows as plain text.
     if (!enabled) return (<>
-      <td style={{ ...TD, padding: "4px 14px", background: "#f3f4f6", fontSize: 12, color: "#1f2937", textAlign: "right", cursor: "not-allowed" }}>{amort}</td>
+      <td style={{ ...TD, ...NUM_CLIP, padding: "4px 14px", background: "#f3f4f6", fontSize: 12, color: "#1f2937", textAlign: "right", cursor: "not-allowed" }}>{amort}</td>
       <td style={{ ...TD, padding: "4px 14px", background: "#f3f4f6", fontSize: 12, color: "#1f2937", cursor: "not-allowed" }}>{fmtCellDate(placed)}</td>
     </>);
     return (<>
@@ -1256,7 +1260,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ────────────────────────────── JSX ────────────────────────── */
   return (
-    <div ref={containerRef} onInputCapture={onAnyInput}>
+    <div ref={containerRef} onMouseOver={showClippedTitle} onInputCapture={onAnyInput}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <style>{ERROR_FLASH_CSS}</style>
       {/* Sentinel — IntersectionObserver watches this to detect when header should pin */}
@@ -1830,11 +1834,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {data.years.map((year: number) => {
                           const val = value.yearValues[year] ?? 0;
                           const nonFin = !isPercentRow(value) && (isNonFinancialRow(value) || groupAllNonFinancial);
-                          return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{isPercentRow(value) ? rawFmt(val) : nonFin ? nonFinFmt(val) : displayFmt(val)}</td>);
+                          return (<td key={year} style={{ ...TD, ...NUM_CLIP, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{isPercentRow(value) ? rawFmt(val) : nonFin ? nonFinFmt(val) : displayFmt(val)}</td>);
                         })}
                         {(isNoTotalRow(value) || groupNoTotal || isNonFinancialRow(value))
-                          ? <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>{groupNoTotal || isNonFinancialRow(value) ? "" : "—"}</td>
-                          : (() => { const t = lineTotal(value, data.years); const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial; return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t != null && t < 0 ? "#DC2626" : "#111" }}>{t == null ? "" : rawRow ? rawFmt(t) : displayFmt(t)}</td>; })()
+                          ? <td style={{ ...TD, ...NUM_CLIP, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>{groupNoTotal || isNonFinancialRow(value) ? "" : "—"}</td>
+                          : (() => { const t = lineTotal(value, data.years); const rawRow = isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial; return <td style={{ ...TD, ...NUM_CLIP, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t != null && t < 0 ? "#DC2626" : "#111" }}>{t == null ? "" : rawRow ? rawFmt(t) : displayFmt(t)}</td>; })()
                         }
                       </tr>
                     );
@@ -1854,11 +1858,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           {renderAssetCells(group, value, "4px 8px")}
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
-                            return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{isPercentRow(value) ? rawFmt(val) : (isNonFinancialRow(value) || groupAllNonFinancial) ? nonFinFmt(val) : displayFmt(val)}</td>);
+                            return (<td key={year} style={{ ...TD, ...NUM_CLIP, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: val < 0 ? "#DC2626" : "#111" }}>{isPercentRow(value) ? rawFmt(val) : (isNonFinancialRow(value) || groupAllNonFinancial) ? nonFinFmt(val) : displayFmt(val)}</td>);
                           })}
                           {(isNoTotalRow(value) || groupNoTotal || isNonFinancialRow(value))
-                            ? <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>{groupNoTotal || isNonFinancialRow(value) ? "" : "—"}</td>
-                            : (() => { const t = lineTotal(value, data.years); return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t != null && t < 0 ? "#DC2626" : "#111" }}>{t == null ? "" : (isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial) ? rawFmt(t) : displayFmt(t)}</td>; })()
+                            ? <td style={{ ...TD, ...NUM_CLIP, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#111" }}>{groupNoTotal || isNonFinancialRow(value) ? "" : "—"}</td>
+                            : (() => { const t = lineTotal(value, data.years); return <td style={{ ...TD, ...NUM_CLIP, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: t != null && t < 0 ? "#DC2626" : "#111" }}>{t == null ? "" : (isPercentRow(value) || isNonFinancialRow(value) || groupAllNonFinancial) ? rawFmt(t) : displayFmt(t)}</td>; })()
                           }
                         </tr>
                       ))}

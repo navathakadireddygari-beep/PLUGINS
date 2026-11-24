@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
+import { showClippedTitle } from "../lib/clipped-title";
 import { createPortal } from "react-dom";
 import { Trash2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X, RefreshCw, Save, Check } from "lucide-react";
 import { ERROR_FLASH_CSS, flashErrorTarget } from "../lib/error-flash";
@@ -150,6 +151,9 @@ const TH = (extra: CSSProperties = {}): CSSProperties => ({
   ...extra,
 });
 const TD: CSSProperties = { borderBottom: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", height: 40 };
+// Read-only figure cells: a value wider than its year column is cut with "…"
+// (full value on hover, see showClippedTitle) instead of spilling into the next column.
+const NUM_CLIP: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
 
 /* ─────────────────────────── Component ──────────────────────────── */
 export default function PivotTableWithAPI(): React.ReactElement {
@@ -1024,7 +1028,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     if (!del) return total;
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-        <span>{total}</span>
+        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{total}</span>
         {del}
       </div>
     );
@@ -1117,7 +1121,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ────────────────────────────── JSX ────────────────────────── */
   return (
-    <div ref={containerRef} onInputCapture={onAnyInput} style={{ width: "100%", maxWidth: WIDGET_MAX_WIDTH, margin: "0 auto", background: "#fff" }}>
+    <div ref={containerRef} onMouseOver={showClippedTitle} onInputCapture={onAnyInput} style={{ width: "100%", maxWidth: WIDGET_MAX_WIDTH, margin: "0 auto", background: "#fff" }}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <style>{ERROR_FLASH_CSS}</style>
       {/* Sentinel — IntersectionObserver watches this to detect when header should pin */}
@@ -1600,11 +1604,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             {sectionNameCell(group, "#fff")}
                           </td>
                           {data.years.map((year: number) => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
-                            <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
+                            <td key={year} style={{ ...TD, ...NUM_CLIP, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
                               {text}
                             </td>
                           ); })}
-                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
+                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, ...NUM_CLIP, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
                             {sectionTotalCell(text, group)}
                           </td>); })()}
                         </>)}
@@ -1624,11 +1628,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             {sectionNameCell(group, "#1f2937")}
                           </td>
                           {data.years.map((year: number) => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
-                            <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
+                            <td key={year} style={{ ...TD, ...NUM_CLIP, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
                               {text}
                             </td>
                           ); })}
-                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
+                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, ...NUM_CLIP, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
                             {sectionTotalCell(text, group)}
                           </td>); })()}
                         </>)}
@@ -1748,7 +1752,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {(() => {
                           const t = lineTotal(value, data.years);
                           const col = isNetTab ? netColor(t ?? 0) : ((t ?? 0) < 0 ? "#DC2626" : "#1f2937");
-                          return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{sectionBypassScale || isNonFinancialRow(value) || t == null ? "" : isNetTab ? netFmt(t, rowBypassScale) : displayFmt(t, rowBypassScale)}</td>;
+                          return <td style={{ ...TD, ...NUM_CLIP, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{sectionBypassScale || isNonFinancialRow(value) || t == null ? "" : isNetTab ? netFmt(t, rowBypassScale) : displayFmt(t, rowBypassScale)}</td>;
                         })()}
                       </tr>
                       );
@@ -1962,7 +1966,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               </td>
                               );
                             }); })()}
-                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, padding: "4px 12px", textAlign: "right", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937" }}>{isNonFinancialRow(value) ? "" : displayFmt(t, isUnscaledRow(value))}</td>; })()}
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, ...NUM_CLIP, padding: "4px 12px", textAlign: "right", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937" }}>{isNonFinancialRow(value) ? "" : displayFmt(t, isUnscaledRow(value))}</td>; })()}
                         </tr>
                       );
                     };
@@ -1983,12 +1987,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
                             const color = nc ? netColor(val) : (val < 0 ? "#DC2626" : "#111");
-                            return (<td key={year} style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(val, isUnscaledRow(value)) : displayFmt(val, isUnscaledRow(value))}</td>);
+                            return (<td key={year} style={{ ...TD, ...NUM_CLIP, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(val, isUnscaledRow(value)) : displayFmt(val, isUnscaledRow(value))}</td>);
                           })}
                           {(() => {
                             const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
                             const color = nc ? netColor(t) : (t < 0 ? "#DC2626" : "#111");
-                            return <td style={{ ...TD, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(t, isUnscaledRow(value)) : displayFmt(t, isUnscaledRow(value))}</td>;
+                            return <td style={{ ...TD, ...NUM_CLIP, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(t, isUnscaledRow(value)) : displayFmt(t, isUnscaledRow(value))}</td>;
                           })()}
                         </tr>
                       );
@@ -2011,12 +2015,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             {data.years.map((year: number) => {
                               const val = value.yearValues[year] ?? 0;
                               const color = nc ? netColor(val) : (val < 0 ? "#DC2626" : "#111");
-                              return (<td key={year} style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(val, isUnscaledRow(value)) : displayFmt(val, isUnscaledRow(value))}</td>);
+                              return (<td key={year} style={{ ...TD, ...NUM_CLIP, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(val, isUnscaledRow(value)) : displayFmt(val, isUnscaledRow(value))}</td>);
                             })}
                             {(() => {
                               const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
                               const color = nc ? netColor(t) : (t < 0 ? "#DC2626" : "#111");
-                              return <td style={{ ...TD, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(t, isUnscaledRow(value)) : displayFmt(t, isUnscaledRow(value))}</td>;
+                              return <td style={{ ...TD, ...NUM_CLIP, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(t, isUnscaledRow(value)) : displayFmt(t, isUnscaledRow(value))}</td>;
                             })()}
                           </tr>
                         );

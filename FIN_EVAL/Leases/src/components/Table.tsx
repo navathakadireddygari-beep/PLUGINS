@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
+import { showClippedTitle } from "../lib/clipped-title";
 import { createPortal } from "react-dom";
 import { Trash2, ChevronDown, ChevronUp, ChevronLeft, RefreshCw, Download, Upload, Save } from "lucide-react";
 import { getAppConfig } from "../config/app-config";
@@ -161,6 +162,9 @@ const TH = (extra: CSSProperties = {}): CSSProperties => ({
   ...extra,
 });
 const TD: CSSProperties = { borderBottom: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", height: 40 };
+// Read-only figure cells: a value wider than its year column is cut with "…"
+// (full value on hover, see showClippedTitle) instead of spilling into the next column.
+const NUM_CLIP: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
 
 // Every section starts expanded, at every depth, so the full tree is visible
 // on load without the user having to open each ancestor in turn.
@@ -728,7 +732,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
     if (!del) return total;
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-        <span>{total}</span>
+        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{total}</span>
         {del}
       </div>
     );
@@ -1071,7 +1075,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
 
   /* ────────────────────────────── JSX ────────────────────────── */
   return (
-    <div ref={containerRef} style={{ width: "100%", maxWidth: WIDGET_MAX_WIDTH, margin: "0 auto", background: "#fff", fontFamily: '"Oracle Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+    <div ref={containerRef} onMouseOver={showClippedTitle} style={{ width: "100%", maxWidth: WIDGET_MAX_WIDTH, margin: "0 auto", background: "#fff", fontFamily: '"Oracle Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       {/* Sentinel — IntersectionObserver watches this to detect when header should pin */}
       <div ref={sentinelRef} style={{ height: 1, marginBottom: -1 }} />
@@ -1613,11 +1617,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             {sectionNameCell(group, isOwnSection, "#fff")}
                           </td>
                           {data.years.map((year: number) => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
-                            <td key={year} style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
+                            <td key={year} style={{ ...TD, ...NUM_CLIP, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
                               {text}
                             </td>
                           ); })}
-                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
+                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, ...NUM_CLIP, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
                             {sectionTotalCell(text, group, isOwnSection)}
                           </td>); })()}
                         </>)}
@@ -1644,11 +1648,11 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             {sectionNameCell(group, isOwnSection, "#1f2937")}
                           </td>
                           {data.years.map((year: number) => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
-                            <td key={year} style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
+                            <td key={year} style={{ ...TD, ...NUM_CLIP, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
                               {text}
                             </td>
                           ); })}
-                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
+                          {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, ...NUM_CLIP, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
                             {sectionTotalCell(text, group, isOwnSection)}
                           </td>); })()}
                         </>)}
@@ -1755,7 +1759,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {(() => {
                           const t = lineTotal(value, data.years);
                           const col = isNetTab ? netColor(t ?? 0) : ((t ?? 0) < 0 ? "#DC2626" : "#1f2937");
-                          return <td style={{ ...TD, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{sectionBypassScale || isNonFinancialRow(value) || t == null ? "" : isNetTab && !rowBypassScale ? netFmt(t) : displayFmt(t, rowBypassScale)}</td>;
+                          return <td style={{ ...TD, ...NUM_CLIP, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{sectionBypassScale || isNonFinancialRow(value) || t == null ? "" : isNetTab && !rowBypassScale ? netFmt(t) : displayFmt(t, rowBypassScale)}</td>;
                         })()}
                       </tr>
                       );
