@@ -209,7 +209,9 @@ export default function SpreadsheetCell({
       title={value || (readOnly ? "Read-only" : undefined)}
       placeholder="—"
       value={draft ?? value}
-      className={`${className} mna:h-full mna:min-h-[2.5rem] mna:border-none mna:px-3 mna:text-[13px] mna:leading-10 mna:outline-none ${textClass} ${stateClass}`}
+      // A read-only figure too long for its column ends in "…", like the
+      // read-only cells in Prod Dev; editable cells just clip, as there.
+      className={`${className} mna:h-full mna:min-h-[2.5rem] mna:border-none mna:px-3 mna:text-[13px] mna:leading-10 mna:outline-none ${readOnly ? "mna:text-ellipsis" : ""} ${textClass} ${stateClass}`}
       style={{ ...style, cursor: readOnly ? "default" : "text" }}
       onMouseDown={(e) => api.select(e, pos)}
       onMouseEnter={() => api.hover(pos)}
