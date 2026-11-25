@@ -10,10 +10,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { deleteFinEvalSection } from "@/api";
+import type { DeleteResult } from "./useDeleteFinEvalLine";
 
 export interface UseDeleteFinEvalSectionResult {
-  /** DELETE the section. Resolves true on success, false on failure. */
-  remove: (sectionId: number) => Promise<boolean>;
+  /** DELETE the section. Resolves `ok` plus the message to show in the toast. */
+  remove: (sectionId: number) => Promise<DeleteResult>;
   deleting: boolean;
   /** Human-readable failure message, or null. */
   error: string | null;
@@ -32,24 +33,24 @@ export const useDeleteFinEvalSection = (
   useEffect(() => () => controllerRef.current?.abort(), []);
 
   const remove = useCallback(
-    async (sectionId: number): Promise<boolean> => {
+    async (sectionId: number): Promise<DeleteResult> => {
       const controller = new AbortController();
       controllerRef.current = controller;
 
       setDeleting(true);
       setError(null);
       try {
-        await deleteFinEvalSection(sectionId, {
+        const message = await deleteFinEvalSection(sectionId, {
           fileId,
           signal: controller.signal,
         });
-        return !controller.signal.aborted;
+        return controller.signal.aborted ? { ok: false } : { ok: true, message };
       } catch (err: unknown) {
-        if (controller.signal.aborted) return false;
-        setError(
-          err instanceof Error ? err.message : "Failed to delete the section",
-        );
-        return false;
+        if (controller.signal.aborted) return { ok: false };
+        const message =
+          err instanceof Error ? err.message : "Failed to delete the section";
+        setError(message);
+        return { ok: false, message };
       } finally {
         if (!controller.signal.aborted) setDeleting(false);
       }

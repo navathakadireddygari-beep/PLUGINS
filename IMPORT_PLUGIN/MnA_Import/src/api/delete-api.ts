@@ -31,26 +31,26 @@ export type DeleteFinEvalBody =
 const sendDelete = async (
   body: DeleteFinEvalBody,
   options: { fileId?: string | number; signal?: AbortSignal } = {},
-): Promise<void> => {
+): Promise<string | undefined> => {
   const fileId = options.fileId ?? getAppConfig().file_id;
   if (fileId == null) {
     throw new Error("No file id — cannot delete from the staged evaluation.");
   }
-  await deleteItems(
+  return deleteItems(
     finEvaluationStagingDeletePath(fileId),
     body,
     options.signal,
   );
 };
 
-/** Delete a single line item by its staging line id. */
+/** Delete a single line item by its staging line id. Resolves to the server's apiMessage. */
 export const deleteFinEvalLine = async (
   lineId: number,
   options: { fileId?: string | number; signal?: AbortSignal } = {},
-): Promise<void> => sendDelete({ finEvalLineStgId: lineId }, options);
+): Promise<string | undefined> => sendDelete({ finEvalLineStgId: lineId }, options);
 
-/** Delete an entire section and all its lines, by its staging section id. */
+/** Delete an entire section and all its lines, by its staging section id. Resolves to the server's apiMessage. */
 export const deleteFinEvalSection = async (
   sectionId: number,
   options: { fileId?: string | number; signal?: AbortSignal } = {},
-): Promise<void> => sendDelete({ finEvalSectionStgId: sectionId }, options);
+): Promise<string | undefined> => sendDelete({ finEvalSectionStgId: sectionId }, options);

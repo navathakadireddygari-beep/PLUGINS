@@ -187,17 +187,18 @@ export const putItems = async <T>(
  * DELETE-with-a-body is unusual but is what this API expects (the row to remove
  * is named in the body, not the path). Success is judged the same way `putItems`
  * judges it: the HTTP status decides, and the envelope is only consulted when
- * one was actually returned.
+ * one was actually returned. Resolves to the server's `apiMessage` (if any) so
+ * the caller can show it in its success toast.
  */
-export const deleteItems = async <T>(
+export const deleteItems = async (
   path: string,
   data: unknown,
   signal?: AbortSignal,
-): Promise<T | undefined> => {
-  let body: ApiEnvelope<T> | "" | null | undefined;
+): Promise<string | undefined> => {
+  let body: ApiEnvelope<unknown> | "" | null | undefined;
   try {
     const config: AxiosRequestConfig = { data, signal };
-    ({ data: body } = await apiClient.delete<ApiEnvelope<T>>(path, config));
+    ({ data: body } = await apiClient.delete<ApiEnvelope<unknown>>(path, config));
   } catch (error) {
     throw toApiError(error, path);
   }
@@ -206,7 +207,7 @@ export const deleteItems = async <T>(
   if (body.apiStatus !== undefined && body.apiStatus !== "S") {
     throw new ApiError(body.apiMessage || `Request to ${path} failed`);
   }
-  return body.data?.items;
+  return body.apiMessage || undefined;
 };
 
 /**

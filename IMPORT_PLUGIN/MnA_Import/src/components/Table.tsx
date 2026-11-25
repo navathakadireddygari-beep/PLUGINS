@@ -1543,10 +1543,10 @@ const Table: React.FC = () => {
         }
         const snapshot = cusRows;
         drop();
-        void deleteSection(sectionId).then((ok) => {
+        void deleteSection(sectionId).then(({ ok, message }) => {
           if (!ok) {
             setCusRows(snapshot); // put it back; the server still has it
-            setToast({ kind: "error", message: "Failed to delete section." });
+            setToast({ kind: "error", message: message || "Failed to delete section." });
             return;
           }
           // Remember it, so the next save does not echo the section — and every
@@ -1556,7 +1556,7 @@ const Table: React.FC = () => {
           );
           setToast({
             kind: "success",
-            message: "Section deleted successfully.",
+            message: message || "Section deleted successfully.",
           });
           emitDeleted();
         });
@@ -2154,7 +2154,7 @@ const Table: React.FC = () => {
         }
 
         const deletedId = row.lineId;
-        void deleteLine(deletedId).then((ok) => {
+        void deleteLine(deletedId).then(({ ok, message }) => {
           if (ok) {
             // Remember it, so the next save does not echo it back.
             setDeletedLineIds((prev) =>
@@ -2162,12 +2162,12 @@ const Table: React.FC = () => {
             );
             setToast({
               kind: "success",
-              message: "Line deleted successfully.",
+              message: message || "Line deleted successfully.",
             });
             emitDeleted();
           } else {
             setRows(rows); // restore the pre-delete order
-            setToast({ kind: "error", message: "Failed to delete line." });
+            setToast({ kind: "error", message: message || "Failed to delete line." });
           }
         });
       },

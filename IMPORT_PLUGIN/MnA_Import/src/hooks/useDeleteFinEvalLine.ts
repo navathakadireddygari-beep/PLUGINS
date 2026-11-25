@@ -9,9 +9,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { deleteFinEvalLine } from "@/api";
 
+/** Outcome of a delete: `message` is the API's text (or the error), if any. */
+export interface DeleteResult {
+  ok: boolean;
+  message?: string;
+}
+
 export interface UseDeleteFinEvalLineResult {
-  /** DELETE the line. Resolves true on success, false on failure. */
-  remove: (lineId: number) => Promise<boolean>;
+  /** DELETE the line. Resolves `ok` plus the message to show in the toast. */
+  remove: (lineId: number) => Promise<DeleteResult>;
   deleting: boolean;
   /** Human-readable failure message, or null. */
   error: string | null;
@@ -30,24 +36,24 @@ export const useDeleteFinEvalLine = (
   useEffect(() => () => controllerRef.current?.abort(), []);
 
   const remove = useCallback(
-    async (lineId: number): Promise<boolean> => {
+    async (lineId: number): Promise<DeleteResult> => {
       const controller = new AbortController();
       controllerRef.current = controller;
 
       setDeleting(true);
       setError(null);
       try {
-        await deleteFinEvalLine(lineId, {
+        const message = await deleteFinEvalLine(lineId, {
           fileId,
           signal: controller.signal,
         });
-        return !controller.signal.aborted;
+        return controller.signal.aborted ? { ok: false } : { ok: true, message };
       } catch (err: unknown) {
-        if (controller.signal.aborted) return false;
-        setError(
-          err instanceof Error ? err.message : "Failed to delete the row",
-        );
-        return false;
+        if (controller.signal.aborted) return { ok: false };
+        const message =
+          err instanceof Error ? err.message : "Failed to delete the row";
+        setError(message);
+        return { ok: false, message };
       } finally {
         if (!controller.signal.aborted) setDeleting(false);
       }
