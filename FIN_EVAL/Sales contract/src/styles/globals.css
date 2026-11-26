@@ -158,6 +158,14 @@
   border-color: hsl(var(--border));
 }
 
+/* A read-only value too long for its cell ends in "…" while it is not
+   focused; clicking in shows the caret, and the arrow keys / Home / End scroll
+   through it (Table.tsx handleCellArrowNav). */
+#sales-contracts-investment-report-root input[readonly],
+#fin-eval-widget-root input[readonly] {
+  text-overflow: ellipsis;
+}
+
 /* Scope background/foreground to the widget root — prevents overwriting APEX body styles.
    NOT !important: only a default; the inline backgrounds/colours below it
    (and any a host page sets on the mount element) must keep winning. */

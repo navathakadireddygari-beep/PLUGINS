@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from "react";
 import { showClippedTitle } from "../lib/clipped-title";
+import ReadOnlyFigure from "./ReadOnlyFigure";
 import { createPortal } from "react-dom";
 import { Trash2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X, RefreshCw, Save, Check } from "lucide-react";
 import { ERROR_FLASH_CSS, flashErrorTarget } from "../lib/error-flash";
@@ -151,8 +152,9 @@ const TH = (extra: CSSProperties = {}): CSSProperties => ({
   ...extra,
 });
 const TD: CSSProperties = { borderBottom: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", height: 40 };
-// Read-only figure cells: a value wider than its year column is cut with "…"
-// (full value on hover, see showClippedTitle) instead of spilling into the next column.
+// Read-only figure cells. The figure itself is a ReadOnlyFigure (a locked input:
+// "…" at rest, click in to scroll through it); this keeps the cell from spilling
+// into the next column.
 const NUM_CLIP: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
 
 /* ─────────────────────────── Component ──────────────────────────── */
@@ -1025,10 +1027,10 @@ export default function PivotTableWithAPI(): React.ReactElement {
   /** Last cell of a section bar: the total, then the delete-section control at the far right, as in Prod Dev. */
   const sectionTotalCell = (total: string, group: Group): React.ReactNode => {
     const del = sectionDeleteButton(group);
-    if (!del) return total;
+    if (!del) return <ReadOnlyFigure value={total} />;
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{total}</span>
+        <div style={{ flex: "1 1 auto", minWidth: 0 }}><ReadOnlyFigure value={total} /></div>
         {del}
       </div>
     );
@@ -1087,10 +1089,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
     const { key } = e;
     if (key !== "ArrowUp" && key !== "ArrowDown" && key !== "ArrowLeft" && key !== "ArrowRight") return;
     const input = e.currentTarget;
-    // For editable cells, only jump on Left/Right when the caret is already at
-    // the edge (so arrows still move the caret mid-text). Read-only cells have
-    // no caret to preserve, so every arrow navigates.
-    if ((key === "ArrowLeft" || key === "ArrowRight") && !input.readOnly) {
+    // Editable cells, and read-only ones whose value is cut off, only jump on
+    // Left/Right when the caret is already at the edge, so the arrows first
+    // scroll through the value. A read-only value that fits has nothing to
+    // scroll, so every arrow navigates.
+    const clipped = input.scrollWidth > input.clientWidth;
+    if ((key === "ArrowLeft" || key === "ArrowRight") && (!input.readOnly || clipped)) {
       const pos = input.selectionStart ?? 0;
       if (key === "ArrowLeft"  && pos > 0)                  return; // caret not at start
       if (key === "ArrowRight" && pos < input.value.length) return; // caret not at end
@@ -1605,7 +1609,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                           {data.years.map((year: number) => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
                             <td key={year} style={{ ...TD, ...NUM_CLIP, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
-                              {text}
+                              <ReadOnlyFigure value={text} />
                             </td>
                           ); })}
                           {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, ...NUM_CLIP, padding: "8px 14px", textAlign: "right", fontSize: 12, fontWeight: 800, color: barNumColor(text, "#fff"), borderBottom: "1px solid #293a59" }}>
@@ -1629,7 +1633,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           </td>
                           {data.years.map((year: number) => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionValues[year] || 0) : displayFmt(sectionValues[year] || 0); return (
                             <td key={year} style={{ ...TD, ...NUM_CLIP, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
-                              {text}
+                              <ReadOnlyFigure value={text} />
                             </td>
                           ); })}
                           {(() => { const text = sectionBypassScale ? "" : isNetTab ? netFmt(sectionTotal) : displayFmt(sectionTotal, sectionBypassScale); return (<td style={{ ...TD, ...NUM_CLIP, padding: "6px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: barNumColor(text, "#1f2937"), borderBottom: "1px solid #e5e7eb" }}>
@@ -1752,7 +1756,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                         {(() => {
                           const t = lineTotal(value, data.years);
                           const col = isNetTab ? netColor(t ?? 0) : ((t ?? 0) < 0 ? "#DC2626" : "#1f2937");
-                          return <td style={{ ...TD, ...NUM_CLIP, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}>{sectionBypassScale || isNonFinancialRow(value) || t == null ? "" : isNetTab ? netFmt(t, rowBypassScale) : displayFmt(t, rowBypassScale)}</td>;
+                          return <td style={{ ...TD, ...NUM_CLIP, padding: "4px 14px", textAlign: "right", fontSize: 12, fontWeight: 700, color: col }}><ReadOnlyFigure value={sectionBypassScale || isNonFinancialRow(value) || t == null ? "" : isNetTab ? netFmt(t, rowBypassScale) : displayFmt(t, rowBypassScale)} /></td>;
                         })()}
                       </tr>
                       );
@@ -1966,7 +1970,7 @@ export default function PivotTableWithAPI(): React.ReactElement {
                               </td>
                               );
                             }); })()}
-                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, ...NUM_CLIP, padding: "4px 12px", textAlign: "right", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937" }}>{isNonFinancialRow(value) ? "" : displayFmt(t, isUnscaledRow(value))}</td>; })()}
+                          {(() => { const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0); return <td style={{ ...TD, ...NUM_CLIP, padding: "4px 12px", textAlign: "right", fontSize: 13, fontWeight: 600, color: t < 0 ? "#DC2626" : "#1f2937" }}><ReadOnlyFigure value={isNonFinancialRow(value) ? "" : displayFmt(t, isUnscaledRow(value))} /></td>; })()}
                         </tr>
                       );
                     };
@@ -1987,12 +1991,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
                           {data.years.map((year: number) => {
                             const val = value.yearValues[year] ?? 0;
                             const color = nc ? netColor(val) : (val < 0 ? "#DC2626" : "#111");
-                            return (<td key={year} style={{ ...TD, ...NUM_CLIP, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(val, isUnscaledRow(value)) : displayFmt(val, isUnscaledRow(value))}</td>);
+                            return (<td key={year} style={{ ...TD, ...NUM_CLIP, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}><ReadOnlyFigure value={nc ? netFmt(val, isUnscaledRow(value)) : displayFmt(val, isUnscaledRow(value))} /></td>);
                           })}
                           {(() => {
                             const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
                             const color = nc ? netColor(t) : (t < 0 ? "#DC2626" : "#111");
-                            return <td style={{ ...TD, ...NUM_CLIP, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(t, isUnscaledRow(value)) : displayFmt(t, isUnscaledRow(value))}</td>;
+                            return <td style={{ ...TD, ...NUM_CLIP, padding: "8px 12px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}><ReadOnlyFigure value={nc ? netFmt(t, isUnscaledRow(value)) : displayFmt(t, isUnscaledRow(value))} /></td>;
                           })()}
                         </tr>
                       );
@@ -2015,12 +2019,12 @@ export default function PivotTableWithAPI(): React.ReactElement {
                             {data.years.map((year: number) => {
                               const val = value.yearValues[year] ?? 0;
                               const color = nc ? netColor(val) : (val < 0 ? "#DC2626" : "#111");
-                              return (<td key={year} style={{ ...TD, ...NUM_CLIP, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(val, isUnscaledRow(value)) : displayFmt(val, isUnscaledRow(value))}</td>);
+                              return (<td key={year} style={{ ...TD, ...NUM_CLIP, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}><ReadOnlyFigure value={nc ? netFmt(val, isUnscaledRow(value)) : displayFmt(val, isUnscaledRow(value))} /></td>);
                             })}
                             {(() => {
                               const t = value.rowTotal ?? data.years.reduce((s, y) => s + (value.yearValues[y] || 0), 0);
                               const color = nc ? netColor(t) : (t < 0 ? "#DC2626" : "#111");
-                              return <td style={{ ...TD, ...NUM_CLIP, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}>{nc ? netFmt(t, isUnscaledRow(value)) : displayFmt(t, isUnscaledRow(value))}</td>;
+                              return <td style={{ ...TD, ...NUM_CLIP, padding: "10px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color }}><ReadOnlyFigure value={nc ? netFmt(t, isUnscaledRow(value)) : displayFmt(t, isUnscaledRow(value))} /></td>;
                             })()}
                           </tr>
                         );

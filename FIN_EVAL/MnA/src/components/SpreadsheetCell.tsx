@@ -146,9 +146,10 @@ export default function SpreadsheetCell({
     // Left/Right move the CARET while there is text to move through, and only
     // jump to the next cell at the edge — Prod Dev's `handleCellArrowNav` rule,
     // exactly (it reads only `selectionStart`): Left navigates when the caret
-    // is at 0, Right when it is at the end. A locked cell has no caret to
-    // preserve, so every arrow navigates.
-    if (!readOnly && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+    // is at 0, Right when it is at the end. A locked cell follows the same rule
+    // when its figure is cut off, so the arrows scroll through it; one that
+    // fits has nothing to scroll, so every arrow navigates.
+    if ((!readOnly || el.scrollWidth > el.clientWidth) && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
       const caret = el.selectionStart ?? 0;
       if (e.key === "ArrowLeft" && caret > 0) return;
       if (e.key === "ArrowRight" && caret < el.value.length) return;
